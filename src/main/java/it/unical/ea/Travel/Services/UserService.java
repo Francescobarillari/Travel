@@ -1,4 +1,4 @@
-package it.unical.ea.Travel.Servicies;
+package it.unical.ea.Travel.Services;
 
 import java.util.List;
 import java.util.UUID;

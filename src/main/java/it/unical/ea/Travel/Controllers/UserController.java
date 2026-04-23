@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import it.unical.ea.Travel.Entities.User;
-import it.unical.ea.Travel.Servicies.UserService;
+import it.unical.ea.Travel.Services.UserService;
 
 @RestController
 @RequestMapping("/user")
