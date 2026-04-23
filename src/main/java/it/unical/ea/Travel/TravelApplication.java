@@ -11,6 +11,3 @@ public class TravelApplication {
 	}
 
 }
-
-/*git commit -m "Entità user crea
-ta con relativo service, repo e controller" */
