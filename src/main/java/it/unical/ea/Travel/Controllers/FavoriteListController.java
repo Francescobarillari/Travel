@@ -1,0 +1,49 @@
+package it.unical.ea.Travel.Controllers;
+
+import java.util.List;
+
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import it.unical.ea.Travel.Entities.FavoriteList;
+import it.unical.ea.Travel.Services.FavoriteListService;
+
+@RestController
+@RequestMapping("/FavoriteList")
+public class FavoriteListController{
+    private final FavoriteListService favoriteListService;
+
+    public FavoriteListController( FavoriteListService favoriteListService){
+        this.favoriteListService= favoriteListService;
+    }
+
+    @PostMapping
+    public FavoriteList saveFavoriteList(@RequestBody FavoriteList favoriteList){
+        return favoriteListService.saveFavoriteList(favoriteList);
+    }
+
+    @GetMapping("/{stringId}")
+    public FavoriteList getFavoriteList(@PathVariable String stringId){
+        return favoriteListService.getFavoriteList(stringId);
+    }
+
+    @GetMapping
+    public List<FavoriteList> getFavoriteLists(@RequestParam(required = false) String ownerId){
+        if (ownerId != null && !ownerId.isBlank()) {
+            return favoriteListService.getFavoriteListsByOwner(ownerId);
+        }
+        return favoriteListService.getFavoriteLists();
+    }
+
+    @DeleteMapping
+    public void deleteFavoriteList(String stringIdString)
+    {
+        favoriteListService.deleteFavoriteList(stringIdString);
+    }
+}
