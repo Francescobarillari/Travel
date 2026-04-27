@@ -3,7 +3,7 @@ package it.unical.ea.Travel.DTOs.favorite;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-import it.unical.ea.Travel.Entities.FavoriteList.Visibility;
+import it.unical.ea.Travel.Entities.favorite.FavoriteList.Visibility;
 
 public record FavoriteListResponseDTO(
         UUID id,

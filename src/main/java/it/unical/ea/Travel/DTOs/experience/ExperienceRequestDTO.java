@@ -4,8 +4,8 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.UUID;
 
-import it.unical.ea.Travel.Entities.Experience.ExperienceStatus;
-import it.unical.ea.Travel.Entities.Experience.ExperienceType;
+import it.unical.ea.Travel.Entities.experience.Experience.ExperienceStatus;
+import it.unical.ea.Travel.Entities.experience.Experience.ExperienceType;
 
 public record ExperienceRequestDTO(
         UUID organizerId,

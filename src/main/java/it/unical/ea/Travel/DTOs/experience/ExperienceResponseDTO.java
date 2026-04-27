@@ -5,8 +5,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-import it.unical.ea.Travel.Entities.Experience.ExperienceStatus;
-import it.unical.ea.Travel.Entities.Experience.ExperienceType;
+import it.unical.ea.Travel.Entities.experience.Experience.ExperienceStatus;
+import it.unical.ea.Travel.Entities.experience.Experience.ExperienceType;
 
 public record ExperienceResponseDTO(
         UUID id,
