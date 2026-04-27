@@ -1,6 +1,7 @@
 package it.unical.ea.Travel.Controllers;
 
-import it.unical.ea.Travel.Entities.Experience;
+import it.unical.ea.Travel.DTOs.ExperienceRequestDTO;
+import it.unical.ea.Travel.DTOs.ExperienceResponseDTO;
 import it.unical.ea.Travel.Services.ExperienceService;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,17 +25,17 @@ public class ExperienceController {
     }
 
     @PostMapping
-    public Experience saveExperience(@RequestBody Experience experience) {
-        return experienceService.saveExperience(experience);
+    public ExperienceResponseDTO saveExperience(@RequestBody ExperienceRequestDTO request) {
+        return experienceService.saveExperience(request);
     }
 
     @GetMapping("/{stringId}")
-    public Experience getExperience(@PathVariable String stringId) {
+    public ExperienceResponseDTO getExperience(@PathVariable String stringId) {
         return experienceService.getExperience(stringId);
     }
 
     @GetMapping
-    public List<Experience> getExperiences(@RequestParam(required = false) String organizerId) {
+    public List<ExperienceResponseDTO> getExperiences(@RequestParam(required = false) String organizerId) {
         if (organizerId != null && !organizerId.isBlank()) {
             return experienceService.getExperiencesByOrganizer(organizerId);
         }
