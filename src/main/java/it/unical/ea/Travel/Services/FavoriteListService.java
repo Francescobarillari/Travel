@@ -5,7 +5,9 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import it.unical.ea.Travel.DTOs.FavoriteListDTO;
 import it.unical.ea.Travel.Entities.FavoriteList;
 import it.unical.ea.Travel.Repositories.FavoriteListRepository;
 
@@ -18,33 +20,66 @@ public class FavoriteListService {
         this.favoriteListRepository = favoriteListRepository;
     }
 
-    public FavoriteList saveFavoriteList(FavoriteList favoriteList) {
-        return favoriteListRepository.save(favoriteList);
+    @Transactional
+    public FavoriteListDTO saveFavoriteList(FavoriteList favoriteList) {
+        FavoriteList savedFavoriteList = favoriteListRepository.save(favoriteList);
+        return mapToDTO(getFavoriteListEntity(savedFavoriteList.getId()));
     }
 
-    public FavoriteList getFavoriteList(String stringId) {
+    @Transactional(readOnly = true)
+    public FavoriteListDTO getFavoriteList(String stringId) {
         UUID uuid = UUID.fromString(stringId);
-        return favoriteListRepository.findById(uuid)
-                .filter(favoriteList -> !favoriteList.isDeleted())
-                .orElseThrow(() -> new RuntimeException("Lista preferiti non trovata"));
+        return mapToDTO(getFavoriteListEntity(uuid));
     }
 
-    public List<FavoriteList> getFavoriteLists() {
-        return favoriteListRepository.findByDeletedAtIsNull();
+    @Transactional(readOnly = true)
+    public List<FavoriteListDTO> getFavoriteLists() {
+        return favoriteListRepository.findByDeletedAtIsNull()
+                .stream()
+                .map(this::mapToDTO)
+                .toList();
     }
 
-    public List<FavoriteList> getFavoriteListsByOwner(String ownerId) {
+    @Transactional(readOnly = true)
+    public List<FavoriteListDTO> getFavoriteListsByOwner(String ownerId) {
         UUID uuid = UUID.fromString(ownerId);
-        return favoriteListRepository.findByOwnerIdAndDeletedAtIsNull(uuid);
+        return favoriteListRepository.findByOwnerIdAndDeletedAtIsNull(uuid)
+                .stream()
+                .map(this::mapToDTO)
+                .toList();
     }
 
     public void updateFavoriteList() {
         return; // da implementare
     }
 
+    @Transactional
     public void deleteFavoriteList(String stringId) {
-        FavoriteList favoriteList = getFavoriteList(stringId);
+        FavoriteList favoriteList = getFavoriteListEntity(stringId);
         favoriteList.setDeletedAt(LocalDateTime.now());
         favoriteListRepository.save(favoriteList);
+    }
+
+    private FavoriteList getFavoriteListEntity(String stringId) {
+        UUID uuid = UUID.fromString(stringId);
+        return getFavoriteListEntity(uuid);
+    }
+
+    private FavoriteList getFavoriteListEntity(UUID uuid) {
+        return favoriteListRepository.findById(uuid)
+                .filter(favoriteList -> !favoriteList.isDeleted())
+                .orElseThrow(() -> new RuntimeException("Lista preferiti non trovata"));
+    }
+
+    private FavoriteListDTO mapToDTO(FavoriteList favoriteList) {
+        return new FavoriteListDTO(
+                favoriteList.getId(),
+                favoriteList.getName(),
+                favoriteList.getDescription(),
+                favoriteList.getVisibility() != null ? favoriteList.getVisibility().name() : null,
+                favoriteList.getCreatedAt(),
+                favoriteList.getUpdatedAt(),
+                favoriteList.getOwner() != null ? favoriteList.getOwner().getId() : null
+        );
     }
 }

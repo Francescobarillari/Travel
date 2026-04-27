@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import it.unical.ea.Travel.DTOs.FavoriteListItemDTO;
 import it.unical.ea.Travel.Entities.FavoriteListItem;
 import it.unical.ea.Travel.Services.FavoriteListItemService;
 
@@ -25,17 +26,17 @@ public class FavoriteListItemController {
     }
 
     @PostMapping
-    public FavoriteListItem saveFavoriteListItem(@RequestBody FavoriteListItem favoriteListItem) {
+    public FavoriteListItemDTO saveFavoriteListItem(@RequestBody FavoriteListItem favoriteListItem) {
         return favoriteListItemService.saveFavoriteListItem(favoriteListItem);
     }
 
     @GetMapping("/{stringId}")
-    public FavoriteListItem getFavoriteListItem(@PathVariable String stringId) {
+    public FavoriteListItemDTO getFavoriteListItem(@PathVariable String stringId) {
         return favoriteListItemService.getFavoriteListItem(stringId);
     }
 
     @GetMapping
-    public List<FavoriteListItem> getFavoriteListItems(@RequestParam(required = false) String favoriteListId) {
+    public List<FavoriteListItemDTO> getFavoriteListItems(@RequestParam(required = false) String favoriteListId) {
         if (favoriteListId != null && !favoriteListId.isBlank()) {
             return favoriteListItemService.getFavoriteListItemsByFavoriteList(favoriteListId);
         }

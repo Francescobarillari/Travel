@@ -4,7 +4,9 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import it.unical.ea.Travel.DTOs.FavoriteListItemDTO;
 import it.unical.ea.Travel.Entities.FavoriteListItem;
 import it.unical.ea.Travel.Repositories.FavoriteListItemRepository;
 
@@ -17,31 +19,57 @@ public class FavoriteListItemService {
         this.favoriteListItemRepository = favoriteListItemRepository;
     }
 
-    public FavoriteListItem saveFavoriteListItem(FavoriteListItem favoriteListItem) {
-        return favoriteListItemRepository.save(favoriteListItem);
+    @Transactional
+    public FavoriteListItemDTO saveFavoriteListItem(FavoriteListItem favoriteListItem) {
+        FavoriteListItem savedFavoriteListItem = favoriteListItemRepository.save(favoriteListItem);
+        return mapToDTO(getFavoriteListItemEntity(savedFavoriteListItem.getId()));
     }
 
-    public FavoriteListItem getFavoriteListItem(String stringId) {
+    @Transactional(readOnly = true)
+    public FavoriteListItemDTO getFavoriteListItem(String stringId) {
         UUID uuid = UUID.fromString(stringId);
-        return favoriteListItemRepository.findById(uuid)
-                .orElseThrow(() -> new RuntimeException("Elemento lista preferiti non trovato"));
+        return mapToDTO(getFavoriteListItemEntity(uuid));
     }
 
-    public List<FavoriteListItem> getFavoriteListItems() {
-        return favoriteListItemRepository.findAll();
+    @Transactional(readOnly = true)
+    public List<FavoriteListItemDTO> getFavoriteListItems() {
+        return favoriteListItemRepository.findAll()
+                .stream()
+                .map(this::mapToDTO)
+                .toList();
     }
 
-    public List<FavoriteListItem> getFavoriteListItemsByFavoriteList(String favoriteListId) {
+    @Transactional(readOnly = true)
+    public List<FavoriteListItemDTO> getFavoriteListItemsByFavoriteList(String favoriteListId) {
         UUID uuid = UUID.fromString(favoriteListId);
-        return favoriteListItemRepository.findByFavoriteListId(uuid);
+        return favoriteListItemRepository.findByFavoriteListId(uuid)
+                .stream()
+                .map(this::mapToDTO)
+                .toList();
     }
 
     public void updateFavoriteListItem() {
         return; // da implementare
     }
 
+    @Transactional
     public void deleteFavoriteListItem(String stringId) {
         UUID uuid = UUID.fromString(stringId);
         favoriteListItemRepository.deleteById(uuid);
+    }
+
+    private FavoriteListItem getFavoriteListItemEntity(UUID uuid) {
+        return favoriteListItemRepository.findById(uuid)
+                .orElseThrow(() -> new RuntimeException("Elemento lista preferiti non trovato"));
+    }
+
+    private FavoriteListItemDTO mapToDTO(FavoriteListItem favoriteListItem) {
+        return new FavoriteListItemDTO(
+                favoriteListItem.getId(),
+                favoriteListItem.getAddedAt(),
+                favoriteListItem.getNotes(),
+                favoriteListItem.getFavoriteList() != null ? favoriteListItem.getFavoriteList().getId() : null,
+                favoriteListItem.getExperience() != null ? favoriteListItem.getExperience().getId() : null
+        );
     }
 }
