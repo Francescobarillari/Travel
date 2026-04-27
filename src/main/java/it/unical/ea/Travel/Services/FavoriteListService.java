@@ -7,8 +7,8 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import it.unical.ea.Travel.DTOs.FavoriteListRequestDTO;
-import it.unical.ea.Travel.DTOs.FavoriteListResponseDTO;
+import it.unical.ea.Travel.DTOs.favorite.FavoriteListRequestDTO;
+import it.unical.ea.Travel.DTOs.favorite.FavoriteListResponseDTO;
 import it.unical.ea.Travel.Entities.FavoriteList;
 import it.unical.ea.Travel.Entities.User;
 import it.unical.ea.Travel.Mappers.FavoriteListMapper;

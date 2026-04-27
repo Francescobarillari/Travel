@@ -1,7 +1,7 @@
 package it.unical.ea.Travel.Mappers;
 
-import it.unical.ea.Travel.DTOs.FavoriteListItemRequestDTO;
-import it.unical.ea.Travel.DTOs.FavoriteListItemResponseDTO;
+import it.unical.ea.Travel.DTOs.favorite.FavoriteListItemRequestDTO;
+import it.unical.ea.Travel.DTOs.favorite.FavoriteListItemResponseDTO;
 import it.unical.ea.Travel.Entities.Experience;
 import it.unical.ea.Travel.Entities.FavoriteList;
 import it.unical.ea.Travel.Entities.FavoriteListItem;

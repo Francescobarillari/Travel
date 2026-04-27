@@ -5,8 +5,8 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 
-import it.unical.ea.Travel.DTOs.LocationRequestDTO;
-import it.unical.ea.Travel.DTOs.LocationResponseDTO;
+import it.unical.ea.Travel.DTOs.location.LocationRequestDTO;
+import it.unical.ea.Travel.DTOs.location.LocationResponseDTO;
 import it.unical.ea.Travel.Entities.Location;
 import it.unical.ea.Travel.Mappers.LocationMapper;
 import it.unical.ea.Travel.Repositories.LocationRepository;

@@ -1,7 +1,7 @@
 package it.unical.ea.Travel.Mappers;
 
-import it.unical.ea.Travel.DTOs.ExperienceImageRequestDTO;
-import it.unical.ea.Travel.DTOs.ExperienceImageResponseDTO;
+import it.unical.ea.Travel.DTOs.experience.image.ExperienceImageRequestDTO;
+import it.unical.ea.Travel.DTOs.experience.image.ExperienceImageResponseDTO;
 import it.unical.ea.Travel.Entities.Experience;
 import it.unical.ea.Travel.Entities.ExperienceImage;
 

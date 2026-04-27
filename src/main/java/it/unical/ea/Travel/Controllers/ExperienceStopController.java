@@ -11,8 +11,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import it.unical.ea.Travel.DTOs.ExperienceStopRequestDTO;
-import it.unical.ea.Travel.DTOs.ExperienceStopResponseDTO;
+import it.unical.ea.Travel.DTOs.experience.stop.ExperienceStopRequestDTO;
+import it.unical.ea.Travel.DTOs.experience.stop.ExperienceStopResponseDTO;
 import it.unical.ea.Travel.Services.ExperienceStopService;
 
 @RestController

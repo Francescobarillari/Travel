@@ -11,8 +11,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import it.unical.ea.Travel.DTOs.ExperienceImageRequestDTO;
-import it.unical.ea.Travel.DTOs.ExperienceImageResponseDTO;
+import it.unical.ea.Travel.DTOs.experience.image.ExperienceImageRequestDTO;
+import it.unical.ea.Travel.DTOs.experience.image.ExperienceImageResponseDTO;
 import it.unical.ea.Travel.Services.ExperienceImageService;
 
 @RestController

@@ -1,16 +1,14 @@
-package it.unical.ea.Travel.DTOs;
+package it.unical.ea.Travel.DTOs.experience;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 import it.unical.ea.Travel.Entities.Experience.ExperienceStatus;
 import it.unical.ea.Travel.Entities.Experience.ExperienceType;
 
-public record ExperienceResponseDTO(
-        UUID id,
-        ExperienceOrganizerDTO organizer,
+public record ExperienceRequestDTO(
+        UUID organizerId,
         ExperienceType type,
         String title,
         String description,
@@ -22,7 +20,5 @@ public record ExperienceResponseDTO(
         LocalDate startDate,
         LocalDate endDate,
         String coverImageUrl,
-        ExperienceStatus status,
-        LocalDateTime createdAt,
-        LocalDateTime updatedAt) {
+        ExperienceStatus status) {
 }

@@ -1,7 +1,7 @@
 package it.unical.ea.Travel.Mappers;
 
-import it.unical.ea.Travel.DTOs.LocationRequestDTO;
-import it.unical.ea.Travel.DTOs.LocationResponseDTO;
+import it.unical.ea.Travel.DTOs.location.LocationRequestDTO;
+import it.unical.ea.Travel.DTOs.location.LocationResponseDTO;
 import it.unical.ea.Travel.Entities.Location;
 
 public final class LocationMapper {

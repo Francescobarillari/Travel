@@ -6,8 +6,8 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import it.unical.ea.Travel.DTOs.FavoriteListItemRequestDTO;
-import it.unical.ea.Travel.DTOs.FavoriteListItemResponseDTO;
+import it.unical.ea.Travel.DTOs.favorite.FavoriteListItemRequestDTO;
+import it.unical.ea.Travel.DTOs.favorite.FavoriteListItemResponseDTO;
 import it.unical.ea.Travel.Entities.Experience;
 import it.unical.ea.Travel.Entities.FavoriteList;
 import it.unical.ea.Travel.Entities.FavoriteListItem;

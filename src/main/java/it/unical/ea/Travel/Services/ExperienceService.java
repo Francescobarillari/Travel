@@ -1,7 +1,7 @@
 package it.unical.ea.Travel.Services;
 
-import it.unical.ea.Travel.DTOs.ExperienceRequestDTO;
-import it.unical.ea.Travel.DTOs.ExperienceResponseDTO;
+import it.unical.ea.Travel.DTOs.experience.ExperienceRequestDTO;
+import it.unical.ea.Travel.DTOs.experience.ExperienceResponseDTO;
 import it.unical.ea.Travel.Entities.Experience;
 import it.unical.ea.Travel.Entities.User;
 import it.unical.ea.Travel.Mappers.ExperienceMapper;

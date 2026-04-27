@@ -1,4 +1,4 @@
-package it.unical.ea.Travel.DTOs;
+package it.unical.ea.Travel.DTOs.favorite;
 
 import java.util.UUID;
 

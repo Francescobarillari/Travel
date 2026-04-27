@@ -5,8 +5,8 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 
-import it.unical.ea.Travel.DTOs.ExperienceStopRequestDTO;
-import it.unical.ea.Travel.DTOs.ExperienceStopResponseDTO;
+import it.unical.ea.Travel.DTOs.experience.stop.ExperienceStopRequestDTO;
+import it.unical.ea.Travel.DTOs.experience.stop.ExperienceStopResponseDTO;
 import it.unical.ea.Travel.Entities.Experience;
 import it.unical.ea.Travel.Entities.ExperienceStop;
 import it.unical.ea.Travel.Entities.Location;

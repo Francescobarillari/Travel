@@ -1,10 +1,8 @@
-package it.unical.ea.Travel.DTOs;
+package it.unical.ea.Travel.DTOs.location;
 
 import java.math.BigDecimal;
-import java.util.UUID;
 
-public record LocationResponseDTO(
-        UUID id,
+public record LocationRequestDTO(
         String name,
         String address,
         String city,

@@ -1,4 +1,4 @@
-package it.unical.ea.Travel.DTOs;
+package it.unical.ea.Travel.DTOs.experience.stop;
 
 import java.time.LocalTime;
 import java.util.UUID;

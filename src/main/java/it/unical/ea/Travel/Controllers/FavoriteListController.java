@@ -11,8 +11,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import it.unical.ea.Travel.DTOs.FavoriteListRequestDTO;
-import it.unical.ea.Travel.DTOs.FavoriteListResponseDTO;
+import it.unical.ea.Travel.DTOs.favorite.FavoriteListRequestDTO;
+import it.unical.ea.Travel.DTOs.favorite.FavoriteListResponseDTO;
 import it.unical.ea.Travel.Services.FavoriteListService;
 
 @RestController

@@ -1,4 +1,4 @@
-package it.unical.ea.Travel.DTOs;
+package it.unical.ea.Travel.DTOs.experience.image;
 
 import java.util.UUID;
 

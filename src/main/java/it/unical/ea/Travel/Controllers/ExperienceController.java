@@ -1,7 +1,7 @@
 package it.unical.ea.Travel.Controllers;
 
-import it.unical.ea.Travel.DTOs.ExperienceRequestDTO;
-import it.unical.ea.Travel.DTOs.ExperienceResponseDTO;
+import it.unical.ea.Travel.DTOs.experience.ExperienceRequestDTO;
+import it.unical.ea.Travel.DTOs.experience.ExperienceResponseDTO;
 import it.unical.ea.Travel.Services.ExperienceService;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
