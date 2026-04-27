@@ -1,23 +1,25 @@
-package it.unical.ea.Travel.Servicies;
+package it.unical.ea.Travel.Services;
 
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import it.unical.ea.Travel.Entities.User;
 import it.unical.ea.Travel.Repositories.UserRepository;
+import lombok.RequiredArgsConstructor;
 
+@RequiredArgsConstructor
 @Service
 public class UserService {
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public UserService(UserRepository userRepository){
-        this.userRepository = userRepository;
-    }
-
-    public User saveUser(User user){
-        return userRepository.save(user);
+    public void registerNewUser(User user) {
+        user.setPasswordHash(passwordEncoder.encode(user.getPasswordHash()));
+        user.setRoles("ROLE_USER");
+        userRepository.save(user);
     }
 
     public User getUser(String stringId){

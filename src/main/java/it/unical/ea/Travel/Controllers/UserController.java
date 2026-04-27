@@ -11,20 +11,18 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import it.unical.ea.Travel.Entities.User;
-import it.unical.ea.Travel.Servicies.UserService;
+import it.unical.ea.Travel.Services.UserService;
+import lombok.RequiredArgsConstructor;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/user")
 public class UserController {
     private final UserService userService;
 
-    public UserController(UserService userService){
-        this.userService = userService;
-    }
-
     @PostMapping
-    public User saveUser(@RequestBody User user){
-        return userService.saveUser(user);
+    public void saveUser(@RequestBody User user){
+        userService.registerNewUser(user);
     }
 
     @GetMapping("/{stringId}")
