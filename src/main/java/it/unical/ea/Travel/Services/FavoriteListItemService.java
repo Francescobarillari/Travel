@@ -6,45 +6,61 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import it.unical.ea.Travel.DTOs.FavoriteListItemDTO;
+import it.unical.ea.Travel.DTOs.FavoriteListItemRequestDTO;
+import it.unical.ea.Travel.DTOs.FavoriteListItemResponseDTO;
+import it.unical.ea.Travel.Entities.Experience;
+import it.unical.ea.Travel.Entities.FavoriteList;
 import it.unical.ea.Travel.Entities.FavoriteListItem;
+import it.unical.ea.Travel.Mappers.FavoriteListItemMapper;
+import it.unical.ea.Travel.Repositories.ExperienceRepository;
+import it.unical.ea.Travel.Repositories.FavoriteListRepository;
 import it.unical.ea.Travel.Repositories.FavoriteListItemRepository;
 
 @Service
 public class FavoriteListItemService {
 
     private final FavoriteListItemRepository favoriteListItemRepository;
+    private final FavoriteListRepository favoriteListRepository;
+    private final ExperienceRepository experienceRepository;
 
-    public FavoriteListItemService(FavoriteListItemRepository favoriteListItemRepository) {
+    public FavoriteListItemService(
+            FavoriteListItemRepository favoriteListItemRepository,
+            FavoriteListRepository favoriteListRepository,
+            ExperienceRepository experienceRepository) {
         this.favoriteListItemRepository = favoriteListItemRepository;
+        this.favoriteListRepository = favoriteListRepository;
+        this.experienceRepository = experienceRepository;
     }
 
     @Transactional
-    public FavoriteListItemDTO saveFavoriteListItem(FavoriteListItem favoriteListItem) {
+    public FavoriteListItemResponseDTO saveFavoriteListItem(FavoriteListItemRequestDTO request) {
+        FavoriteList favoriteList = getFavoriteList(request.favoriteListId());
+        Experience experience = getExperience(request.experienceId());
+        FavoriteListItem favoriteListItem = FavoriteListItemMapper.toEntity(request, favoriteList, experience);
         FavoriteListItem savedFavoriteListItem = favoriteListItemRepository.save(favoriteListItem);
-        return mapToDTO(getFavoriteListItemEntity(savedFavoriteListItem.getId()));
+        return FavoriteListItemMapper.toResponseDTO(getFavoriteListItemEntity(savedFavoriteListItem.getId()));
     }
 
     @Transactional(readOnly = true)
-    public FavoriteListItemDTO getFavoriteListItem(String stringId) {
+    public FavoriteListItemResponseDTO getFavoriteListItem(String stringId) {
         UUID uuid = UUID.fromString(stringId);
-        return mapToDTO(getFavoriteListItemEntity(uuid));
+        return FavoriteListItemMapper.toResponseDTO(getFavoriteListItemEntity(uuid));
     }
 
     @Transactional(readOnly = true)
-    public List<FavoriteListItemDTO> getFavoriteListItems() {
+    public List<FavoriteListItemResponseDTO> getFavoriteListItems() {
         return favoriteListItemRepository.findAll()
                 .stream()
-                .map(this::mapToDTO)
+                .map(FavoriteListItemMapper::toResponseDTO)
                 .toList();
     }
 
     @Transactional(readOnly = true)
-    public List<FavoriteListItemDTO> getFavoriteListItemsByFavoriteList(String favoriteListId) {
+    public List<FavoriteListItemResponseDTO> getFavoriteListItemsByFavoriteList(String favoriteListId) {
         UUID uuid = UUID.fromString(favoriteListId);
         return favoriteListItemRepository.findByFavoriteListId(uuid)
                 .stream()
-                .map(this::mapToDTO)
+                .map(FavoriteListItemMapper::toResponseDTO)
                 .toList();
     }
 
@@ -63,13 +79,21 @@ public class FavoriteListItemService {
                 .orElseThrow(() -> new RuntimeException("Elemento lista preferiti non trovato"));
     }
 
-    private FavoriteListItemDTO mapToDTO(FavoriteListItem favoriteListItem) {
-        return new FavoriteListItemDTO(
-                favoriteListItem.getId(),
-                favoriteListItem.getAddedAt(),
-                favoriteListItem.getNotes(),
-                favoriteListItem.getFavoriteList() != null ? favoriteListItem.getFavoriteList().getId() : null,
-                favoriteListItem.getExperience() != null ? favoriteListItem.getExperience().getId() : null
-        );
+    private FavoriteList getFavoriteList(UUID favoriteListId) {
+        if (favoriteListId == null) {
+            throw new RuntimeException("Il favoriteListId e' obbligatorio");
+        }
+
+        return favoriteListRepository.findByIdAndDeletedAtIsNull(favoriteListId)
+                .orElseThrow(() -> new RuntimeException("Lista preferiti non trovata"));
+    }
+
+    private Experience getExperience(UUID experienceId) {
+        if (experienceId == null) {
+            throw new RuntimeException("L'experienceId e' obbligatorio");
+        }
+
+        return experienceRepository.findByIdAndDeletedAtIsNull(experienceId)
+                .orElseThrow(() -> new RuntimeException("Experience non trovata"));
     }
 }

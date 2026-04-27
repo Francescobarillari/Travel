@@ -7,45 +7,53 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import it.unical.ea.Travel.DTOs.FavoriteListDTO;
+import it.unical.ea.Travel.DTOs.FavoriteListRequestDTO;
+import it.unical.ea.Travel.DTOs.FavoriteListResponseDTO;
 import it.unical.ea.Travel.Entities.FavoriteList;
+import it.unical.ea.Travel.Entities.User;
+import it.unical.ea.Travel.Mappers.FavoriteListMapper;
 import it.unical.ea.Travel.Repositories.FavoriteListRepository;
+import it.unical.ea.Travel.Repositories.UserRepository;
 
 @Service
 public class FavoriteListService {
 
     private final FavoriteListRepository favoriteListRepository;
+    private final UserRepository userRepository;
 
-    public FavoriteListService(FavoriteListRepository favoriteListRepository) {
+    public FavoriteListService(FavoriteListRepository favoriteListRepository, UserRepository userRepository) {
         this.favoriteListRepository = favoriteListRepository;
+        this.userRepository = userRepository;
     }
 
     @Transactional
-    public FavoriteListDTO saveFavoriteList(FavoriteList favoriteList) {
+    public FavoriteListResponseDTO saveFavoriteList(FavoriteListRequestDTO request) {
+        User owner = getOwner(request.ownerId());
+        FavoriteList favoriteList = FavoriteListMapper.toEntity(request, owner);
         FavoriteList savedFavoriteList = favoriteListRepository.save(favoriteList);
-        return mapToDTO(getFavoriteListEntity(savedFavoriteList.getId()));
+        return FavoriteListMapper.toResponseDTO(getFavoriteListEntity(savedFavoriteList.getId()));
     }
 
     @Transactional(readOnly = true)
-    public FavoriteListDTO getFavoriteList(String stringId) {
+    public FavoriteListResponseDTO getFavoriteList(String stringId) {
         UUID uuid = UUID.fromString(stringId);
-        return mapToDTO(getFavoriteListEntity(uuid));
+        return FavoriteListMapper.toResponseDTO(getFavoriteListEntity(uuid));
     }
 
     @Transactional(readOnly = true)
-    public List<FavoriteListDTO> getFavoriteLists() {
+    public List<FavoriteListResponseDTO> getFavoriteLists() {
         return favoriteListRepository.findByDeletedAtIsNull()
                 .stream()
-                .map(this::mapToDTO)
+                .map(FavoriteListMapper::toResponseDTO)
                 .toList();
     }
 
     @Transactional(readOnly = true)
-    public List<FavoriteListDTO> getFavoriteListsByOwner(String ownerId) {
+    public List<FavoriteListResponseDTO> getFavoriteListsByOwner(String ownerId) {
         UUID uuid = UUID.fromString(ownerId);
         return favoriteListRepository.findByOwnerIdAndDeletedAtIsNull(uuid)
                 .stream()
-                .map(this::mapToDTO)
+                .map(FavoriteListMapper::toResponseDTO)
                 .toList();
     }
 
@@ -66,20 +74,17 @@ public class FavoriteListService {
     }
 
     private FavoriteList getFavoriteListEntity(UUID uuid) {
-        return favoriteListRepository.findById(uuid)
-                .filter(favoriteList -> !favoriteList.isDeleted())
+        return favoriteListRepository.findByIdAndDeletedAtIsNull(uuid)
                 .orElseThrow(() -> new RuntimeException("Lista preferiti non trovata"));
     }
 
-    private FavoriteListDTO mapToDTO(FavoriteList favoriteList) {
-        return new FavoriteListDTO(
-                favoriteList.getId(),
-                favoriteList.getName(),
-                favoriteList.getDescription(),
-                favoriteList.getVisibility() != null ? favoriteList.getVisibility().name() : null,
-                favoriteList.getCreatedAt(),
-                favoriteList.getUpdatedAt(),
-                favoriteList.getOwner() != null ? favoriteList.getOwner().getId() : null
-        );
+    private User getOwner(UUID ownerId) {
+        if (ownerId == null) {
+            throw new RuntimeException("L'ownerId e' obbligatorio");
+        }
+
+        return userRepository.findById(ownerId)
+                .filter(user -> !user.isDeleted())
+                .orElseThrow(() -> new RuntimeException("Owner non trovato"));
     }
 }
