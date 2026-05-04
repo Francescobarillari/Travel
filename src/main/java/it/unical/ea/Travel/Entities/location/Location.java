@@ -43,5 +43,4 @@ public class Location {
     @Column(name = "longitude", precision = 10, scale = 7)
     private BigDecimal longitude;
 
-    // TODO: aggiungere placeId quando verra' integrata la parte map provider (es. Google Places)
 }
