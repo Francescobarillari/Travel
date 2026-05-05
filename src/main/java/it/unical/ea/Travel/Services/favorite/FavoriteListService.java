@@ -20,31 +20,36 @@ public class FavoriteListService {
 
     private final FavoriteListRepository favoriteListRepository;
     private final UserRepository userRepository;
+    private final FavoriteListMapper favoriteListMapper;
 
-    public FavoriteListService(FavoriteListRepository favoriteListRepository, UserRepository userRepository) {
+    public FavoriteListService(
+            FavoriteListRepository favoriteListRepository,
+            UserRepository userRepository,
+            FavoriteListMapper favoriteListMapper) {
         this.favoriteListRepository = favoriteListRepository;
         this.userRepository = userRepository;
+        this.favoriteListMapper = favoriteListMapper;
     }
 
     @Transactional
     public FavoriteListResponseDTO saveFavoriteList(FavoriteListRequestDTO request) {
         User owner = getOwner(request.ownerId());
-        FavoriteList favoriteList = FavoriteListMapper.toEntity(request, owner);
+        FavoriteList favoriteList = favoriteListMapper.toEntity(request, owner);
         FavoriteList savedFavoriteList = favoriteListRepository.save(favoriteList);
-        return FavoriteListMapper.toResponseDTO(getFavoriteListEntity(savedFavoriteList.getId()));
+        return favoriteListMapper.toResponseDTO(getFavoriteListEntity(savedFavoriteList.getId()));
     }
 
     @Transactional(readOnly = true)
     public FavoriteListResponseDTO getFavoriteList(String stringId) {
         UUID uuid = UUID.fromString(stringId);
-        return FavoriteListMapper.toResponseDTO(getFavoriteListEntity(uuid));
+        return favoriteListMapper.toResponseDTO(getFavoriteListEntity(uuid));
     }
 
     @Transactional(readOnly = true)
     public List<FavoriteListResponseDTO> getFavoriteLists() {
         return favoriteListRepository.findByDeletedAtIsNull()
                 .stream()
-                .map(FavoriteListMapper::toResponseDTO)
+                .map(favoriteListMapper::toResponseDTO)
                 .toList();
     }
 
@@ -53,7 +58,7 @@ public class FavoriteListService {
         UUID uuid = UUID.fromString(ownerId);
         return favoriteListRepository.findByOwnerIdAndDeletedAtIsNull(uuid)
                 .stream()
-                .map(FavoriteListMapper::toResponseDTO)
+                .map(favoriteListMapper::toResponseDTO)
                 .toList();
     }
 

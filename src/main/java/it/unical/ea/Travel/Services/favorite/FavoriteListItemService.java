@@ -22,36 +22,39 @@ public class FavoriteListItemService {
     private final FavoriteListItemRepository favoriteListItemRepository;
     private final FavoriteListRepository favoriteListRepository;
     private final ExperienceRepository experienceRepository;
+    private final FavoriteListItemMapper favoriteListItemMapper;
 
     public FavoriteListItemService(
             FavoriteListItemRepository favoriteListItemRepository,
             FavoriteListRepository favoriteListRepository,
-            ExperienceRepository experienceRepository) {
+            ExperienceRepository experienceRepository,
+            FavoriteListItemMapper favoriteListItemMapper) {
         this.favoriteListItemRepository = favoriteListItemRepository;
         this.favoriteListRepository = favoriteListRepository;
         this.experienceRepository = experienceRepository;
+        this.favoriteListItemMapper = favoriteListItemMapper;
     }
 
     @Transactional
     public FavoriteListItemResponseDTO saveFavoriteListItem(FavoriteListItemRequestDTO request) {
         FavoriteList favoriteList = getFavoriteList(request.favoriteListId());
         Experience experience = getExperience(request.experienceId());
-        FavoriteListItem favoriteListItem = FavoriteListItemMapper.toEntity(request, favoriteList, experience);
+        FavoriteListItem favoriteListItem = favoriteListItemMapper.toEntity(request, favoriteList, experience);
         FavoriteListItem savedFavoriteListItem = favoriteListItemRepository.save(favoriteListItem);
-        return FavoriteListItemMapper.toResponseDTO(getFavoriteListItemEntity(savedFavoriteListItem.getId()));
+        return favoriteListItemMapper.toResponseDTO(getFavoriteListItemEntity(savedFavoriteListItem.getId()));
     }
 
     @Transactional(readOnly = true)
     public FavoriteListItemResponseDTO getFavoriteListItem(String stringId) {
         UUID uuid = UUID.fromString(stringId);
-        return FavoriteListItemMapper.toResponseDTO(getFavoriteListItemEntity(uuid));
+        return favoriteListItemMapper.toResponseDTO(getFavoriteListItemEntity(uuid));
     }
 
     @Transactional(readOnly = true)
     public List<FavoriteListItemResponseDTO> getFavoriteListItems() {
         return favoriteListItemRepository.findAll()
                 .stream()
-                .map(FavoriteListItemMapper::toResponseDTO)
+                .map(favoriteListItemMapper::toResponseDTO)
                 .toList();
     }
 
@@ -60,7 +63,7 @@ public class FavoriteListItemService {
         UUID uuid = UUID.fromString(favoriteListId);
         return favoriteListItemRepository.findByFavoriteListId(uuid)
                 .stream()
-                .map(FavoriteListItemMapper::toResponseDTO)
+                .map(favoriteListItemMapper::toResponseDTO)
                 .toList();
     }
 

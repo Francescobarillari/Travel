@@ -1,36 +1,32 @@
 package it.unical.ea.Travel.Mappers.favorite;
 
+import org.mapstruct.AfterMapping;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
+
 import it.unical.ea.Travel.DTOs.favorite.FavoriteListRequestDTO;
 import it.unical.ea.Travel.DTOs.favorite.FavoriteListResponseDTO;
 import it.unical.ea.Travel.Entities.favorite.FavoriteList;
 import it.unical.ea.Travel.Entities.user.User;
 
-public final class FavoriteListMapper {
+@Mapper(componentModel = "spring")
+public interface FavoriteListMapper {
 
-    private FavoriteListMapper() {
-    }
+    @Mapping(target = "ownerId", source = "owner.id")
+    FavoriteListResponseDTO toResponseDTO(FavoriteList favoriteList);
 
-    public static FavoriteList toEntity(FavoriteListRequestDTO request, User owner) {
-        FavoriteList favoriteList = new FavoriteList();
-        applyRequestToEntity(request, favoriteList, owner);
-        return favoriteList;
-    }
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "deletedAt", ignore = true)
+    @Mapping(target = "owner", source = "owner")
+    FavoriteList toEntity(FavoriteListRequestDTO request, User owner);
 
-    public static void applyRequestToEntity(FavoriteListRequestDTO request, FavoriteList favoriteList, User owner) {
-        favoriteList.setOwner(owner);
-        favoriteList.setName(request.name());
-        favoriteList.setDescription(request.description());
-        favoriteList.setVisibility(request.visibility() == null ? FavoriteList.Visibility.PRIVATE : request.visibility());
-    }
-
-    public static FavoriteListResponseDTO toResponseDTO(FavoriteList favoriteList) {
-        return new FavoriteListResponseDTO(
-                favoriteList.getId(),
-                favoriteList.getOwner().getId(),
-                favoriteList.getName(),
-                favoriteList.getDescription(),
-                favoriteList.getVisibility(),
-                favoriteList.getCreatedAt(),
-                favoriteList.getUpdatedAt());
+    @AfterMapping
+    default void applyDefaults(FavoriteListRequestDTO request, @MappingTarget FavoriteList favoriteList) {
+        if (request.visibility() == null) {
+            favoriteList.setVisibility(FavoriteList.Visibility.PRIVATE);
+        }
     }
 }

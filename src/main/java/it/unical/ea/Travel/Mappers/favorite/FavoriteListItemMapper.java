@@ -1,5 +1,9 @@
 package it.unical.ea.Travel.Mappers.favorite;
 
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+
+import it.unical.ea.Travel.DTOs.experience.ExperienceResponseDTO;
 import it.unical.ea.Travel.DTOs.favorite.FavoriteListItemRequestDTO;
 import it.unical.ea.Travel.DTOs.favorite.FavoriteListItemResponseDTO;
 import it.unical.ea.Travel.Entities.experience.Experience;
@@ -7,36 +11,20 @@ import it.unical.ea.Travel.Entities.favorite.FavoriteList;
 import it.unical.ea.Travel.Entities.favorite.FavoriteListItem;
 import it.unical.ea.Travel.Mappers.experience.ExperienceMapper;
 
-public final class FavoriteListItemMapper {
+@Mapper(componentModel = "spring", uses = FavoriteListMapper.class)
+public interface FavoriteListItemMapper {
 
-    private FavoriteListItemMapper() {
-    }
-
-    public static FavoriteListItem toEntity(
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "addedAt", ignore = true)
+    @Mapping(target = "notes", source = "request.notes")
+    FavoriteListItem toEntity(
             FavoriteListItemRequestDTO request,
             FavoriteList favoriteList,
-            Experience experience) {
-        FavoriteListItem favoriteListItem = new FavoriteListItem();
-        applyRequestToEntity(request, favoriteListItem, favoriteList, experience);
-        return favoriteListItem;
-    }
+            Experience experience);
 
-    public static void applyRequestToEntity(
-            FavoriteListItemRequestDTO request,
-            FavoriteListItem favoriteListItem,
-            FavoriteList favoriteList,
-            Experience experience) {
-        favoriteListItem.setFavoriteList(favoriteList);
-        favoriteListItem.setExperience(experience);
-        favoriteListItem.setNotes(request.notes());
-    }
+    FavoriteListItemResponseDTO toResponseDTO(FavoriteListItem favoriteListItem);
 
-    public static FavoriteListItemResponseDTO toResponseDTO(FavoriteListItem favoriteListItem) {
-        return new FavoriteListItemResponseDTO(
-                favoriteListItem.getId(),
-                FavoriteListMapper.toResponseDTO(favoriteListItem.getFavoriteList()),
-                ExperienceMapper.toResponseDTO(favoriteListItem.getExperience()),
-                favoriteListItem.getAddedAt(),
-                favoriteListItem.getNotes());
+    default ExperienceResponseDTO map(Experience experience) {
+        return ExperienceMapper.toResponseDTO(experience);
     }
 }
