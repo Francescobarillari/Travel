@@ -4,6 +4,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,6 +19,8 @@ import it.unical.ea.Travel.Repositories.user.UserRepository;
 
 @Service
 public class FavoriteListService {
+
+    private static final Logger logger = LoggerFactory.getLogger(FavoriteListService.class);
 
     private final FavoriteListRepository favoriteListRepository;
     private final UserRepository userRepository;
@@ -33,33 +37,44 @@ public class FavoriteListService {
 
     @Transactional
     public FavoriteListResponseDTO saveFavoriteList(FavoriteListRequestDTO request) {
+        logger.info("Creating favorite list for ownerId={} name='{}' visibility={}",
+                request.ownerId(), request.name(), request.visibility());
         User owner = getOwner(request.ownerId());
         FavoriteList favoriteList = favoriteListMapper.toEntity(request, owner);
         FavoriteList savedFavoriteList = favoriteListRepository.save(favoriteList);
+        logger.info("Created favorite list id={} for ownerId={}",
+                savedFavoriteList.getId(), owner.getId());
         return favoriteListMapper.toResponseDTO(getFavoriteListEntity(savedFavoriteList.getId()));
     }
 
     @Transactional(readOnly = true)
     public FavoriteListResponseDTO getFavoriteList(String stringId) {
+        logger.debug("Fetching favorite list id={}", stringId);
         UUID uuid = UUID.fromString(stringId);
         return favoriteListMapper.toResponseDTO(getFavoriteListEntity(uuid));
     }
 
     @Transactional(readOnly = true)
     public List<FavoriteListResponseDTO> getFavoriteLists() {
-        return favoriteListRepository.findByDeletedAtIsNull()
+        logger.debug("Fetching all favorite lists");
+        List<FavoriteListResponseDTO> favoriteLists = favoriteListRepository.findByDeletedAtIsNull()
                 .stream()
                 .map(favoriteListMapper::toResponseDTO)
                 .toList();
+        logger.debug("Fetched {} favorite lists", favoriteLists.size());
+        return favoriteLists;
     }
 
     @Transactional(readOnly = true)
     public List<FavoriteListResponseDTO> getFavoriteListsByOwner(String ownerId) {
+        logger.debug("Fetching favorite lists for ownerId={}", ownerId);
         UUID uuid = UUID.fromString(ownerId);
-        return favoriteListRepository.findByOwnerIdAndDeletedAtIsNull(uuid)
+        List<FavoriteListResponseDTO> favoriteLists = favoriteListRepository.findByOwnerIdAndDeletedAtIsNull(uuid)
                 .stream()
                 .map(favoriteListMapper::toResponseDTO)
                 .toList();
+        logger.debug("Fetched {} favorite lists for ownerId={}", favoriteLists.size(), ownerId);
+        return favoriteLists;
     }
 
     public void updateFavoriteList() {
@@ -68,9 +83,11 @@ public class FavoriteListService {
 
     @Transactional
     public void deleteFavoriteList(String stringId) {
+        logger.info("Soft deleting favorite list id={}", stringId);
         FavoriteList favoriteList = getFavoriteListEntity(stringId);
         favoriteList.setDeletedAt(LocalDateTime.now());
         favoriteListRepository.save(favoriteList);
+        logger.info("Soft deleted favorite list id={}", favoriteList.getId());
     }
 
     private FavoriteList getFavoriteListEntity(String stringId) {
@@ -80,16 +97,23 @@ public class FavoriteListService {
 
     private FavoriteList getFavoriteListEntity(UUID uuid) {
         return favoriteListRepository.findByIdAndDeletedAtIsNull(uuid)
-                .orElseThrow(() -> new RuntimeException("Lista preferiti non trovata"));
+                .orElseThrow(() -> {
+                    logger.warn("Favorite list not found for id={}", uuid);
+                    return new RuntimeException("Lista preferiti non trovata");
+                });
     }
 
     private User getOwner(UUID ownerId) {
         if (ownerId == null) {
+            logger.warn("Missing ownerId while handling favorite list operation");
             throw new RuntimeException("L'ownerId e' obbligatorio");
         }
 
         return userRepository.findById(ownerId)
                 .filter(user -> !user.isDeleted())
-                .orElseThrow(() -> new RuntimeException("Owner non trovato"));
+                .orElseThrow(() -> {
+                    logger.warn("Owner not found or deleted for ownerId={}", ownerId);
+                    return new RuntimeException("Owner non trovato");
+                });
     }
 }
