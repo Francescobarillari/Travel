@@ -3,7 +3,6 @@ package it.unical.ea.Travel.Mappers.favorite;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
-import it.unical.ea.Travel.DTOs.experience.ExperienceResponseDTO;
 import it.unical.ea.Travel.DTOs.favorite.FavoriteListItemRequestDTO;
 import it.unical.ea.Travel.DTOs.favorite.FavoriteListItemResponseDTO;
 import it.unical.ea.Travel.Entities.experience.Experience;
@@ -11,7 +10,7 @@ import it.unical.ea.Travel.Entities.favorite.FavoriteList;
 import it.unical.ea.Travel.Entities.favorite.FavoriteListItem;
 import it.unical.ea.Travel.Mappers.experience.ExperienceMapper;
 
-@Mapper(componentModel = "spring", uses = FavoriteListMapper.class)
+@Mapper(componentModel = "spring", uses = { FavoriteListMapper.class, ExperienceMapper.class })
 public interface FavoriteListItemMapper {
 
     @Mapping(target = "id", ignore = true)
@@ -23,8 +22,4 @@ public interface FavoriteListItemMapper {
             Experience experience);
 
     FavoriteListItemResponseDTO toResponseDTO(FavoriteListItem favoriteListItem);
-
-    default ExperienceResponseDTO map(Experience experience) {
-        return ExperienceMapper.toResponseDTO(experience);
-    }
 }

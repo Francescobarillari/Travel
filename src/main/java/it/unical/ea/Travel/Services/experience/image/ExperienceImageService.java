@@ -18,26 +18,29 @@ public class ExperienceImageService {
 
     private final ExperienceImageRepository experienceImageRepository;
     private final ExperienceRepository experienceRepository;
+    private final ExperienceImageMapper experienceImageMapper;
 
     public ExperienceImageService(
             ExperienceImageRepository experienceImageRepository,
-            ExperienceRepository experienceRepository) {
+            ExperienceRepository experienceRepository,
+            ExperienceImageMapper experienceImageMapper) {
         this.experienceImageRepository = experienceImageRepository;
         this.experienceRepository = experienceRepository;
+        this.experienceImageMapper = experienceImageMapper;
     }
 
     public ExperienceImageResponseDTO saveExperienceImage(ExperienceImageRequestDTO request) {
         Experience experience = getExperience(request.experienceId());
-        ExperienceImage experienceImage = ExperienceImageMapper.toEntity(request, experience);
+        ExperienceImage experienceImage = experienceImageMapper.toEntity(request, experience);
         ExperienceImage savedExperienceImage = experienceImageRepository.save(experienceImage);
-        return ExperienceImageMapper.toResponseDTO(savedExperienceImage);
+        return experienceImageMapper.toResponseDTO(savedExperienceImage);
     }
 
     public ExperienceImageResponseDTO getExperienceImage(String stringId) {
         UUID uuid = UUID.fromString(stringId);
         ExperienceImage experienceImage = experienceImageRepository.findById(uuid)
                 .orElseThrow(() -> new RuntimeException("Immagine experience non trovata"));
-        return ExperienceImageMapper.toResponseDTO(experienceImage);
+        return experienceImageMapper.toResponseDTO(experienceImage);
     }
 
     public List<ExperienceImageResponseDTO> getExperienceImages(String experienceId) {
@@ -45,13 +48,13 @@ public class ExperienceImageService {
             UUID uuid = UUID.fromString(experienceId);
             return experienceImageRepository.findByExperienceIdOrderByDisplayOrderAsc(uuid)
                     .stream()
-                    .map(ExperienceImageMapper::toResponseDTO)
+                    .map(experienceImageMapper::toResponseDTO)
                     .toList();
         }
 
         return experienceImageRepository.findAll()
                 .stream()
-                .map(ExperienceImageMapper::toResponseDTO)
+                .map(experienceImageMapper::toResponseDTO)
                 .toList();
     }
 

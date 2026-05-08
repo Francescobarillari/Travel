@@ -15,28 +15,30 @@ import it.unical.ea.Travel.Repositories.location.LocationRepository;
 public class LocationService {
 
     private final LocationRepository locationRepository;
+    private final LocationMapper locationMapper;
 
-    public LocationService(LocationRepository locationRepository) {
+    public LocationService(LocationRepository locationRepository, LocationMapper locationMapper) {
         this.locationRepository = locationRepository;
+        this.locationMapper = locationMapper;
     }
 
     public LocationResponseDTO saveLocation(LocationRequestDTO request) {
-        Location location = LocationMapper.toEntity(request);
+        Location location = locationMapper.toEntity(request);
         Location savedLocation = locationRepository.save(location);
-        return LocationMapper.toResponseDTO(savedLocation);
+        return locationMapper.toResponseDTO(savedLocation);
     }
 
     public LocationResponseDTO getLocation(String stringId) {
         UUID uuid = UUID.fromString(stringId);
         Location location = locationRepository.findById(uuid)
                 .orElseThrow(() -> new RuntimeException("Location non trovata"));
-        return LocationMapper.toResponseDTO(location);
+        return locationMapper.toResponseDTO(location);
     }
 
     public List<LocationResponseDTO> getLocations() {
         return locationRepository.findAll()
                 .stream()
-                .map(LocationMapper::toResponseDTO)
+                .map(locationMapper::toResponseDTO)
                 .toList();
     }
 

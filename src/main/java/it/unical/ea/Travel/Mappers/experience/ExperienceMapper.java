@@ -1,62 +1,40 @@
 package it.unical.ea.Travel.Mappers.experience;
 
+import org.mapstruct.AfterMapping;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
+
 import it.unical.ea.Travel.DTOs.experience.ExperienceOrganizerDTO;
 import it.unical.ea.Travel.DTOs.experience.ExperienceRequestDTO;
 import it.unical.ea.Travel.DTOs.experience.ExperienceResponseDTO;
 import it.unical.ea.Travel.Entities.experience.Experience;
 import it.unical.ea.Travel.Entities.user.User;
 
-public final class ExperienceMapper {
+@Mapper(componentModel = "spring")
+public interface ExperienceMapper {
 
-    private ExperienceMapper() {
-    }
+    ExperienceResponseDTO toResponseDTO(Experience experience);
 
-    public static Experience toEntity(ExperienceRequestDTO request, User organizer) {
-        Experience experience = new Experience();
-        applyRequestToEntity(request, experience, organizer);
-        return experience;
-    }
+    ExperienceOrganizerDTO toOrganizerDTO(User user);
 
-    public static void applyRequestToEntity(ExperienceRequestDTO request, Experience experience, User organizer) {
-        experience.setOrganizer(organizer);
-        experience.setType(request.type());
-        experience.setTitle(request.title());
-        experience.setDescription(request.description());
-        experience.setBasePrice(request.basePrice());
-        experience.setCurrency(request.currency() == null || request.currency().isBlank() ? "EUR" : request.currency());
-        experience.setMaxParticipants(request.maxParticipants());
-        experience.setMinParticipants(request.minParticipants());
-        experience.setDurationMinutes(request.durationMinutes());
-        experience.setStartDate(request.startDate());
-        experience.setEndDate(request.endDate());
-        experience.setCoverImageUrl(request.coverImageUrl());
-        experience.setStatus(request.status() == null ? Experience.ExperienceStatus.DRAFT : request.status());
-    }
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "deletedAt", ignore = true)
+    @Mapping(target = "organizer", source = "organizer")
+    Experience toEntity(ExperienceRequestDTO request, User organizer);
 
-    public static ExperienceResponseDTO toResponseDTO(Experience experience) {
-        User organizer = experience.getOrganizer();
-        ExperienceOrganizerDTO organizerDTO = new ExperienceOrganizerDTO(
-                organizer.getId(),
-                organizer.getFirstName(),
-                organizer.getLastName(),
-                organizer.getAvatarUrl());
-
-        return new ExperienceResponseDTO(
-                experience.getId(),
-                organizerDTO,
-                experience.getType(),
-                experience.getTitle(),
-                experience.getDescription(),
-                experience.getBasePrice(),
-                experience.getCurrency(),
-                experience.getMaxParticipants(),
-                experience.getMinParticipants(),
-                experience.getDurationMinutes(),
-                experience.getStartDate(),
-                experience.getEndDate(),
-                experience.getCoverImageUrl(),
-                experience.getStatus(),
-                experience.getCreatedAt(),
-                experience.getUpdatedAt());
+    @AfterMapping
+    default void applyDefaults(ExperienceRequestDTO request, @MappingTarget Experience experience) {
+        if (request == null) {
+            return;
+        }
+        if (request.currency() == null || request.currency().isBlank()) {
+            experience.setCurrency("EUR");
+        }
+        if (request.status() == null) {
+            experience.setStatus(Experience.ExperienceStatus.DRAFT);
+        }
     }
 }

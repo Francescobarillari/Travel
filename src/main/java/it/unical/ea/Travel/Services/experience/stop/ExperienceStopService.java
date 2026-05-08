@@ -21,29 +21,32 @@ public class ExperienceStopService {
     private final ExperienceStopRepository experienceStopRepository;
     private final ExperienceRepository experienceRepository;
     private final LocationRepository locationRepository;
+    private final ExperienceStopMapper experienceStopMapper;
 
     public ExperienceStopService(
             ExperienceStopRepository experienceStopRepository,
             ExperienceRepository experienceRepository,
-            LocationRepository locationRepository) {
+            LocationRepository locationRepository,
+            ExperienceStopMapper experienceStopMapper) {
         this.experienceStopRepository = experienceStopRepository;
         this.experienceRepository = experienceRepository;
         this.locationRepository = locationRepository;
+        this.experienceStopMapper = experienceStopMapper;
     }
 
     public ExperienceStopResponseDTO saveExperienceStop(ExperienceStopRequestDTO request) {
         Experience experience = getExperience(request.experienceId());
         Location location = getLocation(request.locationId());
-        ExperienceStop experienceStop = ExperienceStopMapper.toEntity(request, experience, location);
+        ExperienceStop experienceStop = experienceStopMapper.toEntity(request, experience, location);
         ExperienceStop savedExperienceStop = experienceStopRepository.save(experienceStop);
-        return ExperienceStopMapper.toResponseDTO(savedExperienceStop);
+        return experienceStopMapper.toResponseDTO(savedExperienceStop);
     }
 
     public ExperienceStopResponseDTO getExperienceStop(String stringId) {
         UUID uuid = UUID.fromString(stringId);
         ExperienceStop experienceStop = experienceStopRepository.findById(uuid)
                 .orElseThrow(() -> new RuntimeException("Tappa experience non trovata"));
-        return ExperienceStopMapper.toResponseDTO(experienceStop);
+        return experienceStopMapper.toResponseDTO(experienceStop);
     }
 
     public List<ExperienceStopResponseDTO> getExperienceStops(String experienceId) {
@@ -51,13 +54,13 @@ public class ExperienceStopService {
             UUID uuid = UUID.fromString(experienceId);
             return experienceStopRepository.findByExperienceIdOrderBySequenceOrderAsc(uuid)
                     .stream()
-                    .map(ExperienceStopMapper::toResponseDTO)
+                    .map(experienceStopMapper::toResponseDTO)
                     .toList();
         }
 
         return experienceStopRepository.findAll()
                 .stream()
-                .map(ExperienceStopMapper::toResponseDTO)
+                .map(experienceStopMapper::toResponseDTO)
                 .toList();
     }
 

@@ -18,30 +18,35 @@ public class ExperienceService {
 
     private final ExperienceRepository experienceRepository;
     private final UserRepository userRepository;
+    private final ExperienceMapper experienceMapper;
 
-    public ExperienceService(ExperienceRepository experienceRepository, UserRepository userRepository) {
+    public ExperienceService(
+            ExperienceRepository experienceRepository,
+            UserRepository userRepository,
+            ExperienceMapper experienceMapper) {
         this.experienceRepository = experienceRepository;
         this.userRepository = userRepository;
+        this.experienceMapper = experienceMapper;
     }
 
     public ExperienceResponseDTO saveExperience(ExperienceRequestDTO request) {
         User organizer = getOrganizer(request.organizerId());
-        Experience experience = ExperienceMapper.toEntity(request, organizer);
+        Experience experience = experienceMapper.toEntity(request, organizer);
         Experience savedExperience = experienceRepository.save(experience);
-        return ExperienceMapper.toResponseDTO(savedExperience);
+        return experienceMapper.toResponseDTO(savedExperience);
     }
 
     public ExperienceResponseDTO getExperience(String stringId) {
         UUID uuid = UUID.fromString(stringId);
         Experience experience = experienceRepository.findByIdAndDeletedAtIsNull(uuid)
                 .orElseThrow(() -> new RuntimeException("Experience non trovata"));
-        return ExperienceMapper.toResponseDTO(experience);
+        return experienceMapper.toResponseDTO(experience);
     }
 
     public List<ExperienceResponseDTO> getExperiences() {
         return experienceRepository.findByDeletedAtIsNull()
                 .stream()
-                .map(ExperienceMapper::toResponseDTO)
+                .map(experienceMapper::toResponseDTO)
                 .toList();
     }
 
@@ -49,7 +54,7 @@ public class ExperienceService {
         UUID uuid = UUID.fromString(organizerId);
         return experienceRepository.findByOrganizerIdAndDeletedAtIsNull(uuid)
                 .stream()
-                .map(ExperienceMapper::toResponseDTO)
+                .map(experienceMapper::toResponseDTO)
                 .toList();
     }
 

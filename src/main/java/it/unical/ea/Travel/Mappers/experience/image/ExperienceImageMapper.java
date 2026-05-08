@@ -1,35 +1,20 @@
 package it.unical.ea.Travel.Mappers.experience.image;
 
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+
 import it.unical.ea.Travel.DTOs.experience.image.ExperienceImageRequestDTO;
 import it.unical.ea.Travel.DTOs.experience.image.ExperienceImageResponseDTO;
 import it.unical.ea.Travel.Entities.experience.Experience;
 import it.unical.ea.Travel.Entities.experience.image.ExperienceImage;
 
-public final class ExperienceImageMapper {
+@Mapper(componentModel = "spring")
+public interface ExperienceImageMapper {
 
-    private ExperienceImageMapper() {
-    }
+    @Mapping(target = "experienceId", source = "experience.id")
+    ExperienceImageResponseDTO toResponseDTO(ExperienceImage experienceImage);
 
-    public static ExperienceImage toEntity(ExperienceImageRequestDTO request, Experience experience) {
-        ExperienceImage experienceImage = new ExperienceImage();
-        applyRequestToEntity(request, experienceImage, experience);
-        return experienceImage;
-    }
-
-    public static void applyRequestToEntity(
-            ExperienceImageRequestDTO request,
-            ExperienceImage experienceImage,
-            Experience experience) {
-        experienceImage.setExperience(experience);
-        experienceImage.setUrl(request.url());
-        experienceImage.setDisplayOrder(request.displayOrder());
-    }
-
-    public static ExperienceImageResponseDTO toResponseDTO(ExperienceImage experienceImage) {
-        return new ExperienceImageResponseDTO(
-                experienceImage.getId(),
-                experienceImage.getExperience() != null ? experienceImage.getExperience().getId() : null,
-                experienceImage.getUrl(),
-                experienceImage.getDisplayOrder());
-    }
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "experience", source = "experience")
+    ExperienceImage toEntity(ExperienceImageRequestDTO request, Experience experience);
 }
