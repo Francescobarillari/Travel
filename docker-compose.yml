@@ -12,17 +12,12 @@ services:
       - postgres_data:/var/lib/postgresql/data
 
   backend:
-    # 1. Non facciamo più la "build: .", usiamo un'immagine con Java 21 e Maven già pronti
     image: maven:3.9.6-eclipse-temurin-21
     container_name: java_backend
     working_dir: /app
-    
-    # 2. Il trucco magico: I Volumi
     volumes:
-      - ./:/app                   # Collega la tua cartella di VS Code direttamente dentro Docker
-      - maven_cache:/root/.m2     # Salva i download di Maven così non li riscarica mai più
-    
-    # 3. Il comando di avvio per lo sviluppo
+      - ./:/app                
+      - maven_cache:/root/.m2    
     command: mvn spring-boot:run
     
     ports:

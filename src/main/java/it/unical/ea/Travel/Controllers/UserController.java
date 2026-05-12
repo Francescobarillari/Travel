@@ -10,8 +10,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import it.unical.ea.Travel.Controllers.dto.SignupRequest;
 import it.unical.ea.Travel.Entities.User;
 import it.unical.ea.Travel.Services.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -21,8 +23,8 @@ public class UserController {
     private final UserService userService;
 
     @PostMapping
-    public void saveUser(@RequestBody User user){
-        userService.registerNewUser(user);
+    public User saveUser(@Valid @RequestBody SignupRequest request){
+        return userService.saveUser(request);
     }
 
     @GetMapping("/{stringId}")

@@ -42,9 +42,6 @@ public class User {
     @Column(name = "last_name", nullable = false, length = 100)
     private String lastName;
 
-    @Column(name = "phone", length = 20)
-    private String phone;
-
     @Column(name = "avatar_url", length = 500)
     private String avatarUrl;
 

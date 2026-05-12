@@ -6,6 +6,7 @@ import java.util.UUID;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import it.unical.ea.Travel.Controllers.dto.SignupRequest;
 import it.unical.ea.Travel.Entities.User;
 import it.unical.ea.Travel.Repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -16,10 +17,14 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public void registerNewUser(User user) {
-        user.setPasswordHash(passwordEncoder.encode(user.getPasswordHash()));
+    public User saveUser(SignupRequest request) {
+        User user = new User();
+        user.setEmail(request.getEmail());
+        user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+        user.setFirstName(request.getFirstName());
+        user.setLastName(request.getLastName());
         user.setRoles("ROLE_USER");
-        userRepository.save(user);
+        return userRepository.save(user);
     }
 
     public User getUser(String stringId){

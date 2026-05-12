@@ -11,11 +11,16 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import it.unical.ea.Travel.Entities.User;
 
+/**
+ * Adattatore che mappa l'entità User del database nell'interfaccia UserDetails di Spring Security.
+ * Fornisce al framework le informazioni essenziali sull'utente (credenziali, ruoli e stato dell'account)
+ * necessarie per l'autorizzazione e l'autenticazione.
+ */
 public class UserInfoDetails implements UserDetails {
     
-    private String email; // Usiamo l'email, non il nome!
+    private String email;
     private String password;
-    private List<GrantedAuthority> authorities; // Aggiungiamo la lista dei permessi
+    private List<GrantedAuthority> authorities;
 
     public UserInfoDetails(User user) {
         this.email = user.getEmail(); 
