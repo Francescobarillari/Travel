@@ -6,6 +6,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
@@ -16,8 +18,11 @@ import java.util.UUID;
 @NoArgsConstructor
 @Entity
 @Table(name = "users", indexes = {
-    @Index(name = "idx_user_email", columnList = "email", unique = true)
+        @Index(name = "idx_user_email", columnList = "email", unique = true)
 })
+
+@SQLDelete(sql = "UPDATE users SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?")
+@SQLRestriction("deleted_at IS NULL")
 public class User {
 
     @Id
@@ -37,9 +42,6 @@ public class User {
     @Column(name = "last_name", nullable = false, length = 100)
     private String lastName;
 
-    @Column(name = "phone", length = 20)
-    private String phone;
-
     @Column(name = "avatar_url", length = 500)
     private String avatarUrl;
 
@@ -57,21 +59,23 @@ public class User {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
-    // Metodo helper per il soft delete
+    @Column(name = "roles", nullable = false)
+    private String roles = "ROLE_USER";
+
     public boolean isDeleted() {
         return deletedAt != null;
     }
 }
 
 /*
-users
-├── id (PK, UUID)
-├── email (UNIQUE)
-├── password_hash
-├── first_name, last_name
-├── phone (nullable)
-├── avatar_url (nullable)
-├── email_verified (boolean)
-├── created_at, updated_at
-└── deleted_at (nullable, soft delete)
-*/
+ * users
+ * ├── id (PK, UUID)
+ * ├── email (UNIQUE)
+ * ├── password_hash
+ * ├── first_name, last_name
+ * ├── phone (nullable)
+ * ├── avatar_url (nullable)
+ * ├── email_verified (boolean)
+ * ├── created_at, updated_at
+ * └── deleted_at (nullable, soft delete)
+ */
