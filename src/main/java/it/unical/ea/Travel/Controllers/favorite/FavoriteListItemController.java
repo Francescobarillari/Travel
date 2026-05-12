@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import it.unical.ea.Travel.DTOs.favorite.FavoriteListItemRequestDTO;
 import it.unical.ea.Travel.DTOs.favorite.FavoriteListItemResponseDTO;
 import it.unical.ea.Travel.Services.favorite.FavoriteListItemService;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/FavoriteListItem")
@@ -26,7 +27,7 @@ public class FavoriteListItemController {
     }
 
     @PostMapping
-    public FavoriteListItemResponseDTO saveFavoriteListItem(@RequestBody FavoriteListItemRequestDTO request) {
+    public FavoriteListItemResponseDTO saveFavoriteListItem(@Valid@RequestBody FavoriteListItemRequestDTO request) {
         return favoriteListItemService.saveFavoriteListItem(request);
     }
 
