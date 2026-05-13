@@ -1,7 +1,7 @@
-package it.unical.ea.Travel.Controllers;
+package it.unical.ea.Travel.Controllers.auth;
 
-import it.unical.ea.Travel.Controllers.dto.LoginRequest;
-import it.unical.ea.Travel.Controllers.dto.SignupRequest;
+import it.unical.ea.Travel.DTOs.authDto.LoginRequest;
+import it.unical.ea.Travel.DTOs.authDto.SignupRequest;
 import it.unical.ea.Travel.Services.AuthService;
 import it.unical.ea.Travel.Services.user.UserService;
 import jakarta.validation.Valid;

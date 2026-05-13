@@ -6,7 +6,7 @@ import java.util.UUID;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import it.unical.ea.Travel.Controllers.dto.SignupRequest;
+import it.unical.ea.Travel.DTOs.authDto.SignupRequest;
 import it.unical.ea.Travel.Entities.user.User;
 import it.unical.ea.Travel.Repositories.user.UserRepository;
 import lombok.RequiredArgsConstructor;

@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import it.unical.ea.Travel.Controllers.dto.SignupRequest;
+import it.unical.ea.Travel.DTOs.authDto.SignupRequest;
 import it.unical.ea.Travel.Entities.user.User;
 import it.unical.ea.Travel.Services.user.UserService;
 import jakarta.validation.Valid;

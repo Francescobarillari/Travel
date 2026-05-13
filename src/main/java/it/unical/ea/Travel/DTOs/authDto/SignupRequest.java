@@ -1,4 +1,4 @@
-package it.unical.ea.Travel.Controllers.dto;
+package it.unical.ea.Travel.DTOs.authDto;
 
 import jakarta.validation.constraints.*;
 import lombok.Getter;

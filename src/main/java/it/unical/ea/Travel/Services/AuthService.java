@@ -1,6 +1,6 @@
 package it.unical.ea.Travel.Services;
 
-import it.unical.ea.Travel.Controllers.dto.LoginRequest;
+import it.unical.ea.Travel.DTOs.authDto.LoginRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
