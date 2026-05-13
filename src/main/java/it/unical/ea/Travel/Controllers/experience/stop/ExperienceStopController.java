@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import it.unical.ea.Travel.DTOs.experience.stop.ExperienceStopRequestDTO;
 import it.unical.ea.Travel.DTOs.experience.stop.ExperienceStopResponseDTO;
 import it.unical.ea.Travel.Services.experience.stop.ExperienceStopService;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/experience-stop")
@@ -26,7 +27,7 @@ public class ExperienceStopController {
     }
 
     @PostMapping
-    public ExperienceStopResponseDTO saveExperienceStop(@RequestBody ExperienceStopRequestDTO request) {
+    public ExperienceStopResponseDTO saveExperienceStop(@Valid @RequestBody ExperienceStopRequestDTO request) {
         return experienceStopService.saveExperienceStop(request);
     }
 

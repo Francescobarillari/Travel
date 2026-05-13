@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+import jakarta.validation.Valid;
+
 @RestController
 @RequestMapping("/experience")
 public class ExperienceController {
@@ -25,7 +27,7 @@ public class ExperienceController {
     }
 
     @PostMapping
-    public ExperienceResponseDTO saveExperience(@RequestBody ExperienceRequestDTO request) {
+    public ExperienceResponseDTO saveExperience(@Valid @RequestBody ExperienceRequestDTO request) {
         return experienceService.saveExperience(request);
     }
 

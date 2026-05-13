@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import it.unical.ea.Travel.DTOs.experience.image.ExperienceImageRequestDTO;
 import it.unical.ea.Travel.DTOs.experience.image.ExperienceImageResponseDTO;
 import it.unical.ea.Travel.Services.experience.image.ExperienceImageService;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/experience-image")
@@ -26,7 +27,7 @@ public class ExperienceImageController {
     }
 
     @PostMapping
-    public ExperienceImageResponseDTO saveExperienceImage(@RequestBody ExperienceImageRequestDTO request) {
+    public ExperienceImageResponseDTO saveExperienceImage(@Valid @RequestBody ExperienceImageRequestDTO request) {
         return experienceImageService.saveExperienceImage(request);
     }
 

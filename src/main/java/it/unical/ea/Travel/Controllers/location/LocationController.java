@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import it.unical.ea.Travel.DTOs.location.LocationRequestDTO;
 import it.unical.ea.Travel.DTOs.location.LocationResponseDTO;
 import it.unical.ea.Travel.Services.location.LocationService;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/location")
@@ -25,7 +26,7 @@ public class LocationController {
     }
 
     @PostMapping
-    public LocationResponseDTO saveLocation(@RequestBody LocationRequestDTO request) {
+    public LocationResponseDTO saveLocation(@Valid @RequestBody LocationRequestDTO request) {
         return locationService.saveLocation(request);
     }
 
