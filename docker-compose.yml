@@ -11,6 +11,18 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  keycloak:
+    image: quay.io/keycloak/keycloak:latest
+    container_name: keycloak
+    command: start-dev --import-realm --hostname=http://localhost:8081 --hostname-backchannel-dynamic=true
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    volumes:
+      - ./keycloak/ae-realm-realm.json:/opt/keycloak/data/import/ae-realm-realm.json:ro
+    ports:
+      - "8081:8080"
+
   backend:
     image: maven:3.9.6-eclipse-temurin-21
     container_name: java_backend
@@ -24,11 +36,14 @@ services:
       - "8080:8080"
     depends_on:
       - db
+      - keycloak
     environment:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/my_project_db
       - SPRING_DATASOURCE_USERNAME=myuser
       - SPRING_DATASOURCE_PASSWORD=mypassword
       - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      - KEYCLOAK_ISSUER_URI=http://localhost:8081/realms/ae-realm
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/realms/ae-realm/protocol/openid-connect/certs
 
 volumes:
   postgres_data:

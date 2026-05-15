@@ -1,4 +1,4 @@
-package it.unical.ea.Travel.config;
+package it.unical.ea.Travel.Config;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
