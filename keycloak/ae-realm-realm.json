@@ -101,6 +101,31 @@
         "oauth2.device.authorization.grant.enabled": "false",
         "oidc.ciba.grant.enabled": "false"
       }
+    },
+    {
+      "clientId": "travel-backend-admin",
+      "name": "Travel backend admin client",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "travel-backend-admin-secret",
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "authorizationServicesEnabled": false,
+      "defaultClientScopes": [
+        "web-origins",
+        "acr",
+        "roles",
+        "profile",
+        "email"
+      ],
+      "optionalClientScopes": [
+        "address",
+        "phone",
+        "offline_access",
+        "microprofile-jwt"
+      ]
     }
   ],
   "users": [
@@ -142,6 +167,18 @@
         "ae-client": [
           "BASIC",
           "ADMIN"
+        ]
+      }
+    },
+    {
+      "username": "service-account-travel-backend-admin",
+      "enabled": true,
+      "serviceAccountClientId": "travel-backend-admin",
+      "clientRoles": {
+        "realm-management": [
+          "manage-users",
+          "query-users",
+          "view-users"
         ]
       }
     }

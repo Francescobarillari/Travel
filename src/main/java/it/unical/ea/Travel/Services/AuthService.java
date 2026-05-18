@@ -1,27 +1,21 @@
 package it.unical.ea.Travel.Services;
 
 import it.unical.ea.Travel.DTOs.authDto.LoginRequest;
+import it.unical.ea.Travel.Services.keycloak.KeycloakAuthService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.stereotype.Service;
 
 /**
  * Servizio che gestisce la logica di business relativa all'autenticazione.
- * Incapsula il processo di verifica delle credenziali tramite AuthenticationManager
- * e la successiva generazione del token JWT per l'utente autenticato.
+ * Le credenziali vengono verificate da Keycloak, che emette il JWT usato dal frontend.
  */
 @RequiredArgsConstructor
 @Service
 public class AuthService {
 
-    private final AuthenticationManager authenticationManager;
-    private final JwtService jwtService;
+    private final KeycloakAuthService keycloakAuthService;
 
     public String login(LoginRequest request) {
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
-        );
-        return jwtService.generateToken(request.getEmail());
+        return keycloakAuthService.login(request);
     }
 }

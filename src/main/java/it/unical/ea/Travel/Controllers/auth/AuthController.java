@@ -3,6 +3,7 @@ package it.unical.ea.Travel.Controllers.auth;
 import it.unical.ea.Travel.DTOs.authDto.LoginRequest;
 import it.unical.ea.Travel.DTOs.authDto.SignupRequest;
 import it.unical.ea.Travel.Services.AuthService;
+import it.unical.ea.Travel.Services.keycloak.KeycloakUserAlreadyExistsException;
 import it.unical.ea.Travel.Services.user.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -27,8 +28,6 @@ public class AuthController {
     private final AuthService authService;
     private final MessageSource messageSource;
 
-    // quando implementiamo la gestione errori di spring vanno tolti
-    // i controlli di validazione dai metodi
     @PostMapping("/login")
     public ResponseEntity<String> login(@RequestBody LoginRequest request) {
         try {
@@ -50,6 +49,10 @@ public class AuthController {
             if (!isDuplicateEmailError(e)) {
                 throw e;
             }
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(messageSource.getMessage("auth.signup.emailAlreadyExists", null,
+                            LocaleContextHolder.getLocale()));
+        } catch (KeycloakUserAlreadyExistsException e) {
             return ResponseEntity.status(HttpStatus.CONFLICT)
                     .body(messageSource.getMessage("auth.signup.emailAlreadyExists", null,
                             LocaleContextHolder.getLocale()));
