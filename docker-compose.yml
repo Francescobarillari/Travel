@@ -24,7 +24,6 @@ services:
       KC_DB_URL: jdbc:postgresql://db:5432/my_project_db
       KC_DB_USERNAME: myuser
       KC_DB_PASSWORD: mypassword
-      KC_DB_SCHEMA: keycloak
     volumes:
       - ./keycloak/ae-realm-realm.json:/opt/keycloak/data/import/ae-realm-realm.json:ro
     ports:
