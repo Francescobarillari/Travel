@@ -1,4 +1,4 @@
-package it.unical.ea.Travel.Config;
+package it.unical.ea.Travel.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

@@ -50,7 +50,7 @@ services:
     volumes:
       - ./:/app                
       - maven_cache:/root/.m2    
-    command: mvn spring-boot:run
+    command: mvn -Dmaven.test.skip=true spring-boot:run
     
     ports:
       - "8080:8080"

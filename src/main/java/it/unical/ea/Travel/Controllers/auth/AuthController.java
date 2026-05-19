@@ -61,6 +61,7 @@ public class AuthController {
 
     private boolean isDuplicateEmailError(DataIntegrityViolationException exception) {
         String errorMessage = exception.getMostSpecificCause().getMessage();
-        return errorMessage != null && errorMessage.contains("idx_user_email");
+        return errorMessage != null
+                && (errorMessage.contains("idx_user_email") || errorMessage.contains("Email gia registrata"));
     }
 }
