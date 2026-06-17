@@ -66,15 +66,15 @@ services:
       - SPRING_DATASOURCE_USERNAME=myuser
       - SPRING_DATASOURCE_PASSWORD=mypassword
       - SPRING_JPA_HIBERNATE_DDL_AUTO=update
-      - KEYCLOAK_ISSUER_URI=http://localhost:8081/realms/ae-realm
-      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/realms/ae-realm/protocol/openid-connect/certs
-      - KEYCLOAK_SERVER_URL=http://keycloak:8080
+      - KEYCLOAK_ISSUER_URI=http://172.20.10.2:8081/realms/ae-realm
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://172.20.10.2:8080/realms/ae-realm/protocol/openid-connect/certs
+      - KEYCLOAK_SERVER_URL=http://172.20.10.2:8080
       - KEYCLOAK_REALM=ae-realm
       - KEYCLOAK_APP_CLIENT_ID=ae-client
       - KEYCLOAK_APP_CLIENT_SECRET=travel-dev-secret
       - KEYCLOAK_ADMIN_CLIENT_ID=travel-backend-admin
       - KEYCLOAK_ADMIN_CLIENT_SECRET=travel-backend-admin-secret
-      - KEYCLOAK_DEFAULT_CLIENT_ROLE=BASIC
+      - KEYCLOAK_DEFAULT_CLIENT_ROLE=BASIC%
 
 volumes:
   postgres_data:

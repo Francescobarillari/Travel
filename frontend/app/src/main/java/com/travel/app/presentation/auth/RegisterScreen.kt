@@ -89,11 +89,26 @@ fun RegisterScreen(
                         color = TravelPrimary
                     )
 
-                    // Campo Nome Utente
+                    // Campo Nome
                     OutlinedTextField(
-                        value = viewModel.registerUsername,
-                        onValueChange = { viewModel.registerUsername = it },
-                        label = { Text("Nome Utente") },
+                        value = viewModel.registerFirstName,
+                        onValueChange = { viewModel.registerFirstName = it },
+                        label = { Text("Nome") },
+                        leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, tint = TravelSecondary) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = TravelSecondary,
+                            focusedLabelColor = TravelSecondary
+                        )
+                    )
+
+                    // Campo Cognome
+                    OutlinedTextField(
+                        value = viewModel.registerLastName,
+                        onValueChange = { viewModel.registerLastName = it },
+                        label = { Text("Cognome") },
                         leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, tint = TravelSecondary) },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),

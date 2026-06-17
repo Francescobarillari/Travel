@@ -18,9 +18,23 @@ import com.travel.app.presentation.home.HomeScreen
 import com.travel.app.presentation.navigation.Screen
 import com.travel.app.presentation.theme.TravelTheme
 
+import com.travel.app.service.ApiService
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
+
 class MainActivity : ComponentActivity() {
 
-    private val userRepository: UserRepository = UserRepositoryImpl()
+    private val apiService: ApiService by lazy {
+        Retrofit.Builder()
+            .baseUrl("http://172.20.10.2:8080/") // URL per emulatore Android (punta al localhost del PC)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(ApiService::class.java)
+    }
+
+    private val userRepository: UserRepository by lazy { 
+        UserRepositoryImpl(apiService) 
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -64,7 +78,12 @@ class MainActivity : ComponentActivity() {
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun LoginScreenPreview() {
-    val mockRepo = UserRepositoryImpl()
+    // Mock per la preview che non fa chiamate di rete reali
+    val mockApiService = object : ApiService {
+        override suspend fun login(request: com.travel.app.data.dto.LoginRequestDto) = com.travel.app.data.dto.LoginResponseDto("token")
+        override suspend fun register(request: com.travel.app.data.dto.SignUpRequestDto) = com.travel.app.data.dto.UserDto("id", "email", "first", "last")
+    }
+    val mockRepo = UserRepositoryImpl(mockApiService)
     val mockViewModel = AuthViewModel(mockRepo)
     TravelTheme {
         LoginScreen(
@@ -78,7 +97,12 @@ fun LoginScreenPreview() {
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun RegisterScreenPreview() {
-    val mockRepo = UserRepositoryImpl()
+    // Mock per la preview
+    val mockApiService = object : ApiService {
+        override suspend fun login(request: com.travel.app.data.dto.LoginRequestDto) = com.travel.app.data.dto.LoginResponseDto("token")
+        override suspend fun register(request: com.travel.app.data.dto.SignUpRequestDto) = com.travel.app.data.dto.UserDto("id", "email", "first", "last")
+    }
+    val mockRepo = UserRepositoryImpl(mockApiService)
     val mockViewModel = AuthViewModel(mockRepo)
     TravelTheme {
         RegisterScreen(

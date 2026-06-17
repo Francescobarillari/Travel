@@ -4,8 +4,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.travel.app.domain.model.User
 import com.travel.app.domain.repository.UserRepository
+import kotlinx.coroutines.launch
 
 class AuthViewModel(
     private val userRepository: UserRepository
@@ -18,7 +20,8 @@ class AuthViewModel(
 
     // Stato del form di Registrazione
     var registerEmail by mutableStateOf("")
-    var registerUsername by mutableStateOf("")
+    var registerFirstName by mutableStateOf("")
+    var registerLastName by mutableStateOf("")
     var registerPassword by mutableStateOf("")
     var registerConfirmPassword by mutableStateOf("")
     var registerError by mutableStateOf<String?>(null)
@@ -30,24 +33,27 @@ class AuthViewModel(
             loginError = "Compila tutti i campi"
             return
         }
-        isLoading = true
-        loginError = null
-        val result = userRepository.login(loginEmail, loginPassword)
-        isLoading = false
-        result.fold(
-            onSuccess = { user ->
-                loginEmail = ""
-                loginPassword = ""
-                onSuccess(user)
-            },
-            onFailure = { throwable ->
-                loginError = throwable.message ?: "Errore di autenticazione"
-            }
-        )
+        viewModelScope.launch {
+            isLoading = true
+            loginError = null
+            val result = userRepository.login(loginEmail, loginPassword)
+            isLoading = false
+            result.fold(
+                onSuccess = { user ->
+                    loginEmail = ""
+                    loginPassword = ""
+                    onSuccess(user)
+                },
+                onFailure = { throwable ->
+                    loginError = throwable.message ?: "Errore di autenticazione"
+                }
+            )
+        }
     }
 
     fun register(onSuccess: (User) -> Unit) {
-        if (registerEmail.isBlank() || registerUsername.isBlank() || registerPassword.isBlank()) {
+        if (registerEmail.isBlank() || registerFirstName.isBlank() || 
+            registerLastName.isBlank() || registerPassword.isBlank()) {
             registerError = "Compila tutti i campi"
             return
         }
@@ -55,21 +61,30 @@ class AuthViewModel(
             registerError = "Le password non coincidono"
             return
         }
-        isLoading = true
-        registerError = null
-        val result = userRepository.register(registerEmail, registerUsername, registerPassword)
-        isLoading = false
-        result.fold(
-            onSuccess = { user ->
-                registerEmail = ""
-                registerUsername = ""
-                registerPassword = ""
-                registerConfirmPassword = ""
-                onSuccess(user)
-            },
-            onFailure = { throwable ->
-                registerError = throwable.message ?: "Errore di registrazione"
-            }
-        )
+        
+        viewModelScope.launch {
+            isLoading = true
+            registerError = null
+            val result = userRepository.register(
+                registerEmail, 
+                registerFirstName, 
+                registerLastName, 
+                registerPassword
+            )
+            isLoading = false
+            result.fold(
+                onSuccess = { user ->
+                    registerEmail = ""
+                    registerFirstName = ""
+                    registerLastName = ""
+                    registerPassword = ""
+                    registerConfirmPassword = ""
+                    onSuccess(user)
+                },
+                onFailure = { throwable ->
+                    registerError = throwable.message ?: "Errore di registrazione"
+                }
+            )
+        }
     }
 }
