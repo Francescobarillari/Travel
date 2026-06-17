@@ -14,6 +14,7 @@ import com.travel.app.domain.repository.UserRepository
 import com.travel.app.presentation.auth.AuthViewModel
 import com.travel.app.presentation.auth.LoginScreen
 import com.travel.app.presentation.auth.RegisterScreen
+import com.travel.app.presentation.home.HomeScreen
 import com.travel.app.presentation.navigation.Screen
 import com.travel.app.presentation.theme.TravelTheme
 
@@ -38,7 +39,7 @@ class MainActivity : ComponentActivity() {
                             LoginScreen(
                                 viewModel = authViewModel,
                                 onNavigateToRegister = { currentScreen = Screen.REGISTER },
-                                onLoginSuccess = {}
+                                onLoginSuccess = { currentScreen = Screen.HOME }
                             )
                         }
                         Screen.REGISTER -> {
@@ -47,6 +48,9 @@ class MainActivity : ComponentActivity() {
                                 onNavigateToLogin = { currentScreen = Screen.LOGIN },
                                 onRegisterSuccess = {}
                             )
+                        }
+                        Screen.HOME -> {
+                            HomeScreen()
                         }
                     }
                 }
