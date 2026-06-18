@@ -20,8 +20,47 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             TravelTheme {
-                TravelApp()
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    var currentScreen by remember { mutableStateOf(Screen.LOGIN) }
+
+                    when (currentScreen) {
+                        Screen.LOGIN -> {
+                            LoginScreen(
+                                viewModel = authViewModel,
+                                onNavigateToRegister = { currentScreen = Screen.REGISTER },
+                                onLoginSuccess = { currentScreen = Screen.HOME }
+                            )
+                        }
+                        Screen.REGISTER -> {
+                            RegisterScreen(
+                                viewModel = authViewModel,
+                                onNavigateToLogin = { currentScreen = Screen.LOGIN },
+                                onRegisterSuccess = { currentScreen = Screen.HOME }
+                            )
+                        }
+                        Screen.HOME -> {
+                            HomeScreen()
+                        }
+                    }
+                }
             }
         }
+    }
+}
+
+@Preview(showBackground = true, showSystemUi = true)
+@Composable
+fun LoginScreenPreview() {
+    val mockApiService = object : ApiService {
+        override suspend fun login(request: com.travel.app.data.dto.LoginRequestDto) = "mock_token"
+        override suspend fun register(request: com.travel.app.data.dto.SignUpRequestDto) = "mock_user_id"
+    }
+    val mockRepo = UserRepositoryImpl(mockApiService)
+    val mockViewModel = AuthViewModel(mockRepo)
+    TravelTheme {
+        LoginScreen(viewModel = mockViewModel, onNavigateToRegister = {}, onLoginSuccess = {})
     }
 }

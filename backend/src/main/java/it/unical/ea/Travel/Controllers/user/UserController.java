@@ -11,7 +11,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import it.unical.ea.Travel.DTOs.authDto.SignupRequest;
+import it.unical.ea.Travel.DTOs.user.UserDTO;
 import it.unical.ea.Travel.Entities.user.User;
+import it.unical.ea.Travel.Mappers.user.UserMapper;
 import it.unical.ea.Travel.Services.user.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -21,24 +23,29 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/user")
 public class UserController {
     private final UserService userService;
+    private final UserMapper userMapper;
 
     @PostMapping
-    public User saveUser(@Valid @RequestBody SignupRequest request){
-        return userService.saveUser(request);
+    public UserDTO saveUser(@Valid @RequestBody SignupRequest request){
+        User user = userService.saveUser(request);
+        return userMapper.toDTO(user);
     }
 
     @GetMapping("/{stringId}")
-    public User getUser(@PathVariable String stringId){
-        return userService.getUser(stringId);
+    public UserDTO getUser(@PathVariable String stringId){
+        User user = userService.getUser(stringId);
+        return userMapper.toDTO(user);
     }
 
     @GetMapping
-    public List<User> getUsers(){
-        return userService.getUsers();
+    public List<UserDTO> getUsers(){
+        return userService.getUsers().stream()
+                .map(userMapper::toDTO)
+                .toList();
     }
 
-    @DeleteMapping
-    public void deleteUser(String stringId){
+    @DeleteMapping("/{stringId}")
+    public void deleteUser(@PathVariable String stringId){
         userService.deleteUser(stringId);
     }
 }

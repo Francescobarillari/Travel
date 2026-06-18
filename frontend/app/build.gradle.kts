@@ -3,6 +3,7 @@ import java.util.Properties
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+    id("org.openapi.generator")
 }
 
 android {
@@ -61,6 +62,12 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+
+    sourceSets {
+        getByName("main") {
+            java.srcDir("build/generated/openapi/src/main/kotlin")
+        }
+    }
 }
 
 dependencies {
@@ -85,4 +92,16 @@ dependencies {
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
+}
+
+openApiGenerate {
+    generatorName.set("kotlin")
+    inputSpec.set("$projectDir/specs/openapi.json")
+    outputDir.set("$buildDir/generated/openapi")
+    apiPackage.set("com.travel.app.api")
+    modelPackage.set("com.travel.app.data.dto")
+    configOptions.set(mapOf(
+        "dateLibrary" to "java8",
+        "serializationLibrary" to "gson"
+    ))
 }

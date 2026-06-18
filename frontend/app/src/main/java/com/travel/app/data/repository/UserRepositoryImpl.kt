@@ -2,8 +2,8 @@ package com.travel.app.data.repository
 
 import com.google.gson.Gson
 import com.travel.app.data.dto.ErrorResponseDto
-import com.travel.app.data.dto.LoginRequestDto
-import com.travel.app.data.dto.SignUpRequestDto
+import com.travel.app.data.dto.LoginRequest
+import com.travel.app.data.dto.SignUpRequestDto // <-- IMPORT CORRETTO
 import com.travel.app.domain.model.User
 import com.travel.app.domain.repository.UserRepository
 import com.travel.app.service.ApiService
@@ -20,7 +20,9 @@ class UserRepositoryImpl(
             return Result.success(User(email = email, username = "Test User"))
         }
         return try {
-            apiService.login(LoginRequestDto(email, password))
+            val token = apiService.login(LoginRequest(email = email, password = password))
+            // Il login ha avuto successo e abbiamo il token.
+            // Per ora restituiamo l'utente con l'email usata.
             Result.success(User(email = email, username = email.split("@")[0]))
         } catch (e: Exception) {
             Result.failure(Exception(handleError(e)))
@@ -37,9 +39,9 @@ class UserRepositoryImpl(
         return try {
             apiService.register(
                 SignUpRequestDto(
-                    email = email,
-                    password = password,
-                    userType = "VIAGGIATORE",
+                    email = email,           // <-- AGGIUNTO
+                    password = password,     // <-- AGGIUNTO
+                    userType = "VIAGGIATORE",// <-- AGGIUNTO (presumo sia questo il valore atteso dal DB)
                     firstName = firstName,
                     lastName = lastName,
                     phone = phone
