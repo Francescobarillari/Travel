@@ -37,7 +37,7 @@ class MainActivity : ComponentActivity() {
             .build()
 
         Retrofit.Builder()
-            .baseUrl("http://172.20.10.2:8080/") // URL per emulatore Android (punta al localhost del PC)
+            .baseUrl(BuildConfig.BACKEND_URL)
             .client(client)
             .addConverterFactory(ScalarsConverterFactory.create()) // Aggiunto per le Stringhe
             .addConverterFactory(GsonConverterFactory.create())

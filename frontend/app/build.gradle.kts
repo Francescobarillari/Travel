@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -18,6 +20,17 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+
+        // Legge l'indirizzo IP locale da local.properties (escluso da Git)
+        val localProperties = Properties()
+        val localPropertiesFile = rootProject.file("local.properties")
+        if (localPropertiesFile.exists()) {
+            localPropertiesFile.inputStream().use { inputStream ->
+                localProperties.load(inputStream)
+            }
+        }
+        val backendUrl = localProperties.getProperty("backend.url") ?: "http://10.0.2.2:8080/"
+        buildConfigField("String", "BACKEND_URL", "\"$backendUrl\"")
     }
 
     buildTypes {
@@ -38,6 +51,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.10"
