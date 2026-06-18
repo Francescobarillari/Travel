@@ -34,3 +34,8 @@ build/
 
 ### Environment ###
 .env
+
+### Gradle ###
+.gradle/
+.gradletasknamecache
+!gradle-wrapper.jar
