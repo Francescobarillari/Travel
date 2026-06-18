@@ -1,7 +1,7 @@
 package com.travel.app.data.repository
 
-import com.travel.app.data.dto.LoginRequestDto
-import com.travel.app.data.dto.SignUpRequestDto
+import com.travel.app.data.dto.LoginRequest
+import com.travel.app.data.dto.SignupRequest
 import com.travel.app.domain.model.User
 import com.travel.app.domain.repository.UserRepository
 import com.travel.app.service.ApiService
@@ -11,7 +11,7 @@ class UserRepositoryImpl(
 ) : UserRepository {
     override suspend fun login(email: String, password: String): Result<User> {
         return try {
-            val token = apiService.login(LoginRequestDto(email, password))
+            val token = apiService.login(LoginRequest(email = email, password = password))
             // Il login ha avuto successo e abbiamo il token.
             // Per ora restituiamo l'utente con l'email usata.
             Result.success(User(email = email, username = email.split("@")[0]))
@@ -28,7 +28,7 @@ class UserRepositoryImpl(
     ): Result<User> {
         return try {
             val resultMessage = apiService.register(
-                SignUpRequestDto(
+                SignupRequest(
                     firstName = firstName,
                     lastName = lastName,
                     email = email,

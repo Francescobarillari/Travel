@@ -2,17 +2,21 @@ package it.unical.ea.Travel.Mappers.user;
 
 import it.unical.ea.Travel.DTOs.user.UserDTO;
 import it.unical.ea.Travel.Entities.user.User;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.Named;
 
-public final class UserMapper {
+@Mapper(componentModel = "spring")
+public interface UserMapper {
 
-    private UserMapper() {
-    }
+    @Mapping(target = "fullName", source = "user", qualifiedByName = "mapFullName")
+    UserDTO toDTO(User user);
 
-    public static UserDTO toDTO(User user) {
+    @Named("mapFullName")
+    default String mapFullName(User user) {
         if (user == null) {
             return null;
         }
-        String fullName = user.getFirstName() + " " + user.getLastName();
-        return new UserDTO(user.getId(), fullName);
+        return user.getFirstName() + " " + user.getLastName();
     }
 }
