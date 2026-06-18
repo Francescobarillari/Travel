@@ -1,29 +1,49 @@
 package com.travel.app.data.repository
 
-import com.travel.app.data.datasource.InMemoryDataSource
+import com.travel.app.data.dto.LoginRequestDto
+import com.travel.app.data.dto.SignUpRequestDto
 import com.travel.app.domain.model.User
 import com.travel.app.domain.repository.UserRepository
+import com.travel.app.service.ApiService
 
-class UserRepositoryImpl : UserRepository {
-    override fun login(email: String, password: String): Result<User> {
-        val existingPassword = InMemoryDataSource.registeredUsers[email]
-        return if (existingPassword != null && existingPassword == password) {
-            val username = InMemoryDataSource.userProfileNames[email] ?: "Utente"
-            Result.success(User(email, username))
-        } else {
-            Result.failure(Exception("Email o password non corretti"))
+class UserRepositoryImpl(
+    private val apiService: ApiService
+) : UserRepository {
+    override suspend fun login(email: String, password: String): Result<User> {
+        return try {
+            val token = apiService.login(LoginRequestDto(email, password))
+            // Il login ha avuto successo e abbiamo il token.
+            // Per ora restituiamo l'utente con l'email usata.
+            Result.success(User(email = email, username = email.split("@")[0]))
+        } catch (e: Exception) {
+            Result.failure(Exception(e.message ?: "Errore durante il login"))
         }
     }
 
-    override fun register(email: String, username: String, password: String): Result<User> {
-        return if (email.isBlank() || username.isBlank() || password.isBlank()) {
-            Result.failure(Exception("Tutti i campi sono obbligatori"))
-        } else if (InMemoryDataSource.registeredUsers.containsKey(email)) {
-            Result.failure(Exception("Email già registrata"))
-        } else {
-            InMemoryDataSource.registeredUsers[email] = password
-            InMemoryDataSource.userProfileNames[email] = username
-            Result.success(User(email, username))
+    override suspend fun register(
+        email: String,
+        firstName: String,
+        lastName: String,
+        password: String
+    ): Result<User> {
+        return try {
+            val resultMessage = apiService.register(
+                SignUpRequestDto(
+                    firstName = firstName,
+                    lastName = lastName,
+                    email = email,
+                    password = password
+                )
+            )
+            // Se la registrazione ha successo, restituiamo l'utente creato.
+            Result.success(
+                User(
+                    email = email,
+                    username = "$firstName $lastName"
+                )
+            )
+        } catch (e: Exception) {
+            Result.failure(Exception(e.message ?: "Errore durante la registrazione"))
         }
     }
 }

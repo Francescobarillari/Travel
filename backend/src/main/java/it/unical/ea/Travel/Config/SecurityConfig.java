@@ -1,4 +1,4 @@
-package it.unical.ea.Travel.config;
+package it.unical.ea.Travel.Config;
 
 import java.util.ArrayList;
 import java.util.Collection;

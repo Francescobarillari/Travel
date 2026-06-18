@@ -32,10 +32,9 @@ build/
 ### VS Code ###
 .vscode/
 
-### Environment ###
+### Environment and Local configs ###
 .env
-
-### Gradle ###
+**/local.properties
 .gradle/
 .gradletasknamecache
 !gradle-wrapper.jar

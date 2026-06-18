@@ -9,18 +9,19 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import com.travel.app.data.AppContainer
 import com.travel.app.data.repository.UserRepositoryImpl
-import com.travel.app.domain.repository.UserRepository
 import com.travel.app.presentation.auth.AuthViewModel
 import com.travel.app.presentation.auth.LoginScreen
 import com.travel.app.presentation.auth.RegisterScreen
 import com.travel.app.presentation.home.HomeScreen
 import com.travel.app.presentation.navigation.Screen
 import com.travel.app.presentation.theme.TravelTheme
+import com.travel.app.service.ApiService
 
 class MainActivity : ComponentActivity() {
 
-    private val userRepository: UserRepository = UserRepositoryImpl()
+    private val userRepository = AppContainer.userRepository
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,7 +47,7 @@ class MainActivity : ComponentActivity() {
                             RegisterScreen(
                                 viewModel = authViewModel,
                                 onNavigateToLogin = { currentScreen = Screen.LOGIN },
-                                onRegisterSuccess = {}
+                                onRegisterSuccess = { currentScreen = Screen.HOME }
                             )
                         }
                         Screen.HOME -> {
@@ -59,32 +60,16 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-// Anteprime per la visualizzazione all'interno dell'IDE (Compose Preview)
-
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun LoginScreenPreview() {
-    val mockRepo = UserRepositoryImpl()
-    val mockViewModel = AuthViewModel(mockRepo)
-    TravelTheme {
-        LoginScreen(
-            viewModel = mockViewModel,
-            onNavigateToRegister = {},
-            onLoginSuccess = {}
-        )
+    val mockApiService = object : ApiService {
+        override suspend fun login(request: com.travel.app.data.dto.LoginRequestDto) = "mock_token"
+        override suspend fun register(request: com.travel.app.data.dto.SignUpRequestDto) = "mock_user_id"
     }
-}
-
-@Preview(showBackground = true, showSystemUi = true)
-@Composable
-fun RegisterScreenPreview() {
-    val mockRepo = UserRepositoryImpl()
+    val mockRepo = UserRepositoryImpl(mockApiService)
     val mockViewModel = AuthViewModel(mockRepo)
     TravelTheme {
-        RegisterScreen(
-            viewModel = mockViewModel,
-            onNavigateToLogin = {},
-            onRegisterSuccess = {}
-        )
+        LoginScreen(viewModel = mockViewModel, onNavigateToRegister = {}, onLoginSuccess = {})
     }
 }
