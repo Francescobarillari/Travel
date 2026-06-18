@@ -9,45 +9,19 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import com.travel.app.data.AppContainer
 import com.travel.app.data.repository.UserRepositoryImpl
-import com.travel.app.domain.repository.UserRepository
 import com.travel.app.presentation.auth.AuthViewModel
 import com.travel.app.presentation.auth.LoginScreen
 import com.travel.app.presentation.auth.RegisterScreen
 import com.travel.app.presentation.home.HomeScreen
 import com.travel.app.presentation.navigation.Screen
 import com.travel.app.presentation.theme.TravelTheme
-
 import com.travel.app.service.ApiService
-import okhttp3.OkHttpClient
-import okhttp3.logging.HttpLoggingInterceptor
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
-
-import retrofit2.converter.scalars.ScalarsConverterFactory
 
 class MainActivity : ComponentActivity() {
 
-    private val apiService: ApiService by lazy {
-        val logging = HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BODY
-        }
-        val client = OkHttpClient.Builder()
-            .addInterceptor(logging)
-            .build()
-
-        Retrofit.Builder()
-            .baseUrl(BuildConfig.BACKEND_URL)
-            .client(client)
-            .addConverterFactory(ScalarsConverterFactory.create()) // Aggiunto per le Stringhe
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-            .create(ApiService::class.java)
-    }
-
-    private val userRepository: UserRepository by lazy { 
-        UserRepositoryImpl(apiService) 
-    }
+    private val userRepository = AppContainer.userRepository
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -73,7 +47,7 @@ class MainActivity : ComponentActivity() {
                             RegisterScreen(
                                 viewModel = authViewModel,
                                 onNavigateToLogin = { currentScreen = Screen.LOGIN },
-                                onRegisterSuccess = {}
+                                onRegisterSuccess = { currentScreen = Screen.HOME }
                             )
                         }
                         Screen.HOME -> {
@@ -86,12 +60,9 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-// Anteprime per la visualizzazione all'interno dell'IDE (Compose Preview)
-
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun LoginScreenPreview() {
-    // Mock per la preview che non fa chiamate di rete reali
     val mockApiService = object : ApiService {
         override suspend fun login(request: com.travel.app.data.dto.LoginRequestDto) = "mock_token"
         override suspend fun register(request: com.travel.app.data.dto.SignUpRequestDto) = "mock_user_id"
@@ -99,29 +70,6 @@ fun LoginScreenPreview() {
     val mockRepo = UserRepositoryImpl(mockApiService)
     val mockViewModel = AuthViewModel(mockRepo)
     TravelTheme {
-        LoginScreen(
-            viewModel = mockViewModel,
-            onNavigateToRegister = {},
-            onLoginSuccess = {}
-        )
-    }
-}
-
-@Preview(showBackground = true, showSystemUi = true)
-@Composable
-fun RegisterScreenPreview() {
-    // Mock per la preview
-    val mockApiService = object : ApiService {
-        override suspend fun login(request: com.travel.app.data.dto.LoginRequestDto) = "mock_token"
-        override suspend fun register(request: com.travel.app.data.dto.SignUpRequestDto) = "mock_user_id"
-    }
-    val mockRepo = UserRepositoryImpl(mockApiService)
-    val mockViewModel = AuthViewModel(mockRepo)
-    TravelTheme {
-        RegisterScreen(
-            viewModel = mockViewModel,
-            onNavigateToLogin = {},
-            onRegisterSuccess = {}
-        )
+        LoginScreen(viewModel = mockViewModel, onNavigateToRegister = {}, onLoginSuccess = {})
     }
 }

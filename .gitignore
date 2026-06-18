@@ -34,5 +34,7 @@ build/
 
 ### Environment and Local configs ###
 .env
-**/local.properties
+
+### Gradle ###
 .gradle/
+**/local.properties
