@@ -19,14 +19,27 @@ import com.travel.app.presentation.navigation.Screen
 import com.travel.app.presentation.theme.TravelTheme
 
 import com.travel.app.service.ApiService
+import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+
+import retrofit2.converter.scalars.ScalarsConverterFactory
 
 class MainActivity : ComponentActivity() {
 
     private val apiService: ApiService by lazy {
+        val logging = HttpLoggingInterceptor().apply {
+            level = HttpLoggingInterceptor.Level.BODY
+        }
+        val client = OkHttpClient.Builder()
+            .addInterceptor(logging)
+            .build()
+
         Retrofit.Builder()
             .baseUrl("http://172.20.10.2:8080/") // URL per emulatore Android (punta al localhost del PC)
+            .client(client)
+            .addConverterFactory(ScalarsConverterFactory.create()) // Aggiunto per le Stringhe
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(ApiService::class.java)
@@ -80,8 +93,8 @@ class MainActivity : ComponentActivity() {
 fun LoginScreenPreview() {
     // Mock per la preview che non fa chiamate di rete reali
     val mockApiService = object : ApiService {
-        override suspend fun login(request: com.travel.app.data.dto.LoginRequestDto) = com.travel.app.data.dto.LoginResponseDto("token")
-        override suspend fun register(request: com.travel.app.data.dto.SignUpRequestDto) = com.travel.app.data.dto.UserDto("id", "email", "first", "last")
+        override suspend fun login(request: com.travel.app.data.dto.LoginRequestDto) = "mock_token"
+        override suspend fun register(request: com.travel.app.data.dto.SignUpRequestDto) = "mock_user_id"
     }
     val mockRepo = UserRepositoryImpl(mockApiService)
     val mockViewModel = AuthViewModel(mockRepo)
@@ -99,8 +112,8 @@ fun LoginScreenPreview() {
 fun RegisterScreenPreview() {
     // Mock per la preview
     val mockApiService = object : ApiService {
-        override suspend fun login(request: com.travel.app.data.dto.LoginRequestDto) = com.travel.app.data.dto.LoginResponseDto("token")
-        override suspend fun register(request: com.travel.app.data.dto.SignUpRequestDto) = com.travel.app.data.dto.UserDto("id", "email", "first", "last")
+        override suspend fun login(request: com.travel.app.data.dto.LoginRequestDto) = "mock_token"
+        override suspend fun register(request: com.travel.app.data.dto.SignUpRequestDto) = "mock_user_id"
     }
     val mockRepo = UserRepositoryImpl(mockApiService)
     val mockViewModel = AuthViewModel(mockRepo)

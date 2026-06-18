@@ -3,18 +3,16 @@ package com.travel.app.service
 import retrofit2.http.Body
 import retrofit2.http.POST
 import com.travel.app.data.dto.LoginRequestDto
-import com.travel.app.data.dto.LoginResponseDto
 import com.travel.app.data.dto.SignUpRequestDto
-import com.travel.app.data.dto.UserDto
 
 interface ApiService {
 
-    // Chiamata per il Login
+    // Chiamata per il Login - Restituisce il Token come Stringa
     @POST("api/auth/login")
-    suspend fun login(@Body request: LoginRequestDto): LoginResponseDto
+    suspend fun login(@Body request: LoginRequestDto): String
 
-    // Chiamata per la Registrazione
+    // Chiamata per la Registrazione - Restituisce un messaggio o token come Stringa
     @POST("api/auth/signup")
-    suspend fun register(@Body request: SignUpRequestDto): UserDto
+    suspend fun register(@Body request: SignUpRequestDto): String
 
 }

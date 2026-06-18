@@ -11,10 +11,9 @@ class UserRepositoryImpl(
 ) : UserRepository {
     override suspend fun login(email: String, password: String): Result<User> {
         return try {
-            val response = apiService.login(LoginRequestDto(email, password))
-            // Al momento LoginResponseDto restituisce solo il token.
-            // Restituiamo un oggetto User con l'email fornita.
-            // In futuro si potrebbe chiamare un endpoint /me per i dettagli completi.
+            val token = apiService.login(LoginRequestDto(email, password))
+            // Il login ha avuto successo e abbiamo il token.
+            // Per ora restituiamo l'utente con l'email usata.
             Result.success(User(email = email, username = email.split("@")[0]))
         } catch (e: Exception) {
             Result.failure(Exception(e.message ?: "Errore durante il login"))
@@ -28,7 +27,7 @@ class UserRepositoryImpl(
         password: String
     ): Result<User> {
         return try {
-            val response = apiService.register(
+            val resultMessage = apiService.register(
                 SignUpRequestDto(
                     firstName = firstName,
                     lastName = lastName,
@@ -36,11 +35,11 @@ class UserRepositoryImpl(
                     password = password
                 )
             )
-            // UserDto restituito dal signup contiene firstName e lastName
+            // Se la registrazione ha successo, restituiamo l'utente creato.
             Result.success(
                 User(
-                    email = response.email,
-                    username = "${response.firstName} ${response.lastName}"
+                    email = email,
+                    username = "$firstName $lastName"
                 )
             )
         } catch (e: Exception) {
