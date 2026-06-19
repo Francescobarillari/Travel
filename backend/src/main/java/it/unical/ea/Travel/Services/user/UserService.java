@@ -4,11 +4,13 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import it.unical.ea.Travel.DTOs.authDto.SignupRequest;
 import it.unical.ea.Travel.Entities.user.User;
+import it.unical.ea.Travel.Exception.ApiException;
 import it.unical.ea.Travel.Repositories.user.UserRepository;
 import it.unical.ea.Travel.Services.keycloak.KeycloakAdminService;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +24,7 @@ public class UserService {
     @Transactional
     public User saveUser(SignupRequest request) {
         userRepository.getUserByEmail(request.getEmail()).ifPresent(user -> {
-            throw new DataIntegrityViolationException("Email gia registrata");
+            throw new ApiException(HttpStatus.CONFLICT, "auth.signup.emailAlreadyExists");
         });
 
         String keycloakUserId = keycloakAdminService.createUser(request);
@@ -45,7 +47,7 @@ public class UserService {
     public User getUser(String stringId){
         UUID uuid = UUID.fromString(stringId);
         return userRepository.findById(uuid).orElseThrow(
-            () -> new RuntimeException("Utente non trovato")
+            () -> new ApiException(HttpStatus.NOT_FOUND, "user.notFound")
         );
     }
 

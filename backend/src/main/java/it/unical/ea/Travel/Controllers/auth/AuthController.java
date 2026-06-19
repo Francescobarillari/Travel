@@ -4,6 +4,7 @@ import it.unical.ea.Travel.DTOs.authDto.LoginRequest;
 import it.unical.ea.Travel.DTOs.authDto.SignupRequest;
 import it.unical.ea.Travel.Services.AuthService;
 import it.unical.ea.Travel.Services.keycloak.KeycloakUserAlreadyExistsException;
+import it.unical.ea.Travel.Exception.ApiException;
 import it.unical.ea.Travel.Services.user.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -34,9 +35,9 @@ public class AuthController {
             String token = authService.login(request);
             return ResponseEntity.ok(token);
         } catch (BadCredentialsException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(messageSource.getMessage("auth.login.invalidCredentials", null, LocaleContextHolder.getLocale()));
+            throw new ApiException(HttpStatus.UNAUTHORIZED, "auth.login.invalidCredentials");
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(messageSource.getMessage("auth.login.error", null, LocaleContextHolder.getLocale()));
+            throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "auth.login.error");
         }
     }
 
@@ -44,18 +45,15 @@ public class AuthController {
     public ResponseEntity<String> signup(@Valid @RequestBody SignupRequest request) {
         try {
             userService.saveUser(request);
-            return ResponseEntity.ok().body(messageSource.getMessage("auth.signup.success", null, LocaleContextHolder.getLocale()));
+            return ResponseEntity.ok()
+                    .body(messageSource.getMessage("auth.signup.success", null, LocaleContextHolder.getLocale()));
         } catch (DataIntegrityViolationException e) {
             if (!isDuplicateEmailError(e)) {
-                throw e;
+                throw e; // Rilancia l'eccezione database generica
             }
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body(messageSource.getMessage("auth.signup.emailAlreadyExists", null,
-                            LocaleContextHolder.getLocale()));
+            throw new ApiException(HttpStatus.CONFLICT, "auth.signup.emailAlreadyExists");
         } catch (KeycloakUserAlreadyExistsException e) {
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body(messageSource.getMessage("auth.signup.emailAlreadyExists", null,
-                            LocaleContextHolder.getLocale()));
+            throw new ApiException(HttpStatus.CONFLICT, "auth.signup.emailAlreadyExists");
         }
     }
 
@@ -65,3 +63,4 @@ public class AuthController {
                 && (errorMessage.contains("idx_user_email") || errorMessage.contains("Email gia registrata"));
     }
 }
+
