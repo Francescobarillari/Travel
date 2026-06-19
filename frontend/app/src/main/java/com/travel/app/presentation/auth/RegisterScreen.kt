@@ -33,6 +33,10 @@ import com.travel.app.presentation.theme.TravelBgMid
 import com.travel.app.presentation.theme.TravelBgStart
 import com.travel.app.presentation.theme.TravelPrimary
 import com.travel.app.presentation.theme.TravelSecondary
+import androidx.compose.ui.tooling.preview.Preview
+import com.travel.app.presentation.theme.TravelTheme
+import com.travel.app.data.repository.UserRepositoryImpl
+import com.travel.app.service.ApiService
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -253,5 +257,19 @@ fun RegisterScreen(
                 }
             }
         }
+    }
+}
+
+@Preview(showBackground = true, showSystemUi = true)
+@Composable
+fun RegisterScreenPreview() {
+    val mockApiService = object : ApiService {
+        override suspend fun login(request: com.travel.app.data.dto.LoginRequestDto) = "mock_token"
+        override suspend fun register(request: com.travel.app.data.dto.SignUpRequestDto) = "mock_user_id"
+    }
+    val mockRepo = UserRepositoryImpl(mockApiService)
+    val mockViewModel = AuthViewModel(mockRepo)
+    TravelTheme {
+        RegisterScreen(viewModel = mockViewModel, onNavigateToLogin = {}, onRegisterSuccess = {})
     }
 }
