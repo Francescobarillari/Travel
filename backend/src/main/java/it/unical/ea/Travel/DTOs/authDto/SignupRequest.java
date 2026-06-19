@@ -8,23 +8,24 @@ import lombok.Setter;
 @Setter
 public class SignupRequest {
 
-    @NotBlank(message = "L'email è obbligatoria")
-    @Email(message = "Formato email non valido")
+    @NotBlank(message = "{validation.email.notBlank}")
+    @Email(message = "{validation.email.invalid}")
     private String email;
 
-    @NotBlank(message = "La password è obbligatoria")
-    @Size(min = 8, message = "La password deve avere almeno 8 caratteri")
+    @NotBlank(message = "{validation.password.notBlank}")
+    @Size(min = 8, message = "{validation.password.minSize}")
     @Pattern(
         regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).*$",
-        message = "La password deve contenere almeno una maiuscola, una minuscola e un numero"
+        message = "{validation.password.pattern}"
     )
     private String password;
 
-    @NotBlank(message = "Il nome è obbligatorio")
-    @Size(max = 100, message = "Il nome non può superare i 100 caratteri")
+    @NotBlank(message = "{validation.firstName.notBlank}")
+    @Size(max = 100, message = "{validation.firstName.maxSize}")
     private String firstName;
 
-    @NotBlank(message = "Il cognome è obbligatorio")
-    @Size(max = 100, message = "Il cognome non può superare i 100 caratteri")
+    @NotBlank(message = "{validation.lastName.notBlank}")
+    @Size(max = 100, message = "{validation.lastName.maxSize}")
     private String lastName;
 }
+

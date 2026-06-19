@@ -10,14 +10,16 @@ import lombok.Setter;
 @Getter
 @Setter
 public class LoginRequest {
-    @Email(message = "Email is not valid")
+    @NotBlank(message = "{validation.email.notBlank}")
+    @Email(message = "{validation.email.invalid}")
     private String email;
 
-    @NotBlank(message = "La password è obbligatoria")
-    @Size(min = 8, message = "La password deve avere almeno 8 caratteri")
+    @NotBlank(message = "{validation.password.notBlank}")
+    @Size(min = 8, message = "{validation.password.minSize}")
     @Pattern(
         regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).*$",
-        message = "La password deve contenere almeno una maiuscola, una minuscola e un numero"
-    ) //????
+        message = "{validation.password.pattern}"
+    )
     private String password;
 }
+

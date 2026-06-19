@@ -30,7 +30,7 @@ public class AuthController {
     private final MessageSource messageSource;
 
     @PostMapping("/login")
-    public ResponseEntity<String> login(@RequestBody LoginRequest request) {
+    public ResponseEntity<String> login(@Valid @RequestBody LoginRequest request) {
         try {
             String token = authService.login(request);
             return ResponseEntity.ok(token);
