@@ -1,16 +1,20 @@
 package com.travel.app.presentation.home
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.travel.app.presentation.components.home.FloatingBottomNavBar
 import com.travel.app.presentation.theme.TravelTheme
 
@@ -24,19 +28,10 @@ fun HomeScreen() {
             .background(MaterialTheme.colorScheme.background)
     ) {
 
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = when (selectedTab) {
-                    HomeTab.ESPLORA -> "Esplora"
-                    HomeTab.PREFERITI -> "Preferiti"
-                    HomeTab.PROFILO -> "Profilo"
-                },
-                color = MaterialTheme.colorScheme.onBackground,
-                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold)
-            )
+        when (selectedTab) {
+            HomeTab.ESPLORA -> EsploraScreen()
+            HomeTab.PREFERITI -> SimplePlaceholderScreen(title = "Preferiti")
+            HomeTab.PROFILO -> SimplePlaceholderScreen(title = "Profilo")
         }
 
 
@@ -50,6 +45,82 @@ fun HomeScreen() {
                 onTabSelected = { selectedTab = it }
             )
         }
+    }
+}
+
+@Composable
+fun EsploraScreen() {
+    var searchQuery by remember { mutableStateOf("") }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(top = 16.dp)
+    ) {
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 16.dp)
+        ) {
+            Text(
+                text = "Travel",
+                style = MaterialTheme.typography.headlineLarge.copy(
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            )
+        }
+
+        // Modern, premium SearchBar
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = { searchQuery = it },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 8.dp),
+            placeholder = { 
+                Text(
+                    text = "Cerca attività, viaggi, mete...",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                ) 
+            },
+            leadingIcon = { 
+                Icon(
+                    imageVector = Icons.Default.Search, 
+                    contentDescription = "Cerca", 
+                    tint = MaterialTheme.colorScheme.primary 
+                ) 
+            },
+            singleLine = true,
+            shape = RoundedCornerShape(32.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f),
+                focusedLabelColor = MaterialTheme.colorScheme.primary
+            )
+        )
+
+        Spacer(modifier = Modifier.height(110.dp))
+    }
+}
+
+@Composable
+fun SimplePlaceholderScreen(title: String) {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = title,
+            color = MaterialTheme.colorScheme.onBackground,
+            style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold)
+        )
     }
 }
 
