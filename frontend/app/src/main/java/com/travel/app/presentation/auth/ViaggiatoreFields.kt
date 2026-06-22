@@ -6,7 +6,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
-import com.travel.app.presentation.components.TravelTextField
+import com.travel.app.presentation.components.auth.TravelTextField
 
 @Composable
 fun ViaggiatoreFields(

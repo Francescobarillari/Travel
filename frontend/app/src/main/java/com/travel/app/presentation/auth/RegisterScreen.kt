@@ -1,8 +1,6 @@
 package com.travel.app.presentation.auth
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
+import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -27,9 +25,9 @@ import androidx.compose.ui.unit.dp
 import com.travel.app.R
 import com.travel.app.data.repository.UserRepositoryImpl
 import com.travel.app.domain.model.User
-import com.travel.app.presentation.components.ErrorBanner
-import com.travel.app.presentation.components.PasswordField
-import com.travel.app.presentation.components.TravelTextField
+import com.travel.app.presentation.components.auth.ErrorBanner
+import com.travel.app.presentation.components.auth.PasswordField
+import com.travel.app.presentation.components.auth.TravelTextField
 import com.travel.app.presentation.theme.*
 import com.travel.app.service.ApiService
 
@@ -79,24 +77,29 @@ fun RegisterScreen(
 
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
-                    //Campi per VIAGGIATORE
-                    AnimatedVisibility(visible = viewModel.registerUserType == UserType.VIAGGIATORE, enter = fadeIn(), exit = fadeOut()) {
-                        ViaggiatoreFields(
-                            firstName = viewModel.registerFirstName,
-                            onFirstNameChange = { viewModel.registerFirstName = it },
-                            lastName = viewModel.registerLastName,
-                            onLastNameChange = { viewModel.registerLastName = it },
-                        )
-                    }
-
-                    //cmpi SOCIETÀ
-                    AnimatedVisibility(visible = viewModel.registerUserType == UserType.SOCIETA, enter = fadeIn(), exit = fadeOut()) {
-                        SocietaFields(
-                            companyName = viewModel.registerCompanyName,
-                            onCompanyNameChange = { viewModel.registerCompanyName = it },
-                            vatNumber = viewModel.registerVatNumber,
-                            onVatNumberChange = { viewModel.registerVatNumber = it },
-                        )
+                    // Transizione fluida dei campi senza sbalzi di altezza
+                    Crossfade(
+                        targetState = viewModel.registerUserType,
+                        label = "UserTypeFieldsTransition"
+                    ) { userType ->
+                        when (userType) {
+                            UserType.VIAGGIATORE -> {
+                                ViaggiatoreFields(
+                                    firstName = viewModel.registerFirstName,
+                                    onFirstNameChange = { viewModel.registerFirstName = it },
+                                    lastName = viewModel.registerLastName,
+                                    onLastNameChange = { viewModel.registerLastName = it },
+                                )
+                            }
+                            UserType.SOCIETA -> {
+                                SocietaFields(
+                                    companyName = viewModel.registerCompanyName,
+                                    onCompanyNameChange = { viewModel.registerCompanyName = it },
+                                    vatNumber = viewModel.registerVatNumber,
+                                    onVatNumberChange = { viewModel.registerVatNumber = it },
+                                )
+                            }
+                        }
                     }
 
                     // Campi in comune

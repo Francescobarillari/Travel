@@ -8,7 +8,7 @@ import androidx.compose.material.icons.filled.Business
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import com.travel.app.presentation.components.TravelTextField
+import com.travel.app.presentation.components.auth.TravelTextField
 
 @Composable
 fun SocietaFields(

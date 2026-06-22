@@ -23,9 +23,9 @@ import androidx.compose.ui.unit.dp
 import com.travel.app.R
 import com.travel.app.data.repository.UserRepositoryImpl
 import com.travel.app.domain.model.User
-import com.travel.app.presentation.components.ErrorBanner
-import com.travel.app.presentation.components.PasswordField
-import com.travel.app.presentation.components.TravelTextField
+import com.travel.app.presentation.components.auth.ErrorBanner
+import com.travel.app.presentation.components.auth.PasswordField
+import com.travel.app.presentation.components.auth.TravelTextField
 import com.travel.app.presentation.theme.*
 import com.travel.app.service.ApiService
 

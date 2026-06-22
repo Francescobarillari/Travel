@@ -1,4 +1,4 @@
-package com.travel.app.presentation.components
+package com.travel.app.presentation.components.auth
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -47,7 +47,7 @@ fun PasswordField(
         },
         visualTransformation = if (visible) VisualTransformation.None else PasswordVisualTransformation(),
         modifier = modifier.fillMaxWidth(),
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(16.dp),
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
         singleLine = true,
         colors = OutlinedTextFieldDefaults.colors(

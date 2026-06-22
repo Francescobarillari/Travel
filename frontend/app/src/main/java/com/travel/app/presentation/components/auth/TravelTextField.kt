@@ -1,4 +1,4 @@
-package com.travel.app.presentation.components
+package com.travel.app.presentation.components.auth
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
