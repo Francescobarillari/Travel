@@ -11,6 +11,8 @@ import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Getter
@@ -36,11 +38,33 @@ public class User {
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
-    @Column(name = "first_name", nullable = false, length = 100)
+    @Enumerated(EnumType.STRING)
+    @Column(name = "user_type", nullable = false, length = 50)
+    private UserType userType = UserType.VIAGGIATORE;
+
+    @Column(name = "first_name", length = 100)
     private String firstName;
 
-    @Column(name = "last_name", nullable = false, length = 100)
+    @Column(name = "last_name", length = 100)
     private String lastName;
+
+    @Column(name = "company_name", length = 150)
+    private String companyName;
+
+    @Column(name = "vat_number", length = 50)
+    private String vatNumber;
+
+    // Foto dei documenti di identità della società (fronte/retro ecc.)
+    @ElementCollection
+    @CollectionTable(
+        name = "company_document_photos",
+        joinColumns = @JoinColumn(name = "user_id")
+    )
+    @Column(name = "photo_url", length = 500, nullable = false)
+    private List<String> documentPhotos = new ArrayList<>();
+
+    @Column(name = "phone", length = 30)
+    private String phone;
 
     @Column(name = "avatar_url", length = 500)
     private String avatarUrl;
@@ -72,10 +96,16 @@ public class User {
  * ├── id (PK, UUID)
  * ├── email (UNIQUE)
  * ├── password_hash
- * ├── first_name, last_name
+ * ├── user_type (VIAGGIATORE | SOCIETA)
+ * ├── first_name, last_name       (nullable, solo VIAGGIATORE)
+ * ├── company_name, vat_number    (nullable, solo SOCIETA)
  * ├── phone (nullable)
  * ├── avatar_url (nullable)
  * ├── email_verified (boolean)
  * ├── created_at, updated_at
  * └── deleted_at (nullable, soft delete)
+ *
+ * company_document_photos
+ * ├── user_id (FK → users.id)
+ * └── photo_url
  */

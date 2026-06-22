@@ -14,6 +14,7 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 
 import it.unical.ea.Travel.DTOs.authDto.SignupRequest;
+import it.unical.ea.Travel.Entities.user.UserType;
 
 @Service
 public class KeycloakAdminService {
@@ -44,11 +45,21 @@ public class KeycloakAdminService {
     public String createUser(SignupRequest request) {
         String token = getAdminAccessToken();
 
+        String firstName = "";
+        String lastName = "";
+        if (request.getUserType() == UserType.VIAGGIATORE) {
+            firstName = request.getFirstName() != null ? request.getFirstName() : "";
+            lastName = request.getLastName() != null ? request.getLastName() : "";
+        } else if (request.getUserType() == UserType.SOCIETA) {
+            firstName = "Società";
+            lastName = request.getCompanyName() != null ? request.getCompanyName() : "";
+        }
+
         Map<String, Object> userRepresentation = Map.of(
                 "username", request.getEmail(),
                 "email", request.getEmail(),
-                "firstName", request.getFirstName(),
-                "lastName", request.getLastName(),
+                "firstName", firstName,
+                "lastName", lastName,
                 "enabled", true,
                 "emailVerified", false,
                 "requiredActions", List.of(),
