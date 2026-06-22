@@ -137,8 +137,8 @@ fun RegisterScreen(
 @Composable
 fun RegisterScreenPreview() {
     val mockApiService = object : ApiService {
-        override suspend fun login(request: com.travel.app.data.dto.LoginRequestDto) = "mock_token"
-        override suspend fun register(request: com.travel.app.data.dto.SignUpRequestDto) = "mock_user_id"
+        override suspend fun login(request: com.travel.app.data.dto.LoginRequest) = "mock_token"
+        override suspend fun register(request: com.travel.app.data.dto.SignupRequest) = "mock_user_id"
     }
     TravelTheme {
         RegisterScreen(

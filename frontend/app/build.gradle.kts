@@ -96,8 +96,8 @@ dependencies {
 
 openApiGenerate {
     generatorName.set("kotlin")
-    inputSpec.set("$projectDir/specs/openapi.json")
-    outputDir.set("$buildDir/generated/openapi")
+    inputSpec.set(file("specs/openapi.json").absolutePath.replace('\\', '/'))
+    outputDir.set(file("$buildDir/generated/openapi").absolutePath.replace('\\', '/'))
     apiPackage.set("com.travel.app.api")
     modelPackage.set("com.travel.app.data.dto")
     configOptions.set(mapOf(

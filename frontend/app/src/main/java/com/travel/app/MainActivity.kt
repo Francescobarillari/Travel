@@ -15,37 +15,11 @@ import com.travel.app.presentation.theme.TravelTheme
 import com.travel.app.service.ApiService
 
 class MainActivity : ComponentActivity() {
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             TravelTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    var currentScreen by remember { mutableStateOf(Screen.LOGIN) }
-
-                    when (currentScreen) {
-                        Screen.LOGIN -> {
-                            LoginScreen(
-                                viewModel = authViewModel,
-                                onNavigateToRegister = { currentScreen = Screen.REGISTER },
-                                onLoginSuccess = { currentScreen = Screen.HOME }
-                            )
-                        }
-                        Screen.REGISTER -> {
-                            RegisterScreen(
-                                viewModel = authViewModel,
-                                onNavigateToLogin = { currentScreen = Screen.LOGIN },
-                                onRegisterSuccess = { currentScreen = Screen.HOME }
-                            )
-                        }
-                        Screen.HOME -> {
-                            HomeScreen()
-                        }
-                    }
-                }
+                TravelApp()
             }
         }
     }
@@ -55,8 +29,8 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun LoginScreenPreview() {
     val mockApiService = object : ApiService {
-        override suspend fun login(request: com.travel.app.data.dto.LoginRequestDto) = "mock_token"
-        override suspend fun register(request: com.travel.app.data.dto.SignUpRequestDto) = "mock_user_id"
+        override suspend fun login(request: com.travel.app.data.dto.LoginRequest) = "mock_token"
+        override suspend fun register(request: com.travel.app.data.dto.SignupRequest) = "mock_user_id"
     }
     val mockRepo = UserRepositoryImpl(mockApiService)
     val mockViewModel = AuthViewModel(mockRepo)

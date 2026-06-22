@@ -3,7 +3,7 @@ package com.travel.app.data.repository
 import com.google.gson.Gson
 import com.travel.app.data.dto.ErrorResponseDto
 import com.travel.app.data.dto.LoginRequest
-import com.travel.app.data.dto.SignUpRequestDto // <-- IMPORT CORRETTO
+import com.travel.app.data.dto.SignupRequest
 import com.travel.app.domain.model.User
 import com.travel.app.domain.repository.UserRepository
 import com.travel.app.service.ApiService
@@ -38,10 +38,10 @@ class UserRepositoryImpl(
     ): Result<User> {
         return try {
             apiService.register(
-                SignUpRequestDto(
-                    email = email,           // <-- AGGIUNTO
-                    password = password,     // <-- AGGIUNTO
-                    userType = "VIAGGIATORE",// <-- AGGIUNTO (presumo sia questo il valore atteso dal DB)
+                SignupRequest(
+                    email = email,
+                    password = password,
+                    userType = SignupRequest.UserType.vIAGGIATORE,
                     firstName = firstName,
                     lastName = lastName,
                     phone = phone
@@ -62,10 +62,10 @@ class UserRepositoryImpl(
     ): Result<User> {
         return try {
             apiService.register(
-                SignUpRequestDto(
+                SignupRequest(
                     email = email,
                     password = password,
-                    userType = "SOCIETA",
+                    userType = SignupRequest.UserType.sOCIETA,
                     companyName = companyName,
                     vatNumber = vatNumber,
                     phone = phone
