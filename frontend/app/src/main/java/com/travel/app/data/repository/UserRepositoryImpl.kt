@@ -27,22 +27,49 @@ class UserRepositoryImpl(
         }
     }
 
-    override suspend fun register(
+    override suspend fun registerViaggiatoreUser(
         email: String,
         firstName: String,
         lastName: String,
-        password: String
+        password: String,
+        phone: String?
     ): Result<User> {
         return try {
             apiService.register(
                 SignUpRequestDto(
+                    email = email,
+                    password = password,
+                    userType = "VIAGGIATORE",
                     firstName = firstName,
                     lastName = lastName,
-                    email = email,
-                    password = password
+                    phone = phone
                 )
             )
             Result.success(User(email = email, username = "$firstName $lastName"))
+        } catch (e: Exception) {
+            Result.failure(Exception(handleError(e)))
+        }
+    }
+
+    override suspend fun registerSocietaUser(
+        email: String,
+        companyName: String,
+        vatNumber: String,
+        password: String,
+        phone: String?
+    ): Result<User> {
+        return try {
+            apiService.register(
+                SignUpRequestDto(
+                    email = email,
+                    password = password,
+                    userType = "SOCIETA",
+                    companyName = companyName,
+                    vatNumber = vatNumber,
+                    phone = phone
+                )
+            )
+            Result.success(User(email = email, username = companyName))
         } catch (e: Exception) {
             Result.failure(Exception(handleError(e)))
         }
@@ -53,11 +80,9 @@ class UserRepositoryImpl(
             is HttpException -> {
                 val errorBody = e.response()?.errorBody()?.string()
                 try {
-                    // Prova a leggere il messaggio dal campo "error" del JSON
                     val errorDto = Gson().fromJson(errorBody, ErrorResponseDto::class.java)
                     errorDto.error ?: "Errore del server (${e.code()})"
                 } catch (parseException: Exception) {
-                    // Fallback se il JSON non è nel formato atteso
                     when (e.code()) {
                         401 -> "Credenziali non valide"
                         409 -> "Utente già esistente"
