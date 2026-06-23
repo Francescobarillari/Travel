@@ -1,7 +1,6 @@
 package it.unical.ea.Travel.Controllers.itinerary;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -25,6 +24,7 @@ import lombok.RequiredArgsConstructor;
 public class ItineraryController {
 
     private final ItineraryService itineraryService;
+    private final ItineraryMapper itineraryMapper;
 
     @PostMapping
     public ItineraryDto saveItinerary(@Valid @RequestBody CreateItineraryRequest request) {
@@ -40,27 +40,27 @@ public class ItineraryController {
                 request.getActivityIds()
         );
 
-        return ItineraryMapper.toDTO(savedItinerary);
+        return itineraryMapper.toDTO(savedItinerary);
     }
 
     @GetMapping("/{stringId}")
     public ItineraryDto getItinerary(@PathVariable String stringId) {
         Itinerary itinerary = itineraryService.getItinerary(stringId);
-        return ItineraryMapper.toDTO(itinerary);
+        return itineraryMapper.toDTO(itinerary);
     }
 
     @GetMapping
     public List<ItineraryDto> getItineraries() {
         return itineraryService.getAllItineraries().stream()
-                .map(ItineraryMapper::toDTO)
-                .collect(Collectors.toList());
+                .map(itineraryMapper::toDTO)
+                .toList();
     }
 
     @GetMapping("/creator/{creatorId}")
     public List<ItineraryDto> getItinerariesByCreator(@PathVariable String creatorId) {
         return itineraryService.getItinerariesByCreator(creatorId).stream()
-                .map(ItineraryMapper::toDTO)
-                .collect(Collectors.toList());
+                .map(itineraryMapper::toDTO)
+                .toList();
     }
 
     @DeleteMapping("/{stringId}")

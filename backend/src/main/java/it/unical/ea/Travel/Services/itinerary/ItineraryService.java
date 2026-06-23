@@ -3,10 +3,12 @@ package it.unical.ea.Travel.Services.itinerary;
 import it.unical.ea.Travel.Entities.activity.Activity;
 import it.unical.ea.Travel.Entities.itinerary.Itinerary;
 import it.unical.ea.Travel.Entities.user.User;
+import it.unical.ea.Travel.Exception.ApiException;
 import it.unical.ea.Travel.Repositories.activity.ActivityRepository;
 import it.unical.ea.Travel.Repositories.itinerary.ItineraryRepository;
 import it.unical.ea.Travel.Repositories.user.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -37,7 +39,7 @@ public class ItineraryService {
     public Itinerary getItinerary(String stringId) {
         UUID uuid = UUID.fromString(stringId);
         return itineraryRepository.findById(uuid)
-                .orElseThrow(() -> new RuntimeException("Itinerario non trovato con ID: " + stringId));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "itinerary.notFound"));
     }
 
     // Cerca gli itinerari creati da un utente specifico
@@ -51,7 +53,7 @@ public class ItineraryService {
         // Risolve il creatore
         UUID creatorId = UUID.fromString(creatorStringId);
         User creator = userRepository.findById(creatorId)
-                .orElseThrow(() -> new RuntimeException("Utente non trovato con ID: " + creatorStringId));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "user.notFound"));
         itinerary.setCreator(creator);
 
         // Risolve le activity (se presenti)

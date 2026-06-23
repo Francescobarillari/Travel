@@ -22,7 +22,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @RequestMapping("/activity")
 public class ActivityController {
-    
+
     private final ActivityService activityService;
 
     @PostMapping
