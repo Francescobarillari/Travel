@@ -49,7 +49,8 @@ services:
     working_dir: /app
     volumes:
       - ./backend:/app                
-      - maven_cache:/root/.m2    
+      - maven_cache:/root/.m2
+      - uploads_data:/app/uploads
     command: mvn -Dmaven.test.skip=true spring-boot:run
     
     ports:
@@ -63,6 +64,7 @@ services:
         condition: service_completed_successfully
     environment:
       - SPRING_PROFILES_ACTIVE=dev
+      - UPLOAD_DIR=/app/uploads
       - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/my_project_db
       - SPRING_DATASOURCE_USERNAME=myuser
       - SPRING_DATASOURCE_PASSWORD=mypassword
@@ -80,3 +82,4 @@ services:
 volumes:
   postgres_data:
   maven_cache: # Dichiariamo il volume per la cache di Maven
+  uploads_data: # Volume per le immagini caricate

@@ -63,6 +63,9 @@ public class Itinerary {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
+    @Column(name = "image_path", length = 500)
+    private String imagePath;
+
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 

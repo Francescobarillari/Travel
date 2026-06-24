@@ -3,6 +3,9 @@ package it.unical.ea.Travel.Controllers.activity;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Schema;
+
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -33,7 +36,7 @@ public class ActivityController {
     }
 
     @GetMapping("/{stringId}")
-    public ActivityDto getActivity(@PathVariable String stringId) {
+    public ActivityDto getActivity(@Parameter(schema = @Schema(format = "uuid")) @PathVariable String stringId) {
         Activity activity = activityService.getActivity(stringId);
         return ActivityMapper.toDTO(activity);
     }
@@ -46,7 +49,7 @@ public class ActivityController {
     }
 
     @DeleteMapping("/{stringId}")
-    public void deleteActivity(@PathVariable String stringId) {
+    public void deleteActivity(@Parameter(schema = @Schema(format = "uuid")) @PathVariable String stringId) {
         activityService.deleteActivity(stringId);
     }
 }

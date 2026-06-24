@@ -1,6 +1,7 @@
 package it.unical.ea.Travel.DTOs.authDto;
 
 import it.unical.ea.Travel.Entities.user.UserType;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,6 +14,7 @@ public class SignupRequest {
 
     @NotBlank(message = "{validation.email.notBlank}")
     @Email(message = "{validation.email.invalid}")
+    @Schema(format = "email", example = "user@example.com")
     private String email;
 
     @NotBlank(message = "{validation.password.notBlank}")
@@ -21,6 +23,7 @@ public class SignupRequest {
         regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).*$",
         message = "{validation.password.pattern}"
     )
+    @Schema(format = "password", example = "Password1")
     private String password;
 
     @NotNull(message = "Il tipo utente è obbligatorio")
@@ -44,6 +47,7 @@ public class SignupRequest {
 
     // Campi comuni
     @Size(max = 30, message = "Il numero di telefono non può superare i 30 caratteri")
+    @Schema(format = "phone", example = "+39 333 1234567")
     private String phone;
 }
 

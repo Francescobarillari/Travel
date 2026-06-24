@@ -17,6 +17,7 @@ public interface ItineraryMapper {
 
     @Mapping(target = "creatorId", source = "creator.id")
     @Mapping(target = "activities", source = "activities", qualifiedByName = "mapActivities")
+    @Mapping(target = "imageUrl", ignore = true)
     ItineraryDto toDTO(Itinerary itinerary);
 
     @Mapping(target = "id", source = "dto.id")
@@ -29,6 +30,7 @@ public interface ItineraryMapper {
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "deletedAt", ignore = true)
+    @Mapping(target = "imagePath", ignore = true)
     Itinerary toEntity(ItineraryDto dto, User creator, List<Activity> activities);
 
     @Named("mapActivities")

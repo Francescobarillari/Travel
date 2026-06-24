@@ -2,6 +2,9 @@ package it.unical.ea.Travel.Controllers.user;
 
 import java.util.List;
 
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Schema;
+
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -35,7 +38,7 @@ public class UserController {
     }
 
     @GetMapping("/{stringId}")
-    public UserDTO getUser(@PathVariable String stringId){
+    public UserDTO getUser(@Parameter(schema = @Schema(format = "uuid")) @PathVariable String stringId){
         User user = userService.getUser(stringId);
         return userMapper.toDTO(user);
     }
@@ -66,7 +69,7 @@ public class UserController {
     }
 
     @DeleteMapping("/{stringId}")
-    public void deleteUser(@PathVariable String stringId){
+    public void deleteUser(@Parameter(schema = @Schema(format = "uuid")) @PathVariable String stringId){
         userService.deleteUser(stringId);
     }
 }
