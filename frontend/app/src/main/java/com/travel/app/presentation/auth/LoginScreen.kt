@@ -112,10 +112,12 @@ fun LoginScreenPreview() {
     val mockApiService = object : ApiService {
         override suspend fun login(request: com.travel.app.data.dto.LoginRequest) = "mock_token"
         override suspend fun register(request: com.travel.app.data.dto.SignupRequest) = "mock_user_id"
+        override suspend fun getMe() = com.travel.app.data.dto.UserDTO(email = "test@travel.com")
+        override suspend fun updateMe(request: com.travel.app.data.dto.UserDTO) = request
     }
     TravelTheme {
         LoginScreen(
-            viewModel = AuthViewModel(UserRepositoryImpl(mockApiService)),
+            viewModel = AuthViewModel(UserRepositoryImpl(mockApiService) { error("Not used in preview") }),
             onNavigateToRegister = {},
             onLoginSuccess = {}
         )

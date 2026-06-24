@@ -12,6 +12,7 @@ public interface UserMapper {
 
     // Usiamo source = "." per passare l'intero oggetto User al metodo custom
     @Mapping(target = "fullName", source = ".", qualifiedByName = "mapFullName")
+    @Mapping(target = "password", ignore = true)
     UserDTO toDTO(User user);
 
     @Named("mapFullName")

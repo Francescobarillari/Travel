@@ -15,12 +15,26 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.travel.app.domain.model.User
+import com.travel.app.data.AppContainer
+import com.travel.app.presentation.menu.MenuScreen
+import com.travel.app.presentation.profile.ProfileScreen
 import com.travel.app.presentation.components.home.FloatingBottomNavBar
 import com.travel.app.presentation.theme.TravelTheme
 
 @Composable
-fun HomeScreen() {
+fun HomeScreen(user: User? = null, onLogout: () -> Unit = {}) {
     var selectedTab by remember { mutableStateOf(HomeTab.ESPLORA) }
+    var currentUser by remember(user) { 
+        mutableStateOf(user ?: User(
+            email = "johnkinggraphics@gmail.com", 
+            username = "johnkinggraphics", 
+            userType = "VIAGGIATORE",
+            phone = "6895312",
+            name = "Charlotte king",
+            password = "password123"
+        )) 
+    }
 
     Box(
         modifier = Modifier
@@ -31,7 +45,34 @@ fun HomeScreen() {
         when (selectedTab) {
             HomeTab.ESPLORA -> EsploraScreen()
             HomeTab.PREFERITI -> SimplePlaceholderScreen(title = "Preferiti")
-            HomeTab.PROFILO -> SimplePlaceholderScreen(title = "Profilo")
+            HomeTab.PROFILO -> {
+                val userRepository = AppContainer.userRepository
+                val isMockUser = currentUser?.email in listOf("test@travel.com", "societa@travel.com", "johnkinggraphics@gmail.com")
+                ProfileScreen(
+                    user = currentUser,
+                    onBack = { selectedTab = HomeTab.MENU },
+                    onSave = { updatedUser ->
+                        if (isMockUser) {
+                            currentUser = updatedUser
+                            selectedTab = HomeTab.MENU
+                            Result.success(updatedUser)
+                        } else {
+                            val result = userRepository.updateMe(updatedUser)
+                            result.onSuccess { savedUser ->
+                                currentUser = savedUser
+                                selectedTab = HomeTab.MENU
+                            }
+                            result
+                        }
+                    }
+                )
+            }
+            HomeTab.MENU -> MenuScreen(
+                user = currentUser,
+                onBack = { selectedTab = HomeTab.ESPLORA },
+                onNavigateToProfile = { selectedTab = HomeTab.PROFILO },
+                onLogout = onLogout
+            )
         }
 
 

@@ -7,6 +7,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
@@ -61,10 +62,10 @@ fun FloatingBottomNavBar(
                 modifier = Modifier.weight(1f)
             )
             HomeTabItem(
-                icon = Icons.Default.Person,
-                label = "Profilo",
-                isSelected = selectedTab == HomeTab.PROFILO,
-                onClick = { onTabSelected(HomeTab.PROFILO) },
+                icon = Icons.Default.Menu,
+                label = "Menù",
+                isSelected = selectedTab == HomeTab.MENU,
+                onClick = { onTabSelected(HomeTab.MENU) },
                 modifier = Modifier.weight(1f)
             )
         }

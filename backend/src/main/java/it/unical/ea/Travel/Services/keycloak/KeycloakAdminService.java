@@ -102,6 +102,63 @@ public class KeycloakAdminService {
         }
     }
 
+    public void updateUserPassword(String email, String newPassword) {
+        if (newPassword == null || newPassword.isBlank()) {
+            return;
+        }
+
+        String token = getAdminAccessToken();
+
+        try {
+            // 1. Cerca l'utente per email
+            List<?> users = restClient.get()
+                    .uri("/admin/realms/{realm}/users?email={email}", realm, email)
+                    .header("Authorization", "Bearer " + token)
+                    .retrieve()
+                    .body(List.class);
+
+            if (users == null || users.isEmpty()) {
+                throw new IllegalStateException("Utente non trovato in Keycloak: " + email);
+            }
+
+            // Sicurezza extra: verifica corrispondenza esatta dell'email per evitare fuzzy matching
+            Map<?, ?> matchingUser = null;
+            for (Object obj : users) {
+                if (obj instanceof Map<?, ?> uMap) {
+                    if (email.equalsIgnoreCase((String) uMap.get("email"))) {
+                        matchingUser = uMap;
+                        break;
+                    }
+                }
+            }
+
+            if (matchingUser == null) {
+                throw new IllegalStateException("Nessun utente con email corrispondente esatta trovato in Keycloak: " + email);
+            }
+
+            String userId = (String) matchingUser.get("id");
+            if (userId == null || userId.isBlank()) {
+                throw new IllegalStateException("ID utente Keycloak nullo o non valido");
+            }
+
+            // 2. Esegui il reset della password in Keycloak
+            Map<String, Object> credential = Map.of(
+                    "type", "password",
+                    "value", newPassword,
+                    "temporary", false
+            );
+
+            restClient.put()
+                    .uri("/admin/realms/{realm}/users/{userId}/reset-password", realm, userId)
+                    .header("Authorization", "Bearer " + token)
+                    .body(credential)
+                    .retrieve()
+                    .toBodilessEntity();
+        } catch (Exception e) {
+            throw new RuntimeException("Errore durante l'aggiornamento della password in Keycloak", e);
+        }
+    }
+
     private String getAdminAccessToken() {
         MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
         body.add("grant_type", "client_credentials");
