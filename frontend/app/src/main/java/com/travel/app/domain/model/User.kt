@@ -24,7 +24,8 @@ fun User.toDto(): UserDTO {
         firstName = if (!isSocieta) fName else null,
         lastName = if (!isSocieta) lName else null,
         companyName = if (isSocieta) name else null,
-        fullName = name
+        fullName = name,
+        password = password
     )
 }
 
