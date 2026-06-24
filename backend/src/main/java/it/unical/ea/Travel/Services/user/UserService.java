@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import it.unical.ea.Travel.DTOs.authDto.SignupRequest;
+import it.unical.ea.Travel.DTOs.user.UserDTO;
 import it.unical.ea.Travel.Entities.user.User;
 import it.unical.ea.Travel.Exception.ApiException;
 import it.unical.ea.Travel.Repositories.user.UserRepository;
@@ -87,8 +88,51 @@ public class UserService {
         return userRepository.findAll();
     }
 
-    public void updateUser(){
-        return; //da implementare
+    public User getUserByEmail(String email) {
+        return userRepository.getUserByEmail(email).orElseThrow(
+            () -> new ApiException(HttpStatus.NOT_FOUND, "user.notFound")
+        );
+    }
+
+    @Transactional
+    public User updateUser(String email, UserDTO userDto) {
+        User user = userRepository.getUserByEmail(email).orElseThrow(
+            () -> new ApiException(HttpStatus.NOT_FOUND, "user.notFound")
+        );
+
+        // Validazione sicurezza/business: aggiorna solo i campi adatti al tipo di utente
+        if (user.getUserType() == UserType.VIAGGIATORE) {
+            if (userDto.getFirstName() != null && !userDto.getFirstName().strip().isEmpty()) {
+                user.setFirstName(userDto.getFirstName());
+            }
+            if (userDto.getLastName() != null && !userDto.getLastName().strip().isEmpty()) {
+                user.setLastName(userDto.getLastName());
+            }
+        } else if (user.getUserType() == UserType.SOCIETA) {
+            if (userDto.getCompanyName() != null && !userDto.getCompanyName().strip().isEmpty()) {
+                user.setCompanyName(userDto.getCompanyName());
+            }
+            if (userDto.getVatNumber() != null && !userDto.getVatNumber().strip().isEmpty()) {
+                user.setVatNumber(userDto.getVatNumber());
+            }
+        }
+
+        // Aggiorna telefono se presente
+        if (userDto.getPhone() != null) {
+            user.setPhone(userDto.getPhone().strip().isEmpty() ? null : userDto.getPhone());
+        }
+
+        // Se è specificata una nuova password, validala e aggiornala in Keycloak
+        if (userDto.getPassword() != null && !userDto.getPassword().strip().isEmpty()) {
+            String pwd = userDto.getPassword();
+            // Controllo robustezza password (min 8 caratteri, una maiuscola, una minuscola, un numero)
+            if (pwd.length() < 8 || !pwd.matches("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).*$")) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "Password non conforme ai criteri di sicurezza");
+            }
+            keycloakAdminService.updateUserPassword(email, pwd);
+        }
+
+        return userRepository.save(user);
     }
 
     public void deleteUser(String stringId){

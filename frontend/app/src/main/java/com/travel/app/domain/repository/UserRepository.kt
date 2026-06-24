@@ -18,4 +18,11 @@ interface UserRepository {
         password: String,
         phone: String? = null
     ): Result<User>
+
+    fun getSessionUser(): User?
+    fun saveSession(user: User, token: String)
+    fun logout()
+
+    suspend fun getMe(): Result<User>
+    suspend fun updateMe(user: User): Result<User>
 }

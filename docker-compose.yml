@@ -14,7 +14,7 @@ services:
   keycloak:
     image: quay.io/keycloak/keycloak:latest
     container_name: keycloak
-    command: start-dev --import-realm --hostname=http://localhost:8081 --hostname-backchannel-dynamic=true
+    command: start-dev --import-realm --hostname=http://${HOST_IP}:8081 --hostname-backchannel-dynamic=true
     depends_on:
       - db
     environment:

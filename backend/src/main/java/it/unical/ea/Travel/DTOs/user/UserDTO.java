@@ -22,4 +22,5 @@ public class UserDTO {
     private List<String> documentPhotos = new ArrayList<>();
     private String phone;
     private String fullName;
+    private String password;
 }
