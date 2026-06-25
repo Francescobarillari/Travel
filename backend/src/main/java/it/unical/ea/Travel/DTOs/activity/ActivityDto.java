@@ -18,5 +18,6 @@ public class ActivityDto {
     private String title;
     @Schema(example = "Tour guidato del Colosseo e del Foro Romano")
     private String description;
+    @Schema(type = "string", format = "date-time", example = "2025-06-25T10:30:00")
     private LocalDateTime createdAt;
 }

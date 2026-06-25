@@ -27,22 +27,28 @@ public class SignupRequest {
     private String password;
 
     @NotNull(message = "Il tipo utente è obbligatorio")
+    @Schema(example = "VIAGGIATORE", description = "Tipo utente: VIAGGIATORE o SOCIETA")
     private UserType userType;
 
     // Campi specifici per Viaggiatore
     @Size(max = 100, message = "{validation.firstName.maxSize}")
+    @Schema(example = "Mario")
     private String firstName;
 
     @Size(max = 100, message = "{validation.lastName.maxSize}")
+    @Schema(example = "Rossi")
     private String lastName;
 
     // Campi specifici per Società
     @Size(max = 150, message = "Il nome dell'azienda non può superare i 150 caratteri")
+    @Schema(example = "Viaggi S.r.l.")
     private String companyName;
 
     @Size(max = 50, message = "La Partita IVA non può superare i 50 caratteri")
+    @Schema(example = "IT12345678901", description = "Partita IVA (solo per SOCIETA)")
     private String vatNumber;
 
+    @Schema(description = "URL delle foto dei documenti")
     private List<String> documentPhotos = new ArrayList<>();
 
     // Campi comuni
