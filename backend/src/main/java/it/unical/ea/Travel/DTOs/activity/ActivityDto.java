@@ -16,12 +16,5 @@ public class ActivityDto {
     private UUID id;
     private String name;
     private String description;
-    private String location;
-    private LocalDateTime startTime;
-    private LocalDateTime endTime;
-    private Integer participants;
-    private BigDecimal price;
-    private String organizer;
-    private List<String> images;
     private LocalDateTime createdAt;
 }
