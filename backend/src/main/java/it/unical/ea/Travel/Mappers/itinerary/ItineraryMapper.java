@@ -1,6 +1,5 @@
 package it.unical.ea.Travel.Mappers.itinerary;
 
-import it.unical.ea.Travel.DTOs.activity.ActivityDto;
 import it.unical.ea.Travel.DTOs.itinerary.ItineraryDto;
 import it.unical.ea.Travel.Entities.activity.Activity;
 import it.unical.ea.Travel.Entities.itinerary.Itinerary;
@@ -8,15 +7,13 @@ import it.unical.ea.Travel.Entities.user.User;
 import it.unical.ea.Travel.Mappers.activity.ActivityMapper;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import org.mapstruct.Named;
 
 import java.util.List;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", uses = {ActivityMapper.class})
 public interface ItineraryMapper {
 
     @Mapping(target = "creatorId", source = "creator.id")
-    @Mapping(target = "activities", source = "activities", qualifiedByName = "mapActivities")
     @Mapping(target = "imageUrl", ignore = true)
     ItineraryDto toDTO(Itinerary itinerary);
 
@@ -33,13 +30,4 @@ public interface ItineraryMapper {
     @Mapping(target = "imagePath", ignore = true)
     Itinerary toEntity(ItineraryDto dto, User creator, List<Activity> activities);
 
-    @Named("mapActivities")
-    default List<ActivityDto> mapActivities(List<Activity> activities) {
-        if (activities == null) {
-            return List.of();
-        }
-        return activities.stream()
-                .map(ActivityMapper::toDTO)
-                .toList();
-    }
 }

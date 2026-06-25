@@ -1,43 +1,50 @@
 package it.unical.ea.Travel.Services.activity;
 
+import it.unical.ea.Travel.DTOs.activity.ActivityDto;
 import it.unical.ea.Travel.Entities.activity.Activity;
+import it.unical.ea.Travel.Mappers.activity.ActivityMapper;
 import it.unical.ea.Travel.Repositories.activity.ActivityRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
 public class ActivityService {
 
     private final ActivityRepository activityRepository;
+    private final ActivityMapper activityMapper;
 
-    @Autowired
-    public ActivityService(ActivityRepository activityRepository) {
-        this.activityRepository = activityRepository;
+    public List<ActivityDto> getAllActivities() {
+        List<Activity> activities = activityRepository.findAll();
+        
+        return activityMapper.toDTOList(activities); 
     }
 
-    // Riceve tutte le attività dal database
-    public List<Activity> getAllActivities() {
-        return activityRepository.findAll();
+    public ActivityDto createActivity(ActivityDto activityDto) {
+        
+        Activity activity = activityMapper.toEntity(activityDto);
+        
+        
+        Activity savedActivity = activityRepository.save(activity);
+        
+        
+        return activityMapper.toDTO(savedActivity);
     }
 
-    // Salva una nuova attività nel database
-    public Activity createActivity(Activity activity) {
-        return activityRepository.save(activity);
-    }
-
-    // Cerca una singola attività tramite il suo ID
-    public Activity getActivity(String stringId) {
-        // Converte la stringa ricevuta dal controller in un UUID valido per il database
+    
+    public ActivityDto getActivity(String stringId) {
         UUID uuid = UUID.fromString(stringId);
         
-        return activityRepository.findById(uuid)
+        Activity activity = activityRepository.findById(uuid)
                 .orElseThrow(() -> new RuntimeException("Attività non trovata con ID: " + stringId));
+                
+        return activityMapper.toDTO(activity);
     }
 
-    // Rimuove un'attività (grazie al Soft Delete, imposterà automaticamente deleted_at)
+    
     public void deleteActivity(String stringId) {
         UUID uuid = UUID.fromString(stringId);
         activityRepository.deleteById(uuid);

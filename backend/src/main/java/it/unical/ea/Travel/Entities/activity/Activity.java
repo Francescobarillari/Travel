@@ -9,7 +9,9 @@ import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Getter
@@ -21,19 +23,41 @@ import java.util.UUID;
 @SQLRestriction("deleted_at IS NULL")
 public class Activity {
 
+    
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "id", updatable = false, nullable = false)
     private UUID id;
 
-    @Column(name = "title", nullable = false, length = 150)
-    private String title;
+    @Column(name = "name", nullable = false, length = 150)
+    private String name;
 
     @Column(name = "description", length = 1000)
     private String description;
 
-    // Qui in futuro potrai aggiungere altri campi specifici dell'attività, 
-    // come ad esempio: location, start_date, price, ecc.
+    @Column(name = "location", nullable = false)
+    private String location;
+
+    @Column(name = "start_time", nullable = false)
+    private LocalDateTime startTime;
+
+    @Column(name = "end_time", nullable = false)
+    private LocalDateTime endTime;
+
+    @Column(name = "participants", nullable = false)
+    private Integer participants;
+
+    @Column(name = "price", precision = 10, scale = 2)
+    private BigDecimal price;
+
+    @Column(name = "organizer")
+    private String organizer;
+
+    @ElementCollection
+    @CollectionTable(name = "activity_images", joinColumns = @JoinColumn(name = "activity_id"))
+    @Column(name = "image_url")
+    private List<String> images;
+
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -50,12 +74,3 @@ public class Activity {
         return deletedAt != null;
     }
 }
-
-/*
- * activities
- * ├── id (PK, UUID)
- * ├── title
- * ├── description (nullable)
- * ├── created_at, updated_at
- * └── deleted_at (nullable, soft delete)
- */

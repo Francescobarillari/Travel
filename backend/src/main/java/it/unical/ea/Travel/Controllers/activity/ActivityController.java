@@ -1,7 +1,6 @@
 package it.unical.ea.Travel.Controllers.activity;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -15,8 +14,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import it.unical.ea.Travel.DTOs.activity.ActivityDto;
-import it.unical.ea.Travel.Entities.activity.Activity;
-import it.unical.ea.Travel.Mappers.activity.ActivityMapper;
 import it.unical.ea.Travel.Services.activity.ActivityService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -30,22 +27,20 @@ public class ActivityController {
 
     @PostMapping
     public ActivityDto saveActivity(@Valid @RequestBody ActivityDto request) {
-        Activity activity = ActivityMapper.toEntity(request);
-        Activity savedActivity = activityService.createActivity(activity);
-        return ActivityMapper.toDTO(savedActivity);
+        
+        return activityService.createActivity(request);
     }
 
     @GetMapping("/{stringId}")
     public ActivityDto getActivity(@Parameter(schema = @Schema(format = "uuid")) @PathVariable String stringId) {
-        Activity activity = activityService.getActivity(stringId);
-        return ActivityMapper.toDTO(activity);
+        
+        return activityService.getActivity(stringId);
     }
 
     @GetMapping
     public List<ActivityDto> getActivities() {
-        return activityService.getAllActivities().stream()
-                .map(ActivityMapper::toDTO)
-                .collect(Collectors.toList());
+        
+        return activityService.getAllActivities();
     }
 
     @DeleteMapping("/{stringId}")

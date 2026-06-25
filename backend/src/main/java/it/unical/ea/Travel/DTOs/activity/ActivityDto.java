@@ -1,22 +1,27 @@
 package it.unical.ea.Travel.DTOs.activity;
 
-import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Getter
 @Setter
 @NoArgsConstructor
 public class ActivityDto {
-    @Schema(format = "uuid", example = "550e8400-e29b-41d4-a716-446655440000")
     private UUID id;
-    @Schema(example = "Visita al Colosseo")
-    private String title;
-    @Schema(example = "Tour guidato del Colosseo e del Foro Romano")
+    private String name;
     private String description;
+    private String location;
+    private LocalDateTime startTime;
+    private LocalDateTime endTime;
+    private Integer participants;
+    private BigDecimal price;
+    private String organizer;
+    private List<String> images;
     private LocalDateTime createdAt;
 }
