@@ -32,6 +32,8 @@ public class UserDTO {
     private List<String> documentPhotos = new ArrayList<>();
     @Schema(format = "phone", example = "+39 333 1234567")
     private String phone;
+    @Schema(description = "URL dell'avatar/foto profilo dell'utente")
+    private String avatarUrl;
     @Schema(example = "Mario Rossi", accessMode = Schema.AccessMode.READ_ONLY)
     private String fullName;
     @Schema(format = "password", example = "Password1@", accessMode = Schema.AccessMode.WRITE_ONLY)

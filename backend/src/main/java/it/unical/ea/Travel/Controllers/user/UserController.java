@@ -27,6 +27,15 @@ import it.unical.ea.Travel.Mappers.user.UserMapper;
 import it.unical.ea.Travel.Services.user.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.http.MediaType;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 @RestController
 @RequiredArgsConstructor
@@ -40,21 +49,21 @@ public class UserController {
     @PostMapping
     public UserDTO saveUser(@Valid @RequestBody SignupRequest request) {
         User user = userService.saveUser(request);
-        return userMapper.toDTO(user);
+        return toDTO(user);
     }
 
     @Operation(summary = "Ottieni un utente per ID")
     @GetMapping("/{stringId}")
     public UserDTO getUser(@Parameter(description = "ID dell'utente", schema = @Schema(format = "uuid"), example = "550e8400-e29b-41d4-a716-446655440000") @PathVariable String stringId){
         User user = userService.getUser(stringId);
-        return userMapper.toDTO(user);
+        return toDTO(user);
     }
 
     @Operation(summary = "Ottieni tutti gli utenti")
     @GetMapping
     public List<UserDTO> getUsers() {
         return userService.getUsers().stream()
-                .map(userMapper::toDTO)
+                .map(this::toDTO)
                 .toList();
     }
 
@@ -63,7 +72,7 @@ public class UserController {
     public UserDTO getMe(@AuthenticationPrincipal Jwt jwt) {
         String email = jwt.getClaimAsString("email");
         User user = userService.getUserByEmail(email);
-        UserDTO userDTO = userMapper.toDTO(user);
+        UserDTO userDTO = toDTO(user);
         userDTO.setPassword(null); // Sicurezza extra: Non restituire mai il campo password nelle risposte
         return userDTO;
     }
@@ -73,7 +82,7 @@ public class UserController {
     public UserDTO updateMe(@AuthenticationPrincipal Jwt jwt, @Valid @RequestBody UserDTO userDto) {
         String email = jwt.getClaimAsString("email");
         User updatedUser = userService.updateUser(email, userDto);
-        UserDTO result = userMapper.toDTO(updatedUser);
+        UserDTO result = toDTO(updatedUser);
         result.setPassword(null); // Sicurezza extra: Non restituire mai il campo password nelle risposte
         return result;
     }
@@ -82,5 +91,59 @@ public class UserController {
     @DeleteMapping("/{stringId}")
     public void deleteUser(@Parameter(description = "ID dell'utente", schema = @Schema(format = "uuid"), example = "550e8400-e29b-41d4-a716-446655440000") @PathVariable String stringId){
         userService.deleteUser(stringId);
+    }
+
+    // --- Endpoints Avatar ---
+
+    @Operation(summary = "Carica l'avatar dell'utente", description = "Accetta un file immagine (JPEG, PNG, WebP)")
+    @PostMapping(value = "/{stringId}/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public UserDTO uploadAvatar(
+            @Parameter(description = "ID dell'utente", schema = @Schema(format = "uuid"), example = "550e8400-e29b-41d4-a716-446655440000")
+            @PathVariable String stringId,
+            @RequestPart("file") MultipartFile file) {
+        User updated = userService.uploadAvatar(stringId, file);
+        return toDTO(updated);
+    }
+
+    @Operation(summary = "Scarica l'avatar dell'utente", description = "Restituisce l'avatar inline. Endpoint pubblico.")
+    @GetMapping("/{stringId}/avatar")
+    public ResponseEntity<Resource> getAvatar(
+            @Parameter(description = "ID dell'utente", schema = @Schema(format = "uuid"), example = "550e8400-e29b-41d4-a716-446655440000")
+            @PathVariable String stringId) throws IOException {
+        Resource resource = userService.loadAvatar(stringId);
+
+        String contentType = Files.probeContentType(Path.of(resource.getFilename()));
+        if (contentType == null) {
+            contentType = MediaType.APPLICATION_OCTET_STREAM_VALUE;
+        }
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(contentType))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
+                .body(resource);
+    }
+
+    @Operation(summary = "Elimina l'avatar dell'utente")
+    @DeleteMapping("/{stringId}/avatar")
+    public UserDTO deleteAvatar(
+            @Parameter(description = "ID dell'utente", schema = @Schema(format = "uuid"), example = "550e8400-e29b-41d4-a716-446655440000")
+            @PathVariable String stringId) {
+        User updated = userService.deleteAvatar(stringId);
+        return toDTO(updated);
+    }
+
+    // --- Helpers per arricchire URL ---
+
+    private UserDTO toDTO(User user) {
+        UserDTO dto = userMapper.toDTO(user);
+        if (user.getAvatarUrl() != null) {
+            String avatarUrl = ServletUriComponentsBuilder.fromCurrentContextPath()
+                    .path("/user/")
+                    .path(user.getId().toString())
+                    .path("/avatar")
+                    .toUriString();
+            dto.setAvatarUrl(avatarUrl);
+        }
+        return dto;
     }
 }

@@ -17,11 +17,18 @@ import it.unical.ea.Travel.Services.keycloak.KeycloakAdminService;
 import it.unical.ea.enums.UserType;
 import lombok.RequiredArgsConstructor;
 
+import it.unical.ea.Travel.Services.storage.FileStorageService;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.core.io.Resource;
+
 @RequiredArgsConstructor
 @Service
 public class UserService {
+    private static final String USERS_AVATARS_SUBDIR = "users/avatars";
+
     private final UserRepository userRepository;
     private final KeycloakAdminService keycloakAdminService;
+    private final FileStorageService fileStorageService;
 
     @Transactional
     public User saveUser(SignupRequest request) {
@@ -137,5 +144,45 @@ public class UserService {
     public void deleteUser(String stringId) {
         UUID uuid = UUID.fromString(stringId);
         userRepository.deleteById(uuid);
+    }
+
+    // Carica l'avatar dell'utente
+    @Transactional
+    public User uploadAvatar(String userId, MultipartFile file) {
+        User user = getUser(userId);
+
+        if (user.getAvatarUrl() != null) {
+            fileStorageService.delete(user.getAvatarUrl());
+        }
+
+        String relativePath = fileStorageService.store(file, USERS_AVATARS_SUBDIR);
+        user.setAvatarUrl(relativePath);
+
+        return userRepository.save(user);
+    }
+
+    // Carica la risorsa dell'avatar
+    public Resource loadAvatar(String userId) {
+        User user = getUser(userId);
+
+        if (user.getAvatarUrl() == null) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "user.avatarNotFound");
+        }
+
+        return fileStorageService.load(user.getAvatarUrl());
+    }
+
+    // Elimina l'avatar dell'utente
+    @Transactional
+    public User deleteAvatar(String userId) {
+        User user = getUser(userId);
+
+        if (user.getAvatarUrl() != null) {
+            fileStorageService.delete(user.getAvatarUrl());
+            user.setAvatarUrl(null);
+            return userRepository.save(user);
+        }
+
+        return user;
     }
 }
