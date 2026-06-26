@@ -7,7 +7,7 @@ services:
       POSTGRES_PASSWORD: mypassword
       POSTGRES_DB: my_project_db
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
@@ -51,6 +51,7 @@ services:
       - ./backend:/app
       - ./in_common:/in_common
       - maven_cache:/root/.m2
+      - ./backend/uploads:/app/uploads
     command: >
       sh -c "
         cd /in_common && mvn clean install -DskipTests -q &&
@@ -66,6 +67,8 @@ services:
       keycloak-config:
         condition: service_completed_successfully
     environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - UPLOAD_DIR=/app/uploads
       - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/my_project_db
       - SPRING_DATASOURCE_USERNAME=myuser
       - SPRING_DATASOURCE_PASSWORD=mypassword

@@ -6,6 +6,8 @@ import it.unical.ea.Travel.Services.AuthService;
 import it.unical.ea.Travel.Services.keycloak.KeycloakUserAlreadyExistsException;
 import it.unical.ea.Travel.Exception.ApiException;
 import it.unical.ea.Travel.Services.user.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -23,12 +25,14 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/auth")
+@Tag(name = "Auth", description = "Autenticazione e registrazione utenti")
 public class AuthController {
 
     private final UserService userService;
     private final AuthService authService;
     private final MessageSource messageSource;
 
+    @Operation(summary = "Login utente", description = "Autentica l'utente e restituisce un token JWT")
     @PostMapping("/login")
     public ResponseEntity<String> login(@Valid @RequestBody LoginRequest request) {
         try {
@@ -41,6 +45,7 @@ public class AuthController {
         }
     }
 
+    @Operation(summary = "Registrazione utente", description = "Registra un nuovo utente (Viaggiatore o Società) e lo crea anche su Keycloak")
     @PostMapping("/signup")
     public ResponseEntity<String> signup(@Valid @RequestBody SignupRequest request) {
         try {

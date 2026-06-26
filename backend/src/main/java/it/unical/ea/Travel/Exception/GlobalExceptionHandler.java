@@ -44,6 +44,15 @@ public class GlobalExceptionHandler {
 
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, String>> handleIllegalArgumentException(IllegalArgumentException ex) {
+        String message = ex.getMessage();
+        if (message != null && message.contains("Invalid UUID string")) {
+            return new ResponseEntity<>(Map.of("error", "Formato UUID non valido."), HttpStatus.BAD_REQUEST);
+        }
+        return new ResponseEntity<>(Map.of("error", message != null ? message : "Richiesta non valida."), HttpStatus.BAD_REQUEST);
+    }
     
 }
 

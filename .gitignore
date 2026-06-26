@@ -38,3 +38,6 @@ build/
 .gradle/
 .gradletasknamecache
 !gradle-wrapper.jar
+
+### Uploads ###
+uploads/
