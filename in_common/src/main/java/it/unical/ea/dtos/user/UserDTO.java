@@ -1,6 +1,7 @@
-package it.unical.ea.Travel.DTOs.user;
+package it.unical.ea.dtos.user;
 
-import it.unical.ea.Travel.Entities.user.UserType;
+import it.unical.ea.enums.UserType;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

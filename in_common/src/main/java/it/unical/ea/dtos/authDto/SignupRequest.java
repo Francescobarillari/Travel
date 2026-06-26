@@ -1,6 +1,6 @@
-package it.unical.ea.Travel.DTOs.authDto;
+package it.unical.ea.dtos.authDto;
 
-import it.unical.ea.Travel.Entities.user.UserType;
+import it.unical.ea.enums.UserType;
 import jakarta.validation.constraints.*;
 import java.util.ArrayList;
 import java.util.List;

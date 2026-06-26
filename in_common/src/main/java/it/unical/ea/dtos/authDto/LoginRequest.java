@@ -1,4 +1,4 @@
-package it.unical.ea.Travel.DTOs.authDto;
+package it.unical.ea.dtos.authDto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

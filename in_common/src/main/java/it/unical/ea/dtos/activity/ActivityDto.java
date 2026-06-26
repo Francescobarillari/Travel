@@ -1,4 +1,4 @@
-package it.unical.ea.Travel.DTOs.activity;
+package it.unical.ea.dtos.activity;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;

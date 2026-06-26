@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import it.unical.ea.Travel.DTOs.activity.ActivityDto;
+import it.unical.ea.dtos.activity.ActivityDto;
 import it.unical.ea.Travel.Entities.activity.Activity;
 import it.unical.ea.Travel.Mappers.activity.ActivityMapper;
 import it.unical.ea.Travel.Services.activity.ActivityService;

@@ -1,4 +1,4 @@
-package it.unical.ea.Travel.Entities.user;
+package it.unical.ea.enums;
 
 public enum UserType {
     VIAGGIATORE,

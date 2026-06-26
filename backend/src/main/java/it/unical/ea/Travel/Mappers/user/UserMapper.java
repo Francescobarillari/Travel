@@ -1,8 +1,8 @@
 package it.unical.ea.Travel.Mappers.user;
 
-import it.unical.ea.Travel.DTOs.user.UserDTO;
+import it.unical.ea.dtos.user.UserDTO;
 import it.unical.ea.Travel.Entities.user.User;
-import it.unical.ea.Travel.Entities.user.UserType; // Aggiunto import
+import it.unical.ea.enums.UserType;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.Named;
@@ -20,7 +20,7 @@ public interface UserMapper {
         if (user == null) {
             return null;
         }
-        
+
         // Recuperiamo la logica corretta dal vecchio mapper manuale
         if (user.getUserType() == UserType.SOCIETA) {
             return user.getCompanyName();

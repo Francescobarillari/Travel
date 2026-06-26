@@ -11,7 +11,7 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 
-import it.unical.ea.Travel.DTOs.authDto.LoginRequest;
+import it.unical.ea.dtos.authDto.LoginRequest;
 
 @Service
 public class KeycloakAuthService {

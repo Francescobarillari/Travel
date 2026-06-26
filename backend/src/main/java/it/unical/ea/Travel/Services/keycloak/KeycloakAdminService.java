@@ -13,8 +13,8 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 
-import it.unical.ea.Travel.DTOs.authDto.SignupRequest;
-import it.unical.ea.Travel.Entities.user.UserType;
+import it.unical.ea.dtos.authDto.SignupRequest;
+import it.unical.ea.enums.UserType;
 
 @Service
 public class KeycloakAdminService {
@@ -66,9 +66,7 @@ public class KeycloakAdminService {
                 "credentials", List.of(Map.of(
                         "type", "password",
                         "value", request.getPassword(),
-                        "temporary", false
-                ))
-        );
+                        "temporary", false)));
 
         try {
             ResponseEntity<Void> response = restClient.post()
@@ -121,7 +119,8 @@ public class KeycloakAdminService {
                 throw new IllegalStateException("Utente non trovato in Keycloak: " + email);
             }
 
-            // Sicurezza extra: verifica corrispondenza esatta dell'email per evitare fuzzy matching
+            // Sicurezza extra: verifica corrispondenza esatta dell'email per evitare fuzzy
+            // matching
             Map<?, ?> matchingUser = null;
             for (Object obj : users) {
                 if (obj instanceof Map<?, ?> uMap) {
@@ -133,7 +132,8 @@ public class KeycloakAdminService {
             }
 
             if (matchingUser == null) {
-                throw new IllegalStateException("Nessun utente con email corrispondente esatta trovato in Keycloak: " + email);
+                throw new IllegalStateException(
+                        "Nessun utente con email corrispondente esatta trovato in Keycloak: " + email);
             }
 
             String userId = (String) matchingUser.get("id");
@@ -145,8 +145,7 @@ public class KeycloakAdminService {
             Map<String, Object> credential = Map.of(
                     "type", "password",
                     "value", newPassword,
-                    "temporary", false
-            );
+                    "temporary", false);
 
             restClient.put()
                     .uri("/admin/realms/{realm}/users/{userId}/reset-password", realm, userId)
@@ -188,7 +187,8 @@ public class KeycloakAdminService {
                 .body(Map.class);
 
         restClient.post()
-                .uri("/admin/realms/{realm}/users/{userId}/role-mappings/clients/{clientUuid}", realm, userId, clientUuid)
+                .uri("/admin/realms/{realm}/users/{userId}/role-mappings/clients/{clientUuid}", realm, userId,
+                        clientUuid)
                 .header("Authorization", "Bearer " + token)
                 .body(List.of(role))
                 .retrieve()

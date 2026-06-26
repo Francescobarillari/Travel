@@ -8,13 +8,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import it.unical.ea.Travel.DTOs.authDto.SignupRequest;
-import it.unical.ea.Travel.DTOs.user.UserDTO;
+import it.unical.ea.dtos.authDto.SignupRequest;
+import it.unical.ea.dtos.user.UserDTO;
 import it.unical.ea.Travel.Entities.user.User;
 import it.unical.ea.Travel.Exception.ApiException;
 import it.unical.ea.Travel.Repositories.user.UserRepository;
 import it.unical.ea.Travel.Services.keycloak.KeycloakAdminService;
-import it.unical.ea.Travel.Entities.user.UserType;
+import it.unical.ea.enums.UserType;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
@@ -77,30 +77,28 @@ public class UserService {
         }
     }
 
-    public User getUser(String stringId){
+    public User getUser(String stringId) {
         UUID uuid = UUID.fromString(stringId);
         return userRepository.findById(uuid).orElseThrow(
-            () -> new ApiException(HttpStatus.NOT_FOUND, "user.notFound")
-        );
+                () -> new ApiException(HttpStatus.NOT_FOUND, "user.notFound"));
     }
 
-    public List<User> getUsers(){
+    public List<User> getUsers() {
         return userRepository.findAll();
     }
 
     public User getUserByEmail(String email) {
         return userRepository.getUserByEmail(email).orElseThrow(
-            () -> new ApiException(HttpStatus.NOT_FOUND, "user.notFound")
-        );
+                () -> new ApiException(HttpStatus.NOT_FOUND, "user.notFound"));
     }
 
     @Transactional
     public User updateUser(String email, UserDTO userDto) {
         User user = userRepository.getUserByEmail(email).orElseThrow(
-            () -> new ApiException(HttpStatus.NOT_FOUND, "user.notFound")
-        );
+                () -> new ApiException(HttpStatus.NOT_FOUND, "user.notFound"));
 
-        // Validazione sicurezza/business: aggiorna solo i campi adatti al tipo di utente
+        // Validazione sicurezza/business: aggiorna solo i campi adatti al tipo di
+        // utente
         if (user.getUserType() == UserType.VIAGGIATORE) {
             if (userDto.getFirstName() != null && !userDto.getFirstName().strip().isEmpty()) {
                 user.setFirstName(userDto.getFirstName());
@@ -125,7 +123,8 @@ public class UserService {
         // Se è specificata una nuova password, validala e aggiornala in Keycloak
         if (userDto.getPassword() != null && !userDto.getPassword().strip().isEmpty()) {
             String pwd = userDto.getPassword();
-            // Controllo robustezza password (min 8 caratteri, una maiuscola, una minuscola, un numero)
+            // Controllo robustezza password (min 8 caratteri, una maiuscola, una minuscola,
+            // un numero)
             if (pwd.length() < 8 || !pwd.matches("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).*$")) {
                 throw new ApiException(HttpStatus.BAD_REQUEST, "Password non conforme ai criteri di sicurezza");
             }
@@ -135,7 +134,7 @@ public class UserService {
         return userRepository.save(user);
     }
 
-    public void deleteUser(String stringId){
+    public void deleteUser(String stringId) {
         UUID uuid = UUID.fromString(stringId);
         userRepository.deleteById(uuid);
     }

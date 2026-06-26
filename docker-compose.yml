@@ -48,10 +48,14 @@ services:
     container_name: java_backend
     working_dir: /app
     volumes:
-      - ./backend:/app                
-      - maven_cache:/root/.m2    
-    command: mvn -Dmaven.test.skip=true spring-boot:run
-    
+      - ./backend:/app
+      - ./in_common:/in_common
+      - maven_cache:/root/.m2
+    command: >
+      sh -c "
+        cd /in_common && mvn clean install -DskipTests -q &&
+        cd /app && mvn -Dmaven.test.skip=true spring-boot:run
+      "
     ports:
       - "8080:8080"
     depends_on:
@@ -78,4 +82,4 @@ services:
 
 volumes:
   postgres_data:
-  maven_cache: # Dichiariamo il volume per la cache di Maven
+  maven_cache:
