@@ -1,6 +1,6 @@
 package it.unical.ea.Travel.Mappers.activity;
 
-import it.unical.ea.Travel.DTOs.activity.ActivityDto;
+import it.unical.ea.dtos.activity.ActivityDto;
 import it.unical.ea.Travel.Entities.activity.Activity;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;

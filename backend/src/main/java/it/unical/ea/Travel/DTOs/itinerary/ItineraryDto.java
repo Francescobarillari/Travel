@@ -1,7 +1,7 @@
 package it.unical.ea.Travel.DTOs.itinerary;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import it.unical.ea.Travel.DTOs.activity.ActivityDto;
+import it.unical.ea.dtos.activity.ActivityDto;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;

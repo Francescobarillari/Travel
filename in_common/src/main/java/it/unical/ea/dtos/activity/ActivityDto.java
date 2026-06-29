@@ -1,4 +1,4 @@
-package it.unical.ea.Travel.DTOs.activity;
+package it.unical.ea.dtos.activity;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.*;

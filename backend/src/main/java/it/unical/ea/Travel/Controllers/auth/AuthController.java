@@ -1,7 +1,7 @@
 package it.unical.ea.Travel.Controllers.auth;
 
-import it.unical.ea.Travel.DTOs.authDto.LoginRequest;
-import it.unical.ea.Travel.DTOs.authDto.SignupRequest;
+import it.unical.ea.dtos.authDto.LoginRequest;
+import it.unical.ea.dtos.authDto.SignupRequest;
 import it.unical.ea.Travel.Services.AuthService;
 import it.unical.ea.Travel.Services.keycloak.KeycloakUserAlreadyExistsException;
 import it.unical.ea.Travel.Exception.ApiException;
@@ -68,4 +68,3 @@ public class AuthController {
                 && (errorMessage.contains("idx_user_email") || errorMessage.contains("Email gia registrata"));
     }
 }
-

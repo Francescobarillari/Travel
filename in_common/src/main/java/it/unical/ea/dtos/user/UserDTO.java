@@ -1,7 +1,8 @@
-package it.unical.ea.Travel.DTOs.user;
+package it.unical.ea.dtos.user;
+
+import it.unical.ea.enums.UserType;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import it.unical.ea.Travel.Entities.user.UserType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -31,6 +32,8 @@ public class UserDTO {
     private List<String> documentPhotos = new ArrayList<>();
     @Schema(format = "phone", example = "+39 333 1234567")
     private String phone;
+    @Schema(description = "URL dell'avatar/foto profilo dell'utente")
+    private String avatarUrl;
     @Schema(example = "Mario Rossi", accessMode = Schema.AccessMode.READ_ONLY)
     private String fullName;
     @Schema(format = "password", example = "Password1@", accessMode = Schema.AccessMode.WRITE_ONLY)

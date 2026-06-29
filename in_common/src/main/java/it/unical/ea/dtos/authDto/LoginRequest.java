@@ -1,4 +1,4 @@
-package it.unical.ea.Travel.DTOs.authDto;
+package it.unical.ea.dtos.authDto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
