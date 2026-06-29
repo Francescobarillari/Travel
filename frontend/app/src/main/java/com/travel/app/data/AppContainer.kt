@@ -12,6 +12,28 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.converter.scalars.ScalarsConverterFactory
+import com.google.gson.TypeAdapter
+import com.google.gson.stream.JsonReader
+import com.google.gson.stream.JsonWriter
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+
+class LocalDateTimeAdapter : TypeAdapter<LocalDateTime>() {
+    private val formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
+
+    override fun write(out: JsonWriter, value: LocalDateTime?) {
+        if (value == null) {
+            out.nullValue()
+        } else {
+            out.value(formatter.format(value))
+        }
+    }
+
+    override fun read(reader: JsonReader): LocalDateTime? {
+        val str = reader.nextString()
+        return if (str.isNullOrBlank()) null else LocalDateTime.parse(str, formatter)
+    }
+}
 
 object AppContainer {
     private val BASE_URL = BuildConfig.BACKEND_URL
@@ -32,14 +54,19 @@ object AppContainer {
         .addInterceptor(logging)
         .build()
 
+    private val gson = com.google.gson.GsonBuilder()
+        .registerTypeAdapter(LocalDateTime::class.java, LocalDateTimeAdapter())
+        .create()
+
     private val retrofit: Retrofit = Retrofit.Builder()
         .baseUrl(BASE_URL)
         .client(client)
         .addConverterFactory(ScalarsConverterFactory.create())
-        .addConverterFactory(GsonConverterFactory.create())
+        .addConverterFactory(GsonConverterFactory.create(gson))
         .build()
 
     private val apiService: ApiService = retrofit.create(ApiService::class.java)
 
     val userRepository: UserRepository = UserRepositoryImpl(apiService, { sessionManager })
+    val activityRepository: com.travel.app.domain.repository.ActivityRepository = com.travel.app.data.repository.ActivityRepositoryImpl(apiService)
 }

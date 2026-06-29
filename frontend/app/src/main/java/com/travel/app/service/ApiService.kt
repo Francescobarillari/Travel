@@ -7,6 +7,7 @@ import retrofit2.http.PUT
 import com.travel.app.data.dto.LoginRequest
 import com.travel.app.data.dto.SignupRequest
 import com.travel.app.data.dto.UserDTO
+import it.unical.ea.dtos.activity.ActivityDto
 
 interface ApiService {
 
@@ -25,4 +26,12 @@ interface ApiService {
     // Chiamata per aggiornare il profilo dell'utente autenticato
     @PUT("user/me")
     suspend fun updateMe(@Body request: UserDTO): UserDTO
+
+    // Chiamata per creare una nuova attività
+    @POST("activity")
+    suspend fun createActivity(@Body request: ActivityDto): ActivityDto
+
+    // Chiamata per recuperare tutte le attività
+    @GET("activity")
+    suspend fun getActivities(): List<ActivityDto>
 }

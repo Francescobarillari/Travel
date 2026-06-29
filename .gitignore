@@ -41,3 +41,6 @@ build/
 
 ### Uploads ###
 uploads/
+
+### Custom Libraries ###
+frontend/app/libs/common-dtos-1.0.0.jar
