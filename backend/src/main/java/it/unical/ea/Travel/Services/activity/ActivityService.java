@@ -2,9 +2,11 @@ package it.unical.ea.Travel.Services.activity;
 
 import it.unical.ea.Travel.DTOs.activity.ActivityDto;
 import it.unical.ea.Travel.Entities.activity.Activity;
+import it.unical.ea.Travel.Exception.ApiException;
 import it.unical.ea.Travel.Mappers.activity.ActivityMapper;
 import it.unical.ea.Travel.Repositories.activity.ActivityRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -39,7 +41,7 @@ public class ActivityService {
         UUID uuid = UUID.fromString(stringId);
         
         Activity activity = activityRepository.findById(uuid)
-                .orElseThrow(() -> new RuntimeException("Attività non trovata con ID: " + stringId));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "activity.notFound"));
                 
         return activityMapper.toDTO(activity);
     }

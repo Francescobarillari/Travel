@@ -108,7 +108,7 @@ public class ItineraryController {
         Resource resource = itineraryService.getImage(stringId);
 
         // Determina il content type dal file
-        String contentType = Files.probeContentType(Path.of(resource.getFilename()));
+        String contentType = Files.probeContentType(Path.of(resource.getURI()));
         if (contentType == null) {
             contentType = MediaType.APPLICATION_OCTET_STREAM_VALUE;
         }
