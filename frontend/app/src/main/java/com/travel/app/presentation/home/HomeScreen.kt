@@ -25,6 +25,7 @@ import com.travel.app.presentation.menu.MenuScreen
 import com.travel.app.presentation.profile.ProfileScreen
 import com.travel.app.presentation.components.home.FloatingBottomNavBar
 import com.travel.app.presentation.theme.TravelTheme
+
 import it.unical.ea.dtos.activity.ActivityDto
 
 @Composable

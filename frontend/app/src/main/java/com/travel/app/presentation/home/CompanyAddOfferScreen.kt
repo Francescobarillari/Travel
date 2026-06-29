@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.tooling.preview.Preview
 import com.travel.app.data.AppContainer
 import com.travel.app.presentation.components.auth.TravelTextField
+
 import it.unical.ea.dtos.activity.ActivityDto
 import kotlinx.coroutines.launch
 import java.math.BigDecimal
