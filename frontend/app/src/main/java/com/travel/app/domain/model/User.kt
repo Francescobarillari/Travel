@@ -32,7 +32,7 @@ fun User.toDto(): UserDTO {
 }
 
 fun UserDTO.toDomain(): User {
-    val detectedType = userType?.name ?: "VIAGGIATORE"
+    val detectedType = userType?.value?.uppercase() ?: "VIAGGIATORE"
     val calculatedName = fullName ?: when {
         !firstName.isNullOrBlank() || !lastName.isNullOrBlank() -> "${firstName.orEmpty()} ${lastName.orEmpty()}".trim()
         !companyName.isNullOrBlank() -> companyName
