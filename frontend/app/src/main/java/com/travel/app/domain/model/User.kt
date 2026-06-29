@@ -8,7 +8,8 @@ data class User(
     val userType: String = "VIAGGIATORE",
     val phone: String? = null,
     val name: String? = null,
-    val password: String? = null
+    val password: String? = null,
+    val vatNumber: String? = null
 )
 
 fun User.toDto(): UserDTO {
@@ -25,7 +26,8 @@ fun User.toDto(): UserDTO {
         lastName = if (!isSocieta) lName else null,
         companyName = if (isSocieta) name else null,
         fullName = name,
-        password = password
+        password = password,
+        vatNumber = if (isSocieta) vatNumber else null
     )
 }
 
@@ -41,7 +43,8 @@ fun UserDTO.toDomain(): User {
         username = calculatedName ?: email?.split("@")?.firstOrNull() ?: "Utente",
         userType = detectedType,
         phone = phone,
-        name = calculatedName
+        name = calculatedName,
+        vatNumber = vatNumber
     )
 }
 

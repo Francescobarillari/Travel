@@ -36,6 +36,8 @@ fun HomeScreen(user: User? = null, onLogout: () -> Unit = {}) {
         )) 
     }
 
+    val isSocieta = currentUser.userType == "SOCIETA"
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -43,11 +45,23 @@ fun HomeScreen(user: User? = null, onLogout: () -> Unit = {}) {
     ) {
 
         when (selectedTab) {
-            HomeTab.ESPLORA -> EsploraScreen()
-            HomeTab.PREFERITI -> SimplePlaceholderScreen(title = "Preferiti")
+            HomeTab.ESPLORA -> {
+                if (isSocieta) {
+                    CompanyDashboardScreen()
+                } else {
+                    EsploraScreen()
+                }
+            }
+            HomeTab.PREFERITI -> {
+                if (isSocieta) {
+                    CompanyAddOfferScreen()
+                } else {
+                    SimplePlaceholderScreen(title = "Preferiti")
+                }
+            }
             HomeTab.PROFILO -> {
                 val userRepository = AppContainer.userRepository
-                val isMockUser = currentUser?.email in listOf("test@travel.com", "societa@travel.com", "johnkinggraphics@gmail.com")
+                val isMockUser = currentUser.email in listOf("test@travel.com", "societa@travel.com", "johnkinggraphics@gmail.com")
                 ProfileScreen(
                     user = currentUser,
                     onBack = { selectedTab = HomeTab.MENU },
@@ -83,6 +97,7 @@ fun HomeScreen(user: User? = null, onLogout: () -> Unit = {}) {
         ) {
             FloatingBottomNavBar(
                 selectedTab = selectedTab,
+                isSocieta = isSocieta,
                 onTabSelected = { selectedTab = it }
             )
         }
@@ -167,8 +182,30 @@ fun SimplePlaceholderScreen(title: String) {
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
-fun HomeScreenPreview() {
+fun HomeScreenViaggiatorePreview() {
     TravelTheme {
-        HomeScreen()
+        HomeScreen(
+            user = User(
+                email = "viaggiatore@travel.com",
+                username = "viaggiatore123",
+                userType = "VIAGGIATORE",
+                name = "Marco Rossi"
+            )
+        )
+    }
+}
+
+@Preview(showBackground = true, showSystemUi = true)
+@Composable
+fun HomeScreenSocietaPreview() {
+    TravelTheme {
+        HomeScreen(
+            user = User(
+                email = "societa@travel.com",
+                username = "travel_agency",
+                userType = "SOCIETA",
+                name = "Agenzia Viaggi Italia S.r.l."
+            )
+        )
     }
 }
