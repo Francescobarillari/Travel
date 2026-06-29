@@ -51,12 +51,15 @@ fun ProfileScreen(
         password = "password123"
     )
 
+    val isSocieta = initialUser.userType == "SOCIETA"
+
     // Form states
     var name by remember { mutableStateOf(initialUser.name.orEmpty()) }
     val email by remember { mutableStateOf(initialUser.email) }
     var username by remember { mutableStateOf(initialUser.username) }
     var password by remember { mutableStateOf(initialUser.password.orEmpty()) }
     var phoneNum by remember { mutableStateOf(initialUser.phone.orEmpty()) }
+    var vatNumber by remember { mutableStateOf(initialUser.vatNumber.orEmpty()) }
     
     // Country code prefix state
     var selectedCountryPrefix by remember { mutableStateOf("+91") }
@@ -96,7 +99,7 @@ fun ProfileScreen(
             }
 
             Text(
-                text = "Edit Profile",
+                text = "Modifica Profilo",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.Black
@@ -108,7 +111,8 @@ fun ProfileScreen(
                         name = name,
                         username = username,
                         password = password,
-                        phone = phoneNum
+                        phone = phoneNum,
+                        vatNumber = if (isSocieta) vatNumber else null
                     )
                     coroutineScope.launch {
                         isLoading = true
@@ -137,7 +141,7 @@ fun ProfileScreen(
                     Icon(
                         imageVector = Icons.Default.Check,
                         contentDescription = "Salva",
-                        tint = Color(0xFF22C55E) // Premium Green checkmark
+                        tint = Color(0xFF22C55E)
                     )
                 }
             }
@@ -205,27 +209,34 @@ fun ProfileScreen(
                 }
             }
 
-            // INPUT FIELDS
+
             ProfileInputField(
-                label = "Name",
+                label = if (isSocieta) "Nome Società" else "Nome e Cognome",
                 value = name,
                 onValueChange = { name = it }
             )
 
             ProfileInputField(
-                label = "E mail address",
+                label = "Indirizzo Email",
                 value = email,
                 onValueChange = {},
                 enabled = false
             )
 
             ProfileInputField(
-                label = "User name",
+                label = if (isSocieta) "Username Azienda" else "Username",
                 value = username,
                 onValueChange = { username = it }
             )
 
-            // Password Field with toggle
+            if (isSocieta) {
+                ProfileInputField(
+                    label = "Partita IVA",
+                    value = vatNumber,
+                    onValueChange = { vatNumber = it }
+                )
+            }
+
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -269,7 +280,7 @@ fun ProfileScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
-                    text = "Phone number",
+                    text = "Numero di Telefono",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.Black
@@ -386,7 +397,7 @@ fun ProfileInputField(
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
-fun ProfileScreenPreview() {
+fun ProfileScreenViaggiatorePreview() {
     TravelTheme {
         ProfileScreen(
             user = User(
@@ -395,6 +406,25 @@ fun ProfileScreenPreview() {
                 userType = "VIAGGIATORE",
                 phone = "6895312",
                 name = "Charlotte king"
+            ),
+            onBack = {},
+            onSave = { Result.success(it) }
+        )
+    }
+}
+
+@Preview(showBackground = true, showSystemUi = true)
+@Composable
+fun ProfileScreenSocietaPreview() {
+    TravelTheme {
+        ProfileScreen(
+            user = User(
+                email = "societa@travel.com",
+                username = "travel_agency",
+                userType = "SOCIETA",
+                phone = "081765432",
+                name = "Agenzia Viaggi Italia S.r.l.",
+                vatNumber = "01234567890"
             ),
             onBack = {},
             onSave = { Result.success(it) }
