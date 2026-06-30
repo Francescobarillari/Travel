@@ -39,6 +39,9 @@ public class User {
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
+    @Column(name = "keycloak_id", length = 36)
+    private String keycloakId;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "user_type", nullable = false, length = 50)
     private UserType userType = UserType.VIAGGIATORE;
