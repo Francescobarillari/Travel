@@ -36,6 +36,7 @@ fun FloatingBottomNavBar(
     Box(
         modifier = Modifier
             .fillMaxWidth()
+            .navigationBarsPadding()
             .padding(horizontal = 20.dp, vertical = 16.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -49,7 +50,7 @@ fun FloatingBottomNavBar(
                     clip = false
                 )
                 .background(
-                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f),
+                    color = MaterialTheme.colorScheme.surface,
                     shape = RoundedCornerShape(32.dp)
                 )
                 .padding(horizontal = 8.dp),
