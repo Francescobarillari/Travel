@@ -25,7 +25,6 @@ import com.travel.app.presentation.menu.MenuScreen
 import com.travel.app.presentation.profile.ProfileScreen
 import com.travel.app.presentation.components.home.FloatingBottomNavBar
 import com.travel.app.presentation.theme.TravelTheme
-import com.travel.app.presentation.theme.TravelSecondary
 import it.unical.ea.dtos.activity.ActivityDto
 
 @Composable
@@ -340,7 +339,7 @@ fun ActivityCard(activity: ActivityDto) {
                     Icon(
                         imageVector = Icons.Default.LocationOn,
                         contentDescription = null,
-                        tint = TravelSecondary,
+                        tint = MaterialTheme.colorScheme.secondary,
                         modifier = Modifier.size(16.dp)
                     )
                     Text(
@@ -358,7 +357,7 @@ fun ActivityCard(activity: ActivityDto) {
                     Icon(
                         imageVector = Icons.Default.CalendarToday,
                         contentDescription = null,
-                        tint = TravelSecondary,
+                        tint = MaterialTheme.colorScheme.secondary,
                         modifier = Modifier.size(16.dp)
                     )
                     Text(

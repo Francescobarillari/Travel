@@ -26,8 +26,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.tooling.preview.Preview
 import com.travel.app.data.AppContainer
 import com.travel.app.presentation.components.auth.TravelTextField
-import com.travel.app.presentation.theme.TravelPrimary
-import com.travel.app.presentation.theme.TravelSecondary
 import it.unical.ea.dtos.activity.ActivityDto
 import kotlinx.coroutines.launch
 import java.math.BigDecimal
@@ -239,7 +237,7 @@ fun CompanyAddOfferScreen(
                 text = "Nuova Offerta",
                 style = MaterialTheme.typography.headlineMedium.copy(
                     fontWeight = FontWeight.Bold,
-                    color = TravelPrimary
+                    color = MaterialTheme.colorScheme.primary
                 ),
                 modifier = Modifier.padding(bottom = 4.dp)
             )
@@ -293,7 +291,7 @@ fun CompanyAddOfferScreen(
                         text = "Informazioni Attività",
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold,
-                        color = TravelPrimary
+                        color = MaterialTheme.colorScheme.primary
                     )
 
                     TravelTextField(
@@ -333,7 +331,7 @@ fun CompanyAddOfferScreen(
                                 text = "Periodo Attività *",
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = TravelPrimary,
+                                color = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.padding(bottom = 12.dp)
                             )
                             Row(
@@ -354,7 +352,7 @@ fun CompanyAddOfferScreen(
                                     Icon(
                                         imageVector = Icons.Default.CalendarToday,
                                         contentDescription = null,
-                                        tint = TravelSecondary,
+                                        tint = MaterialTheme.colorScheme.secondary,
                                         modifier = Modifier.size(18.dp)
                                     )
                                     Spacer(modifier = Modifier.height(4.dp))
@@ -393,7 +391,7 @@ fun CompanyAddOfferScreen(
                                     Icon(
                                         imageVector = Icons.Default.CalendarToday,
                                         contentDescription = null,
-                                        tint = TravelSecondary,
+                                        tint = MaterialTheme.colorScheme.secondary,
                                         modifier = Modifier.size(18.dp)
                                     )
                                     Spacer(modifier = Modifier.height(4.dp))
@@ -422,7 +420,7 @@ fun CompanyAddOfferScreen(
                         text = "Dettagli Offerta",
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold,
-                        color = TravelPrimary
+                        color = MaterialTheme.colorScheme.primary
                     )
 
                     Row(
@@ -457,7 +455,7 @@ fun CompanyAddOfferScreen(
                             .fillMaxWidth()
                             .height(52.dp)
                             .clip(RoundedCornerShape(16.dp)),
-                        colors = ButtonDefaults.buttonColors(containerColor = TravelPrimary),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                         enabled = !isLoading
                     ) {
                         if (isLoading) {
@@ -487,7 +485,7 @@ fun CompanyAddOfferScreen(
             confirmButton = {
                 Button(
                     onClick = { showSuccessDialog = false },
-                    colors = ButtonDefaults.buttonColors(containerColor = TravelPrimary)
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                 ) {
                     Text("OK", color = Color.White)
                 }

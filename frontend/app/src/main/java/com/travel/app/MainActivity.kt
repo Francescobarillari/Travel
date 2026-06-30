@@ -33,6 +33,8 @@ fun LoginScreenPreview() {
         override suspend fun register(request: com.travel.app.data.dto.SignupRequest) = "mock_user_id"
         override suspend fun getMe() = com.travel.app.data.dto.UserDTO(email = "test@travel.com")
         override suspend fun updateMe(request: com.travel.app.data.dto.UserDTO) = request
+        override suspend fun createActivity(request: it.unical.ea.dtos.activity.ActivityDto) = request
+        override suspend fun getActivities() = emptyList<it.unical.ea.dtos.activity.ActivityDto>()
     }
     val mockRepo = UserRepositoryImpl(mockApiService) { error("Not used in preview") }
     val mockViewModel = AuthViewModel(mockRepo)

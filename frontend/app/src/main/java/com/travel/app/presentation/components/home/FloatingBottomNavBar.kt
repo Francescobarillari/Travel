@@ -49,7 +49,7 @@ fun FloatingBottomNavBar(
                     clip = false
                 )
                 .background(
-                    color = Color(0xFFF0F9FF), // Opaque soft blue
+                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f),
                     shape = RoundedCornerShape(32.dp)
                 )
                 .padding(horizontal = 8.dp),
