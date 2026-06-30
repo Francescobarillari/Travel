@@ -7,6 +7,8 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -21,6 +23,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.core.io.Resource;
@@ -100,6 +103,30 @@ public class ActivityController {
             @PathVariable String filename) {
         ActivityDto updated = activityService.deleteImage(stringId, filename);
         return enrichImageUrls(updated);
+    }
+
+    // --- Endpoints Prenotazione ---
+
+    @Operation(summary = "Prenota un'attività", description = "Prenota l'attività per l'utente autenticato")
+    @PostMapping("/{stringId}/book")
+    public ResponseEntity<Void> bookActivity(
+            @Parameter(description = "ID dell'attività", schema = @Schema(format = "uuid"), example = "550e8400-e29b-41d4-a716-446655440000")
+            @PathVariable String stringId,
+            @AuthenticationPrincipal Jwt jwt) {
+        String email = jwt.getClaimAsString("email");
+        activityService.bookActivity(stringId, email);
+        return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    @Operation(summary = "Cancella prenotazione attività", description = "Cancella la prenotazione dell'attività per l'utente autenticato")
+    @DeleteMapping("/{stringId}/book")
+    public ResponseEntity<Void> cancelBooking(
+            @Parameter(description = "ID dell'attività", schema = @Schema(format = "uuid"), example = "550e8400-e29b-41d4-a716-446655440000")
+            @PathVariable String stringId,
+            @AuthenticationPrincipal Jwt jwt) {
+        String email = jwt.getClaimAsString("email");
+        activityService.cancelActivityBooking(stringId, email);
+        return ResponseEntity.noContent().build();
     }
 
     // --- Helpers per arricchire URL ---
