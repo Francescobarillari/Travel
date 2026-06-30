@@ -10,6 +10,7 @@ import java.util.List;
 @Mapper(componentModel = "spring")
 public interface ActivityMapper {
 
+    @Mapping(target = "currentParticipants", ignore = true)
     ActivityDto toDTO(Activity activity);
 
     List<ActivityDto> toDTOList(List<Activity> activities);
