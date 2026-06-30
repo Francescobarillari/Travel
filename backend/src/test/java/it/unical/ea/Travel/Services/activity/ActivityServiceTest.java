@@ -86,7 +86,7 @@ class ActivityServiceTest {
         @Test
         @DisplayName("Dovrebbe prenotare con successo un'attività futura")
         void shouldBookFutureActivity() {
-            when(activityRepository.findById(activityId)).thenReturn(Optional.of(futureActivity));
+            when(activityRepository.findByIdForUpdate(activityId)).thenReturn(Optional.of(futureActivity));
             when(userRepository.getUserByEmail(userEmail)).thenReturn(Optional.of(testUser));
             when(activityBookingRepository.countDirectParticipants(activityId)).thenReturn(5L);
             when(activityBookingRepository.findByUserIdAndActivityId(userId, activityId)).thenReturn(Optional.empty());
@@ -99,7 +99,7 @@ class ActivityServiceTest {
         @Test
         @DisplayName("Dovrebbe bloccare la prenotazione per un'attività passata")
         void shouldBlockBookingForPastActivity() {
-            when(activityRepository.findById(pastActivityId)).thenReturn(Optional.of(pastActivity));
+            when(activityRepository.findByIdForUpdate(pastActivityId)).thenReturn(Optional.of(pastActivity));
 
             ApiException exception = assertThrows(ApiException.class,
                     () -> activityService.bookActivity(pastActivityId.toString(), userEmail));
@@ -112,7 +112,7 @@ class ActivityServiceTest {
         @Test
         @DisplayName("Dovrebbe bloccare la prenotazione quando la capienza è piena")
         void shouldBlockBookingWhenFull() {
-            when(activityRepository.findById(activityId)).thenReturn(Optional.of(futureActivity));
+            when(activityRepository.findByIdForUpdate(activityId)).thenReturn(Optional.of(futureActivity));
             when(userRepository.getUserByEmail(userEmail)).thenReturn(Optional.of(testUser));
             // Simula capienza piena: 20 partecipanti su 20 massimi
             when(activityBookingRepository.countDirectParticipants(activityId)).thenReturn(20L);
@@ -128,7 +128,7 @@ class ActivityServiceTest {
         @Test
         @DisplayName("Dovrebbe bloccare la prenotazione duplicata")
         void shouldBlockDuplicateBooking() {
-            when(activityRepository.findById(activityId)).thenReturn(Optional.of(futureActivity));
+            when(activityRepository.findByIdForUpdate(activityId)).thenReturn(Optional.of(futureActivity));
             when(userRepository.getUserByEmail(userEmail)).thenReturn(Optional.of(testUser));
             when(activityBookingRepository.countDirectParticipants(activityId)).thenReturn(5L);
             when(activityBookingRepository.findByUserIdAndActivityId(userId, activityId))
@@ -146,7 +146,7 @@ class ActivityServiceTest {
         @DisplayName("Dovrebbe lanciare errore se l'attività non esiste")
         void shouldThrowIfActivityNotFound() {
             UUID nonExistentId = UUID.randomUUID();
-            when(activityRepository.findById(nonExistentId)).thenReturn(Optional.empty());
+            when(activityRepository.findByIdForUpdate(nonExistentId)).thenReturn(Optional.empty());
 
             ApiException exception = assertThrows(ApiException.class,
                     () -> activityService.bookActivity(nonExistentId.toString(), userEmail));
@@ -158,7 +158,7 @@ class ActivityServiceTest {
         @Test
         @DisplayName("Dovrebbe lanciare errore se l'utente non esiste")
         void shouldThrowIfUserNotFound() {
-            when(activityRepository.findById(activityId)).thenReturn(Optional.of(futureActivity));
+            when(activityRepository.findByIdForUpdate(activityId)).thenReturn(Optional.of(futureActivity));
             when(userRepository.getUserByEmail("unknown@example.com")).thenReturn(Optional.empty());
 
             ApiException exception = assertThrows(ApiException.class,
@@ -181,7 +181,7 @@ class ActivityServiceTest {
             ActivityBooking existingBooking = new ActivityBooking();
             existingBooking.setId(UUID.randomUUID());
 
-            when(activityRepository.findById(activityId)).thenReturn(Optional.of(futureActivity));
+            when(activityRepository.findByIdForUpdate(activityId)).thenReturn(Optional.of(futureActivity));
             when(userRepository.getUserByEmail(userEmail)).thenReturn(Optional.of(testUser));
             when(activityBookingRepository.findByUserIdAndActivityId(userId, activityId))
                     .thenReturn(Optional.of(existingBooking));
@@ -194,7 +194,7 @@ class ActivityServiceTest {
         @Test
         @DisplayName("Dovrebbe bloccare la cancellazione per un'attività passata")
         void shouldBlockCancellationForPastActivity() {
-            when(activityRepository.findById(pastActivityId)).thenReturn(Optional.of(pastActivity));
+            when(activityRepository.findByIdForUpdate(pastActivityId)).thenReturn(Optional.of(pastActivity));
 
             ApiException exception = assertThrows(ApiException.class,
                     () -> activityService.cancelActivityBooking(pastActivityId.toString(), userEmail));
@@ -207,7 +207,7 @@ class ActivityServiceTest {
         @Test
         @DisplayName("Dovrebbe lanciare errore se la prenotazione non esiste")
         void shouldThrowIfBookingNotFound() {
-            when(activityRepository.findById(activityId)).thenReturn(Optional.of(futureActivity));
+            when(activityRepository.findByIdForUpdate(activityId)).thenReturn(Optional.of(futureActivity));
             when(userRepository.getUserByEmail(userEmail)).thenReturn(Optional.of(testUser));
             when(activityBookingRepository.findByUserIdAndActivityId(userId, activityId))
                     .thenReturn(Optional.empty());
