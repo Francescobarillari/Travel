@@ -54,6 +54,9 @@ public class ActivityDto {
     @Schema(description = "Lista di URL di immagini dell'attività")
     private List<String> images;
 
+    @Schema(description = "Numero attuale di partecipanti prenotati", example = "5", accessMode = Schema.AccessMode.READ_ONLY)
+    private Integer currentParticipants = 0;
+
     @Schema(type = "string", format = "date-time", example = "2025-06-25T10:30:00")
     private LocalDateTime createdAt;
 }
