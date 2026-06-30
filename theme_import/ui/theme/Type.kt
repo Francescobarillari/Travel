@@ -1,4 +1,4 @@
-package com.travel.app.presentation.theme
+package com.example.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
@@ -8,7 +8,6 @@ import androidx.compose.ui.unit.sp
 
 import androidx.compose.ui.text.googlefonts.GoogleFont
 import androidx.compose.ui.text.googlefonts.Font
-import com.travel.app.R
 
 val provider = GoogleFont.Provider(
     providerAuthority = "com.google.android.gms.fonts",
@@ -33,7 +32,7 @@ val displayFontFamily = FontFamily(
 // Default Material 3 typography values
 val baseline = Typography()
 
-val Typography = Typography(
+val AppTypography = Typography(
     displayLarge = baseline.displayLarge.copy(fontFamily = displayFontFamily),
     displayMedium = baseline.displayMedium.copy(fontFamily = displayFontFamily),
     displaySmall = baseline.displaySmall.copy(fontFamily = displayFontFamily),
@@ -50,3 +49,4 @@ val Typography = Typography(
     labelMedium = baseline.labelMedium.copy(fontFamily = bodyFontFamily),
     labelSmall = baseline.labelSmall.copy(fontFamily = bodyFontFamily),
 )
+

@@ -9,6 +9,7 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
@@ -25,7 +26,6 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.travel.app.presentation.theme.TravelSecondary
 
 @Composable
 fun PasswordField(
@@ -40,7 +40,7 @@ fun PasswordField(
         value = value,
         onValueChange = onValueChange,
         label = { Text(label, fontSize = 14.sp) },
-        leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = TravelSecondary) },
+        leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
         trailingIcon = {
             val icon = if (visible) Icons.Default.Visibility else Icons.Default.VisibilityOff
             IconButton(onClick = { visible = !visible }) {
@@ -54,8 +54,8 @@ fun PasswordField(
         singleLine = true,
         textStyle = TextStyle(fontSize = 14.sp),
         colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = TravelSecondary,
-            focusedLabelColor = TravelSecondary
+            focusedBorderColor = MaterialTheme.colorScheme.primary,
+            focusedLabelColor = MaterialTheme.colorScheme.primary
         )
     )
 }

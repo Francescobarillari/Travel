@@ -28,7 +28,7 @@ import com.travel.app.domain.model.User
 import com.travel.app.presentation.components.auth.ErrorBanner
 import com.travel.app.presentation.components.auth.PasswordField
 import com.travel.app.presentation.components.auth.TravelTextField
-import com.travel.app.presentation.theme.*
+import com.travel.app.presentation.theme.TravelTheme
 import com.travel.app.service.ApiService
 
 @Composable
@@ -37,96 +37,98 @@ fun RegisterScreen(
     onNavigateToLogin: () -> Unit,
     onRegisterSuccess: (User) -> Unit,
 ) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Brush.verticalGradient(listOf(TravelBgStart, TravelBgMid, TravelBgEnd))),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
+    TravelTheme(darkTheme = false) {
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(24.dp)
-                .verticalScroll(rememberScrollState()),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(20.dp)
+                .fillMaxSize()
+                .background(Brush.verticalGradient(listOf(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f), MaterialTheme.colorScheme.background))),
+            contentAlignment = Alignment.Center
         ) {
-            Image(
-                painter = painterResource(id = R.drawable.logo),
-                contentDescription = "Logo",
-                modifier = Modifier.size(200.dp).clip(RoundedCornerShape(16.dp))
-            )
-
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp)
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
-                Column(
-                    modifier = Modifier.fillMaxWidth().padding(24.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                Image(
+                    painter = painterResource(id = R.drawable.logo),
+                    contentDescription = "Logo",
+                    modifier = Modifier.size(200.dp).clip(RoundedCornerShape(16.dp))
+                )
+
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
                 ) {
-                    Text("Crea il tuo account", style = MaterialTheme.typography.titleMedium, color = TravelPrimary)
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(24.dp),
+                        verticalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
+                        Text("Crea il tuo account", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
 
-                    //tipo Utente
-                    UserTypeSelectorRow(
-                        selected = viewModel.registerUserType,
-                        onSelect = { viewModel.registerUserType = it }
-                    )
+                        //tipo Utente
+                        UserTypeSelectorRow(
+                            selected = viewModel.registerUserType,
+                            onSelect = { viewModel.registerUserType = it }
+                        )
 
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
-                    // Transizione fluida dei campi senza sbalzi di altezza
-                    Crossfade(
-                        targetState = viewModel.registerUserType,
-                        label = "UserTypeFieldsTransition"
-                    ) { userType ->
-                        when (userType) {
-                            UserType.VIAGGIATORE -> {
-                                ViaggiatoreFields(
-                                    firstName = viewModel.registerFirstName,
-                                    onFirstNameChange = { viewModel.registerFirstName = it },
-                                    lastName = viewModel.registerLastName,
-                                    onLastNameChange = { viewModel.registerLastName = it },
-                                )
-                            }
-                            UserType.SOCIETA -> {
-                                SocietaFields(
-                                    companyName = viewModel.registerCompanyName,
-                                    onCompanyNameChange = { viewModel.registerCompanyName = it },
-                                    vatNumber = viewModel.registerVatNumber,
-                                    onVatNumberChange = { viewModel.registerVatNumber = it },
-                                )
+                        // Transizione fluida dei campi senza sbalzi di altezza
+                        Crossfade(
+                            targetState = viewModel.registerUserType,
+                            label = "UserTypeFieldsTransition"
+                        ) { userType ->
+                            when (userType) {
+                                UserType.VIAGGIATORE -> {
+                                    ViaggiatoreFields(
+                                        firstName = viewModel.registerFirstName,
+                                        onFirstNameChange = { viewModel.registerFirstName = it },
+                                        lastName = viewModel.registerLastName,
+                                        onLastNameChange = { viewModel.registerLastName = it },
+                                    )
+                                }
+                                UserType.SOCIETA -> {
+                                    SocietaFields(
+                                        companyName = viewModel.registerCompanyName,
+                                        onCompanyNameChange = { viewModel.registerCompanyName = it },
+                                        vatNumber = viewModel.registerVatNumber,
+                                        onVatNumberChange = { viewModel.registerVatNumber = it },
+                                    )
+                                }
                             }
                         }
-                    }
 
-                    // Campi in comune
-                    TravelTextField(value = viewModel.registerEmail, onValueChange = { viewModel.registerEmail = it }, label = "Indirizzo Email *", leadingIcon = Icons.Default.Email, keyboardType = KeyboardType.Email)
-                    TravelTextField(value = viewModel.registerPhone, onValueChange = { viewModel.registerPhone = it }, label = "Telefono (opzionale)", leadingIcon = Icons.Default.Phone, keyboardType = KeyboardType.Phone)
-                    PasswordField(value = viewModel.registerPassword, onValueChange = { viewModel.registerPassword = it }, label = "Password *")
-                    PasswordField(value = viewModel.registerConfirmPassword, onValueChange = { viewModel.registerConfirmPassword = it }, label = "Conferma Password *")
+                        // Campi in comune
+                        TravelTextField(value = viewModel.registerEmail, onValueChange = { viewModel.registerEmail = it }, label = "Indirizzo Email *", leadingIcon = Icons.Default.Email, keyboardType = KeyboardType.Email)
+                        TravelTextField(value = viewModel.registerPhone, onValueChange = { viewModel.registerPhone = it }, label = "Telefono (opzionale)", leadingIcon = Icons.Default.Phone, keyboardType = KeyboardType.Phone)
+                        PasswordField(value = viewModel.registerPassword, onValueChange = { viewModel.registerPassword = it }, label = "Password *")
+                        PasswordField(value = viewModel.registerConfirmPassword, onValueChange = { viewModel.registerConfirmPassword = it }, label = "Conferma Password *")
 
-                    viewModel.registerError?.let { ErrorBanner(message = it) }
+                        viewModel.registerError?.let { ErrorBanner(message = it) }
 
-                    Button(
-                        onClick = { viewModel.register(onRegisterSuccess) },
-                        modifier = Modifier.fillMaxWidth().height(52.dp).padding(top = 8.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = TravelPrimary, contentColor = Color.White),
-                        enabled = !viewModel.isLoading
-                    ) {
-                        if (viewModel.isLoading) CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
-                        else Text("Registrati", style = MaterialTheme.typography.labelLarge)
+                        Button(
+                            onClick = { viewModel.register(onRegisterSuccess) },
+                            modifier = Modifier.fillMaxWidth().height(52.dp).padding(top = 8.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = Color.White),
+                            enabled = !viewModel.isLoading
+                        ) {
+                            if (viewModel.isLoading) CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+                            else Text("Registrati", style = MaterialTheme.typography.labelLarge)
+                        }
                     }
                 }
-            }
 
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth()) {
-                Text("Hai già un account? ", style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
-                TextButton(onClick = onNavigateToLogin) {
-                    Text("Accedi", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = TravelSecondary)
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth()) {
+                    Text("Hai già un account? ", style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
+                    TextButton(onClick = onNavigateToLogin) {
+                        Text("Accedi", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.secondary)
+                    }
                 }
             }
         }
@@ -141,6 +143,8 @@ fun RegisterScreenPreview() {
         override suspend fun register(request: com.travel.app.data.dto.SignupRequest) = "mock_user_id"
         override suspend fun getMe() = com.travel.app.data.dto.UserDTO(email = "test@travel.com")
         override suspend fun updateMe(request: com.travel.app.data.dto.UserDTO) = request
+        override suspend fun createActivity(request: it.unical.ea.dtos.activity.ActivityDto) = request
+        override suspend fun getActivities() = emptyList<it.unical.ea.dtos.activity.ActivityDto>()
     }
     TravelTheme {
         RegisterScreen(

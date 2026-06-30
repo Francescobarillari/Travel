@@ -13,7 +13,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.travel.app.presentation.theme.TravelPrimary
 
 @Composable
 fun UserTypeSelectorRow(
@@ -37,7 +36,7 @@ fun UserTypeSelectorRow(
                 modifier = Modifier.weight(1f),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isSelected) TravelPrimary else Color.Transparent,
+                    containerColor = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
                     contentColor   = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
                 ),
                 elevation = ButtonDefaults.buttonElevation(

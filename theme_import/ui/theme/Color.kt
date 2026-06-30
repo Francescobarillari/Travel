@@ -1,9 +1,9 @@
-package com.travel.app.presentation.theme
+package com.example.compose
 import androidx.compose.ui.graphics.Color
 
 val primaryLight = Color(0xFF32628D)
 val onPrimaryLight = Color(0xFFFFFFFF)
-val primaryContainerLight = Color(0xFFEAF2FF)
+val primaryContainerLight = Color(0xFFCFE5FF)
 val onPrimaryContainerLight = Color(0xFF134A74)
 val secondaryLight = Color(0xFF526070)
 val onSecondaryLight = Color(0xFFFFFFFF)
@@ -17,9 +17,9 @@ val errorLight = Color(0xFFBA1A1A)
 val onErrorLight = Color(0xFFFFFFFF)
 val errorContainerLight = Color(0xFFFFDAD6)
 val onErrorContainerLight = Color(0xFF93000A)
-val backgroundLight = Color(0xFFFFFFFF)
+val backgroundLight = Color(0xFFF7F9FF)
 val onBackgroundLight = Color(0xFF191C20)
-val surfaceLight = Color(0xFFFFFFFF)
+val surfaceLight = Color(0xFFF7F9FF)
 val onSurfaceLight = Color(0xFF191C20)
 val surfaceVariantLight = Color(0xFFDEE3EB)
 val onSurfaceVariantLight = Color(0xFF42474E)
@@ -216,3 +216,10 @@ val surfaceContainerLowDarkHighContrast = Color(0xFF1D2024)
 val surfaceContainerDarkHighContrast = Color(0xFF2D3135)
 val surfaceContainerHighDarkHighContrast = Color(0xFF383C40)
 val surfaceContainerHighestDarkHighContrast = Color(0xFF44474C)
+
+
+
+
+
+
+
