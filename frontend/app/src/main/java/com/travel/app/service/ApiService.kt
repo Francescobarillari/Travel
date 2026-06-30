@@ -4,9 +4,9 @@ import retrofit2.http.Body
 import retrofit2.http.POST
 import retrofit2.http.GET
 import retrofit2.http.PUT
-import com.travel.app.data.dto.LoginRequest
-import com.travel.app.data.dto.SignupRequest
-import com.travel.app.data.dto.UserDTO
+import it.unical.ea.dtos.authDto.LoginRequest
+import it.unical.ea.dtos.authDto.SignupRequest
+import it.unical.ea.dtos.user.UserDTO
 import retrofit2.http.DELETE
 import retrofit2.http.Path
 import it.unical.ea.dtos.activity.ActivityDto
