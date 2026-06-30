@@ -52,17 +52,13 @@ fun HomeScreen(user: User? = null, onLogout: () -> Unit = {}) {
 
         when (selectedTab) {
             HomeTab.ESPLORA -> {
-                if (isSocieta) {
-                    CompanyDashboardScreen()
-                } else {
-                    EsploraScreen()
-                }
+                EsploraScreen()
             }
             HomeTab.PREFERITI -> {
                 if (isSocieta) {
                     CompanyAddOfferScreen()
                 } else {
-                    SimplePlaceholderScreen(title = "Preferiti")
+                    CompanyDashboardScreen()
                 }
             }
             HomeTab.PROFILO -> {

@@ -58,15 +58,15 @@ fun FloatingBottomNavBar(
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             HomeTabItem(
-                icon = if (isSocieta) Icons.Default.Dashboard else Icons.Default.Search,
-                label = if (isSocieta) "Dashboard" else "Esplora",
+                icon = Icons.Default.Search,
+                label = "Esplora",
                 isSelected = selectedTab == HomeTab.ESPLORA,
                 onClick = { onTabSelected(HomeTab.ESPLORA) },
                 modifier = Modifier.weight(1f)
             )
             HomeTabItem(
-                icon = if (isSocieta) Icons.Default.Add else (if (selectedTab == HomeTab.PREFERITI) Icons.Default.Favorite else Icons.Default.FavoriteBorder),
-                label = if (isSocieta) "Aggiungi" else "Preferiti",
+                icon = if (isSocieta) Icons.Default.Add else Icons.Default.Dashboard,
+                label = if (isSocieta) "Aggiungi" else "Dashboard",
                 isSelected = selectedTab == HomeTab.PREFERITI,
                 onClick = { onTabSelected(HomeTab.PREFERITI) },
                 modifier = Modifier.weight(1f)

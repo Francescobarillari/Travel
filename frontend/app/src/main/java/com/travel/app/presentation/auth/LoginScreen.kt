@@ -118,6 +118,9 @@ fun LoginScreenPreview() {
         override suspend fun updateMe(request: com.travel.app.data.dto.UserDTO) = request
         override suspend fun createActivity(request: it.unical.ea.dtos.activity.ActivityDto) = request
         override suspend fun getActivities() = emptyList<it.unical.ea.dtos.activity.ActivityDto>()
+        override suspend fun getItineraries() = emptyList<it.unical.ea.dtos.itinerary.ItineraryDto>()
+        override suspend fun createItinerary(request: it.unical.ea.dtos.itinerary.CreateItineraryRequest) = it.unical.ea.dtos.itinerary.ItineraryDto()
+        override suspend fun deleteItinerary(id: String) {}
     }
     TravelTheme {
         LoginScreen(

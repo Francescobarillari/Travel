@@ -3,9 +3,13 @@ package com.travel.app.data
 import android.content.Context
 import com.travel.app.BuildConfig
 import com.travel.app.data.repository.UserRepositoryImpl
+import com.travel.app.data.repository.ActivityRepositoryImpl
+import com.travel.app.data.repository.ItineraryRepositoryImpl
 import com.travel.app.data.session.AuthInterceptor
 import com.travel.app.data.session.SessionManager
 import com.travel.app.domain.repository.UserRepository
+import com.travel.app.domain.repository.ActivityRepository
+import com.travel.app.domain.repository.ItineraryRepository
 import com.travel.app.service.ApiService
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -68,5 +72,6 @@ object AppContainer {
     private val apiService: ApiService = retrofit.create(ApiService::class.java)
 
     val userRepository: UserRepository = UserRepositoryImpl(apiService, { sessionManager })
-    val activityRepository: com.travel.app.domain.repository.ActivityRepository = com.travel.app.data.repository.ActivityRepositoryImpl(apiService)
+    val activityRepository: ActivityRepository = ActivityRepositoryImpl(apiService)
+    val itineraryRepository: ItineraryRepository = ItineraryRepositoryImpl(apiService)
 }

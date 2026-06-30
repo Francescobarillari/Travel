@@ -13,6 +13,7 @@ import com.travel.app.presentation.auth.LoginScreen
 import com.travel.app.presentation.auth.RegisterScreen
 import com.travel.app.presentation.theme.TravelTheme
 import com.travel.app.service.ApiService
+import java.util.UUID
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -35,6 +36,15 @@ fun LoginScreenPreview() {
         override suspend fun updateMe(request: com.travel.app.data.dto.UserDTO) = request
         override suspend fun createActivity(request: it.unical.ea.dtos.activity.ActivityDto) = request
         override suspend fun getActivities() = emptyList<it.unical.ea.dtos.activity.ActivityDto>()
+        override suspend fun getItineraries()= emptyList<it.unical.ea.dtos.itinerary.ItineraryDto>()
+        override suspend fun createItinerary(request: it.unical.ea.dtos.itinerary.CreateItineraryRequest) = it.unical.ea.dtos.itinerary.ItineraryDto().apply {
+            title = request.title
+            description = request.description
+            startDateTime = request.startDateTime
+            endDateTime = request.endDateTime
+            creatorId = request.creatorId as UUID?
+        }
+        override suspend fun deleteItinerary(id: String) {}
     }
     val mockRepo = UserRepositoryImpl(mockApiService) { error("Not used in preview") }
     val mockViewModel = AuthViewModel(mockRepo)
