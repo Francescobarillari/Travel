@@ -100,6 +100,24 @@ public class KeycloakAdminService {
         }
     }
 
+    public void disableUser(String keycloakUserId) {
+        if (keycloakUserId == null || keycloakUserId.isBlank()) {
+            return; // oppure lancia eccezione, a seconda delle tue policy
+        }
+        String token = getAdminAccessToken();
+        Map<String, Object> payload = Map.of("enabled", false);
+        try {
+            restClient.put()
+                    .uri("/admin/realms/{realm}/users/{userId}", realm, keycloakUserId)
+                    .header("Authorization", "Bearer " + token)
+                    .body(payload)
+                    .retrieve()
+                    .toBodilessEntity();
+        } catch (Exception e) {
+            throw new RuntimeException("Errore durante la disabilitazione dell'utente Keycloak con ID: " + keycloakUserId, e);
+        }
+    }
+
     public void updateUserPassword(String email, String newPassword) {
         if (newPassword == null || newPassword.isBlank()) {
             return;

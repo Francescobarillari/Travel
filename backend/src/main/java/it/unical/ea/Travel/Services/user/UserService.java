@@ -62,6 +62,7 @@ public class UserService {
         User user = new User();
         user.setEmail(request.getEmail());
         user.setPasswordHash("{keycloak}");
+        user.setKeycloakId(keycloakUserId);
         user.setUserType(request.getUserType());
         user.setPhone(request.getPhone());
 
@@ -141,9 +142,21 @@ public class UserService {
         return userRepository.save(user);
     }
 
+    @Transactional
     public void deleteUser(String stringId) {
         UUID uuid = UUID.fromString(stringId);
-        userRepository.deleteById(uuid);
+        User user = userRepository.findById(uuid)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "user.notFound"));
+
+        // Disabilita in Keycloak usando l'ID salvato
+        if (user.getKeycloakId() == null || user.getKeycloakId().isBlank()) {
+            // Non dovrebbe mai accadere, ma gestiamo l'errore
+            throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "Utente senza keycloakId associato");
+        }
+        keycloakAdminService.disableUser(user.getKeycloakId());
+
+        // Soft delete sul DB (imposta deleted_at) grazie a @SQLDelete
+        userRepository.delete(user);
     }
 
     // Carica l'avatar dell'utente
