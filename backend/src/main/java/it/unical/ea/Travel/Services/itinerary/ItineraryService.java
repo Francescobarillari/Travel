@@ -1,19 +1,26 @@
 package it.unical.ea.Travel.Services.itinerary;
 
 import it.unical.ea.Travel.Entities.activity.Activity;
+import it.unical.ea.Travel.Entities.activity.ActivityBooking;
 import it.unical.ea.Travel.Entities.itinerary.Itinerary;
+import it.unical.ea.Travel.Entities.itinerary.ItineraryBooking;
 import it.unical.ea.Travel.Entities.user.User;
 import it.unical.ea.Travel.Exception.ApiException;
 import it.unical.ea.Travel.Repositories.activity.ActivityRepository;
+import it.unical.ea.Travel.Repositories.activity.ActivityBookingRepository;
 import it.unical.ea.Travel.Repositories.itinerary.ItineraryRepository;
+import it.unical.ea.Travel.Repositories.itinerary.ItineraryBookingRepository;
 import it.unical.ea.Travel.Repositories.user.UserRepository;
+import it.unical.ea.Travel.Services.activity.ActivityService;
 import it.unical.ea.Travel.Services.storage.FileStorageService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -26,16 +33,25 @@ public class ItineraryService {
     private final UserRepository userRepository;
     private final ActivityRepository activityRepository;
     private final FileStorageService fileStorageService;
+    private final ItineraryBookingRepository itineraryBookingRepository;
+    private final ActivityBookingRepository activityBookingRepository;
+    private final ActivityService activityService;
 
     @Autowired
     public ItineraryService(ItineraryRepository itineraryRepository,
                             UserRepository userRepository,
                             ActivityRepository activityRepository,
-                            FileStorageService fileStorageService) {
+                            FileStorageService fileStorageService,
+                            ItineraryBookingRepository itineraryBookingRepository,
+                            ActivityBookingRepository activityBookingRepository,
+                            ActivityService activityService) {
         this.itineraryRepository = itineraryRepository;
         this.userRepository = userRepository;
         this.activityRepository = activityRepository;
         this.fileStorageService = fileStorageService;
+        this.itineraryBookingRepository = itineraryBookingRepository;
+        this.activityBookingRepository = activityBookingRepository;
+        this.activityService = activityService;
     }
 
     // Riceve tutti gli itinerari dal database
@@ -126,6 +142,74 @@ public class ItineraryService {
         }
 
         return itinerary;
+    }
+
+    @Transactional
+    public void bookItinerary(String itineraryId, String userEmail) {
+        // 1. Lock sull'Itinerario
+        Itinerary itinerary = itineraryRepository.findByIdForUpdate(UUID.fromString(itineraryId))
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "itinerary.notFound"));
+                
+        // 2. Controllo evento concluso
+        if (itinerary.getEndDateTime() != null && itinerary.getEndDateTime().isBefore(LocalDateTime.now())) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "itinerary.booking.pastEvent");
+        }
+                
+        User user = userRepository.getUserByEmail(userEmail)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "user.notFound"));
+                
+        // 3. Lock sulle attività collegate (Optimistic Lock)
+        for (Activity activity : itinerary.getActivities()) {
+            Activity lockedActivity = activityRepository.findByIdForUpdate(activity.getId())
+                    .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "activity.notFound"));
+                    
+            int current = activityService.calculateCurrentParticipants(lockedActivity);
+            if (lockedActivity.getParticipants() != null && current >= lockedActivity.getParticipants()) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "itinerary.booking.activityFull");
+            }
+        }
+
+        if (itineraryBookingRepository.findByUserIdAndItineraryId(user.getId(), itinerary.getId()).isPresent()) {
+            throw new ApiException(HttpStatus.CONFLICT, "itinerary.booking.alreadyBooked");
+        }
+
+        // 4. Salva la prenotazione dell'itinerario
+        ItineraryBooking booking = new ItineraryBooking();
+        booking.setUser(user);
+        booking.setItinerary(itinerary);
+        itineraryBookingRepository.save(booking);
+
+        // 5. Iscrizione automatica a cascata in tutte le attività
+        for (Activity activity : itinerary.getActivities()) {
+            ActivityBooking actBooking = new ActivityBooking();
+            actBooking.setUser(user);
+            actBooking.setActivity(activity);
+            actBooking.setItinerary(itinerary); // Riferimento all'itinerario
+            activityBookingRepository.save(actBooking);
+        }
+    }
+
+    @Transactional
+    public void cancelItineraryBooking(String itineraryId, String userEmail) {
+        Itinerary itinerary = itineraryRepository.findByIdForUpdate(UUID.fromString(itineraryId))
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "itinerary.notFound"));
+                
+        if (itinerary.getEndDateTime() != null && itinerary.getEndDateTime().isBefore(LocalDateTime.now())) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "itinerary.booking.pastEvent");
+        }
+        
+        User user = userRepository.getUserByEmail(userEmail)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "user.notFound"));
+                
+        ItineraryBooking booking = itineraryBookingRepository.findByUserIdAndItineraryId(user.getId(), itinerary.getId())
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "itinerary.booking.notFound"));
+                
+        // Rimuove l'iscrizione a cascata da tutte le attività collegate
+        List<ActivityBooking> associatedBookings = activityBookingRepository.findByUserIdAndItineraryId(user.getId(), itinerary.getId());
+        activityBookingRepository.deleteAll(associatedBookings);
+
+        // Rimuove la prenotazione dell'itinerario
+        itineraryBookingRepository.delete(booking);
     }
 }
 

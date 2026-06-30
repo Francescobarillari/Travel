@@ -1,6 +1,6 @@
 package it.unical.ea.Travel.Mappers.itinerary;
 
-import it.unical.ea.Travel.DTOs.itinerary.ItineraryDto;
+import it.unical.ea.dtos.itinerary.ItineraryDto;
 import it.unical.ea.Travel.Entities.activity.Activity;
 import it.unical.ea.Travel.Entities.itinerary.Itinerary;
 import it.unical.ea.Travel.Entities.user.User;

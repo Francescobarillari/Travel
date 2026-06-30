@@ -24,12 +24,18 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.http.HttpStatus;
 
-import it.unical.ea.Travel.DTOs.itinerary.CreateItineraryRequest;
-import it.unical.ea.Travel.DTOs.itinerary.ItineraryDto;
+import it.unical.ea.dtos.itinerary.CreateItineraryRequest;
+import it.unical.ea.dtos.itinerary.ItineraryDto;
 import it.unical.ea.Travel.Entities.itinerary.Itinerary;
+import it.unical.ea.Travel.Entities.activity.Activity;
 import it.unical.ea.Travel.Mappers.itinerary.ItineraryMapper;
 import it.unical.ea.Travel.Services.itinerary.ItineraryService;
+import it.unical.ea.Travel.Services.activity.ActivityService;
+import it.unical.ea.dtos.activity.ActivityDto;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -41,6 +47,7 @@ public class ItineraryController {
 
     private final ItineraryService itineraryService;
     private final ItineraryMapper itineraryMapper;
+    private final ActivityService activityService;
 
     @Operation(summary = "Crea un nuovo itinerario", description = "Crea un itinerario associandolo a un creatore e opzionalmente a delle attività")
     @PostMapping
@@ -54,15 +61,15 @@ public class ItineraryController {
         Itinerary savedItinerary = itineraryService.createItinerary(
                 itinerary,
                 request.getCreatorId(),
-                request.getActivityIds()
-        );
+                request.getActivityIds());
 
         return toDTO(savedItinerary);
     }
 
     @Operation(summary = "Ottieni un itinerario per ID")
     @GetMapping("/{stringId}")
-    public ItineraryDto getItinerary(@Parameter(description = "ID dell'itinerario", schema = @Schema(format = "uuid"), example = "550e8400-e29b-41d4-a716-446655440000") @PathVariable String stringId) {
+    public ItineraryDto getItinerary(
+            @Parameter(description = "ID dell'itinerario", schema = @Schema(format = "uuid"), example = "550e8400-e29b-41d4-a716-446655440000") @PathVariable String stringId) {
         Itinerary itinerary = itineraryService.getItinerary(stringId);
         return toDTO(itinerary);
     }
@@ -77,7 +84,8 @@ public class ItineraryController {
 
     @Operation(summary = "Ottieni gli itinerari di un creatore", description = "Restituisce tutti gli itinerari creati da un utente specifico")
     @GetMapping("/creator/{creatorId}")
-    public List<ItineraryDto> getItinerariesByCreator(@Parameter(description = "ID del creatore", schema = @Schema(format = "uuid"), example = "550e8400-e29b-41d4-a716-446655440000") @PathVariable String creatorId) {
+    public List<ItineraryDto> getItinerariesByCreator(
+            @Parameter(description = "ID del creatore", schema = @Schema(format = "uuid"), example = "550e8400-e29b-41d4-a716-446655440000") @PathVariable String creatorId) {
         return itineraryService.getItinerariesByCreator(creatorId).stream()
                 .map(this::toDTO)
                 .toList();
@@ -85,7 +93,8 @@ public class ItineraryController {
 
     @Operation(summary = "Elimina un itinerario (soft delete)")
     @DeleteMapping("/{stringId}")
-    public void deleteItinerary(@Parameter(description = "ID dell'itinerario", schema = @Schema(format = "uuid"), example = "550e8400-e29b-41d4-a716-446655440000") @PathVariable String stringId) {
+    public void deleteItinerary(
+            @Parameter(description = "ID dell'itinerario", schema = @Schema(format = "uuid"), example = "550e8400-e29b-41d4-a716-446655440000") @PathVariable String stringId) {
         itineraryService.deleteItinerary(stringId);
     }
 
@@ -94,17 +103,17 @@ public class ItineraryController {
     @Operation(summary = "Carica un'immagine per l'itinerario", description = "Accetta file JPEG, PNG o WebP. Se esiste già un'immagine, viene sostituita.")
     @PostMapping(value = "/{stringId}/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ItineraryDto uploadImage(
-            @Parameter(description = "ID dell'itinerario", schema = @Schema(format = "uuid"), example = "550e8400-e29b-41d4-a716-446655440000")
-            @PathVariable String stringId,
-            @Parameter(description = "File immagine (JPEG, PNG, WebP)", schema = @Schema(type = "string", format = "binary"))
-            @RequestPart("file") MultipartFile file) {
+            @Parameter(description = "ID dell'itinerario", schema = @Schema(format = "uuid"), example = "550e8400-e29b-41d4-a716-446655440000") @PathVariable String stringId,
+            @Parameter(description = "File immagine (JPEG, PNG, WebP)", schema = @Schema(type = "string", format = "binary")) @RequestPart("file") MultipartFile file) {
         Itinerary updated = itineraryService.uploadImage(stringId, file);
         return toDTO(updated);
     }
 
     @Operation(summary = "Scarica l'immagine dell'itinerario", description = "Restituisce l'immagine inline con il content-type corretto. Endpoint pubblico.")
     @GetMapping("/{stringId}/image")
-    public ResponseEntity<Resource> getImage(@Parameter(description = "ID dell'itinerario", schema = @Schema(format = "uuid"), example = "550e8400-e29b-41d4-a716-446655440000") @PathVariable String stringId) throws IOException {
+    public ResponseEntity<Resource> getImage(
+            @Parameter(description = "ID dell'itinerario", schema = @Schema(format = "uuid"), example = "550e8400-e29b-41d4-a716-446655440000") @PathVariable String stringId)
+            throws IOException {
         Resource resource = itineraryService.getImage(stringId);
 
         // Determina il content type dal file
@@ -121,15 +130,47 @@ public class ItineraryController {
 
     @Operation(summary = "Elimina l'immagine dell'itinerario")
     @DeleteMapping("/{stringId}/image")
-    public ItineraryDto deleteImage(@Parameter(description = "ID dell'itinerario", schema = @Schema(format = "uuid"), example = "550e8400-e29b-41d4-a716-446655440000") @PathVariable String stringId) {
+    public ItineraryDto deleteImage(
+            @Parameter(description = "ID dell'itinerario", schema = @Schema(format = "uuid"), example = "550e8400-e29b-41d4-a716-446655440000") @PathVariable String stringId) {
         Itinerary updated = itineraryService.deleteImage(stringId);
         return toDTO(updated);
+    }
+
+    @Operation(summary = "Prenota un itinerario", description = "Prenota l'itinerario ed iscrive l'utente autenticato a tutte le attività collegate")
+    @PostMapping("/{stringId}/book")
+    public ResponseEntity<Void> bookItinerary(
+            @Parameter(description = "ID dell'itinerario", schema = @Schema(format = "uuid"), example = "550e8400-e29b-41d4-a716-446655440000") @PathVariable String stringId,
+            @AuthenticationPrincipal Jwt jwt) {
+        String email = jwt.getClaimAsString("email");
+        itineraryService.bookItinerary(stringId, email);
+        return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    @Operation(summary = "Cancella la prenotazione di un itinerario", description = "Annulla l'iscrizione all'itinerario ed a tutte le sue attività per l'utente autenticato")
+    @DeleteMapping("/{stringId}/book")
+    public ResponseEntity<Void> cancelItineraryBooking(
+            @Parameter(description = "ID dell'itinerario", schema = @Schema(format = "uuid"), example = "550e8400-e29b-41d4-a716-446655440000") @PathVariable String stringId,
+            @AuthenticationPrincipal Jwt jwt) {
+        String email = jwt.getClaimAsString("email");
+        itineraryService.cancelItineraryBooking(stringId, email);
+        return ResponseEntity.noContent().build();
     }
 
     // --- Helper per costruire imageUrl ---
 
     private ItineraryDto toDTO(Itinerary itinerary) {
         ItineraryDto dto = itineraryMapper.toDTO(itinerary);
+
+        if (dto.getActivities() != null && itinerary.getActivities() != null) {
+            for (ActivityDto actDto : dto.getActivities()) {
+                Activity act = itinerary.getActivities().stream()
+                        .filter(a -> a.getId().equals(actDto.getId()))
+                        .findFirst().orElse(null);
+                if (act != null) {
+                    actDto.setCurrentParticipants(activityService.calculateCurrentParticipants(act));
+                }
+            }
+        }
 
         if (itinerary.getImagePath() != null) {
             String imageUrl = ServletUriComponentsBuilder.fromCurrentContextPath()

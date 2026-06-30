@@ -102,7 +102,7 @@ public class ActivityService {
 
     @Transactional
     public void bookActivity(String activityId, String userEmail) {
-        Activity activity = activityRepository.findById(UUID.fromString(activityId))
+        Activity activity = activityRepository.findByIdForUpdate(UUID.fromString(activityId))
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "activity.notFound"));
 
         // REGOLA DATI PASSATI: Blocco prenotazione per attività passate
@@ -131,7 +131,7 @@ public class ActivityService {
 
     @Transactional
     public void cancelActivityBooking(String activityId, String userEmail) {
-        Activity activity = activityRepository.findById(UUID.fromString(activityId))
+        Activity activity = activityRepository.findByIdForUpdate(UUID.fromString(activityId))
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "activity.notFound"));
 
         // REGOLA DATI PASSATI: Blocco cancellazione per attività passate
