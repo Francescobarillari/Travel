@@ -17,7 +17,7 @@ public interface ItineraryRepository extends JpaRepository<Itinerary, UUID> {
 
     List<Itinerary> findByCreatorId(UUID creatorId);
 
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Lock(LockModeType.OPTIMISTIC_FORCE_INCREMENT)
     @Query("SELECT i FROM Itinerary i WHERE i.id = :id")
     Optional<Itinerary> findByIdForUpdate(@Param("id") UUID id);
 }

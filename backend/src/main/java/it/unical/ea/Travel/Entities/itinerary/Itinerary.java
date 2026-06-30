@@ -69,6 +69,9 @@ public class Itinerary {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
+    @Version
+    private Long version;
+
     public boolean isDeleted() {
         return deletedAt != null;
     }

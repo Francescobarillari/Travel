@@ -53,7 +53,13 @@ public class GlobalExceptionHandler {
         }
         return new ResponseEntity<>(Map.of("error", message != null ? message : "Richiesta non valida."), HttpStatus.BAD_REQUEST);
     }
-    
+
+    @ExceptionHandler(org.springframework.orm.ObjectOptimisticLockingFailureException.class)
+    public ResponseEntity<Map<String, String>> handleOptimisticLockException(
+            org.springframework.orm.ObjectOptimisticLockingFailureException ex, Locale locale) {
+        String translatedMessage = messageSource.getMessage("error.optimisticLock", null, locale);
+        return new ResponseEntity<>(Map.of("error", translatedMessage), HttpStatus.CONFLICT);
+    }
 }
 
 

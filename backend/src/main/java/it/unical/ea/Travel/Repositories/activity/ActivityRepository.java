@@ -14,7 +14,7 @@ import java.util.UUID;
 @Repository
 public interface ActivityRepository extends JpaRepository<Activity, UUID> {
     
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Lock(LockModeType.OPTIMISTIC_FORCE_INCREMENT)
     @Query("SELECT a FROM Activity a WHERE a.id = :id")
     Optional<Activity> findByIdForUpdate(@Param("id") UUID id);
 }

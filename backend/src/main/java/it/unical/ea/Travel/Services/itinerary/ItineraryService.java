@@ -158,12 +158,8 @@ public class ItineraryService {
         User user = userRepository.getUserByEmail(userEmail)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "user.notFound"));
                 
-        // 3. Lock sulle attività collegate in ordine crescente di ID (Prevenzione Deadlock)
-        List<Activity> sortedActivities = itinerary.getActivities().stream()
-                .sorted(java.util.Comparator.comparing(Activity::getId))
-                .toList();
-                
-        for (Activity activity : sortedActivities) {
+        // 3. Lock sulle attività collegate (Optimistic Lock)
+        for (Activity activity : itinerary.getActivities()) {
             Activity lockedActivity = activityRepository.findByIdForUpdate(activity.getId())
                     .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "activity.notFound"));
                     

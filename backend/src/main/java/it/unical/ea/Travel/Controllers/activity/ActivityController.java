@@ -49,7 +49,8 @@ public class ActivityController {
 
     @Operation(summary = "Ottieni un'attività per ID")
     @GetMapping("/{stringId}")
-    public ActivityDto getActivity(@Parameter(description = "ID dell'attività", schema = @Schema(format = "uuid"), example = "550e8400-e29b-41d4-a716-446655440000") @PathVariable String stringId) {
+    public ActivityDto getActivity(
+            @Parameter(description = "ID dell'attività", schema = @Schema(format = "uuid"), example = "550e8400-e29b-41d4-a716-446655440000") @PathVariable String stringId) {
         return enrichImageUrls(activityService.getActivity(stringId));
     }
 
@@ -63,7 +64,8 @@ public class ActivityController {
 
     @Operation(summary = "Elimina un'attività (soft delete)")
     @DeleteMapping("/{stringId}")
-    public void deleteActivity(@Parameter(description = "ID dell'attività", schema = @Schema(format = "uuid"), example = "550e8400-e29b-41d4-a716-446655440000") @PathVariable String stringId) {
+    public void deleteActivity(
+            @Parameter(description = "ID dell'attività", schema = @Schema(format = "uuid"), example = "550e8400-e29b-41d4-a716-446655440000") @PathVariable String stringId) {
         activityService.deleteActivity(stringId);
     }
 
@@ -72,8 +74,7 @@ public class ActivityController {
     @Operation(summary = "Carica immagini per l'attività", description = "Accetta una lista di file immagine (JPEG, PNG, WebP)")
     @PostMapping(value = "/{stringId}/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ActivityDto uploadImages(
-            @Parameter(description = "ID dell'attività", schema = @Schema(format = "uuid"), example = "550e8400-e29b-41d4-a716-446655440000")
-            @PathVariable String stringId,
+            @Parameter(description = "ID dell'attività", schema = @Schema(format = "uuid"), example = "550e8400-e29b-41d4-a716-446655440000") @PathVariable String stringId,
             @RequestPart("files") MultipartFile[] files) {
         ActivityDto updated = activityService.uploadImages(stringId, files);
         return enrichImageUrls(updated);
@@ -98,8 +99,7 @@ public class ActivityController {
     @Operation(summary = "Elimina un'immagine specifica dell'attività")
     @DeleteMapping("/{stringId}/images/{filename}")
     public ActivityDto deleteImage(
-            @Parameter(description = "ID dell'attività", schema = @Schema(format = "uuid"), example = "550e8400-e29b-41d4-a716-446655440000")
-            @PathVariable String stringId,
+            @Parameter(description = "ID dell'attività", schema = @Schema(format = "uuid"), example = "550e8400-e29b-41d4-a716-446655440000") @PathVariable String stringId,
             @PathVariable String filename) {
         ActivityDto updated = activityService.deleteImage(stringId, filename);
         return enrichImageUrls(updated);
@@ -110,8 +110,7 @@ public class ActivityController {
     @Operation(summary = "Prenota un'attività", description = "Prenota l'attività per l'utente autenticato")
     @PostMapping("/{stringId}/book")
     public ResponseEntity<Void> bookActivity(
-            @Parameter(description = "ID dell'attività", schema = @Schema(format = "uuid"), example = "550e8400-e29b-41d4-a716-446655440000")
-            @PathVariable String stringId,
+            @Parameter(description = "ID dell'attività", schema = @Schema(format = "uuid"), example = "550e8400-e29b-41d4-a716-446655440000") @PathVariable String stringId,
             @AuthenticationPrincipal Jwt jwt) {
         String email = jwt.getClaimAsString("email");
         activityService.bookActivity(stringId, email);
@@ -121,8 +120,7 @@ public class ActivityController {
     @Operation(summary = "Cancella prenotazione attività", description = "Cancella la prenotazione dell'attività per l'utente autenticato")
     @DeleteMapping("/{stringId}/book")
     public ResponseEntity<Void> cancelBooking(
-            @Parameter(description = "ID dell'attività", schema = @Schema(format = "uuid"), example = "550e8400-e29b-41d4-a716-446655440000")
-            @PathVariable String stringId,
+            @Parameter(description = "ID dell'attività", schema = @Schema(format = "uuid"), example = "550e8400-e29b-41d4-a716-446655440000") @PathVariable String stringId,
             @AuthenticationPrincipal Jwt jwt) {
         String email = jwt.getClaimAsString("email");
         activityService.cancelActivityBooking(stringId, email);
@@ -138,7 +136,8 @@ public class ActivityController {
         if (dto.getImages() != null && !dto.getImages().isEmpty()) {
             List<String> absoluteUrls = dto.getImages().stream()
                     .map(path -> {
-                        if (path.startsWith("http")) return path;
+                        if (path.startsWith("http"))
+                            return path;
                         String filename = path.substring(path.lastIndexOf("/") + 1);
                         return ServletUriComponentsBuilder.fromCurrentContextPath()
                                 .path("/activity/images/")
