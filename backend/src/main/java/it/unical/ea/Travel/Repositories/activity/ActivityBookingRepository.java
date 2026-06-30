@@ -5,14 +5,18 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-import java.util.UUID;
+
+import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
 public interface ActivityBookingRepository extends JpaRepository<ActivityBooking, UUID> {
 
     Optional<ActivityBooking> findByUserIdAndActivityId(UUID userId, UUID activityId);
 
-    @Query("SELECT COUNT(DISTINCT ab.user.id) FROM ActivityBooking ab WHERE ab.activity.id = :activityId")
+    @Query("SELECT COUNT(ab.id) FROM ActivityBooking ab WHERE ab.activity.id = :activityId")
     long countDirectParticipants(@Param("activityId") UUID activityId);
+
+    List<ActivityBooking> findByUserIdAndItineraryId(UUID userId, UUID itineraryId);
 }

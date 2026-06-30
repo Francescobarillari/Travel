@@ -24,12 +24,18 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.http.HttpStatus;
 
-import it.unical.ea.Travel.DTOs.itinerary.CreateItineraryRequest;
-import it.unical.ea.Travel.DTOs.itinerary.ItineraryDto;
+import it.unical.ea.dtos.itinerary.CreateItineraryRequest;
+import it.unical.ea.dtos.itinerary.ItineraryDto;
 import it.unical.ea.Travel.Entities.itinerary.Itinerary;
+import it.unical.ea.Travel.Entities.activity.Activity;
 import it.unical.ea.Travel.Mappers.itinerary.ItineraryMapper;
 import it.unical.ea.Travel.Services.itinerary.ItineraryService;
+import it.unical.ea.Travel.Services.activity.ActivityService;
+import it.unical.ea.dtos.activity.ActivityDto;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -41,6 +47,7 @@ public class ItineraryController {
 
     private final ItineraryService itineraryService;
     private final ItineraryMapper itineraryMapper;
+    private final ActivityService activityService;
 
     @Operation(summary = "Crea un nuovo itinerario", description = "Crea un itinerario associandolo a un creatore e opzionalmente a delle attività")
     @PostMapping
@@ -126,10 +133,43 @@ public class ItineraryController {
         return toDTO(updated);
     }
 
+    @Operation(summary = "Prenota un itinerario", description = "Prenota l'itinerario ed iscrive l'utente autenticato a tutte le attività collegate")
+    @PostMapping("/{stringId}/book")
+    public ResponseEntity<Void> bookItinerary(
+            @Parameter(description = "ID dell'itinerario", schema = @Schema(format = "uuid"), example = "550e8400-e29b-41d4-a716-446655440000")
+            @PathVariable String stringId,
+            @AuthenticationPrincipal Jwt jwt) {
+        String email = jwt.getClaimAsString("email");
+        itineraryService.bookItinerary(stringId, email);
+        return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    @Operation(summary = "Cancella la prenotazione di un itinerario", description = "Annulla l'iscrizione all'itinerario ed a tutte le sue attività per l'utente autenticato")
+    @DeleteMapping("/{stringId}/book")
+    public ResponseEntity<Void> cancelItineraryBooking(
+            @Parameter(description = "ID dell'itinerario", schema = @Schema(format = "uuid"), example = "550e8400-e29b-41d4-a716-446655440000")
+            @PathVariable String stringId,
+            @AuthenticationPrincipal Jwt jwt) {
+        String email = jwt.getClaimAsString("email");
+        itineraryService.cancelItineraryBooking(stringId, email);
+        return ResponseEntity.noContent().build();
+    }
+
     // --- Helper per costruire imageUrl ---
 
     private ItineraryDto toDTO(Itinerary itinerary) {
         ItineraryDto dto = itineraryMapper.toDTO(itinerary);
+
+        if (dto.getActivities() != null && itinerary.getActivities() != null) {
+            for (ActivityDto actDto : dto.getActivities()) {
+                Activity act = itinerary.getActivities().stream()
+                        .filter(a -> a.getId().equals(actDto.getId()))
+                        .findFirst().orElse(null);
+                if (act != null) {
+                    actDto.setCurrentParticipants(activityService.calculateCurrentParticipants(act));
+                }
+            }
+        }
 
         if (itinerary.getImagePath() != null) {
             String imageUrl = ServletUriComponentsBuilder.fromCurrentContextPath()

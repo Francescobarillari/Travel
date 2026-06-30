@@ -1,6 +1,5 @@
-package it.unical.ea.Travel.Entities.activity;
+package it.unical.ea.Travel.Entities.itinerary;
 
-import it.unical.ea.Travel.Entities.itinerary.Itinerary;
 import it.unical.ea.Travel.Entities.user.User;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -10,13 +9,13 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "activity_bookings", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"user_id", "activity_id"})
+@Table(name = "itinerary_bookings", uniqueConstraints = {
+    @UniqueConstraint(columnNames = {"user_id", "itinerary_id"})
 })
 @Getter
 @Setter
 @NoArgsConstructor
-public class ActivityBooking {
+public class ItineraryBooking {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
@@ -26,11 +25,7 @@ public class ActivityBooking {
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "activity_id", nullable = false)
-    private Activity activity;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "itinerary_id")
+    @JoinColumn(name = "itinerary_id", nullable = false)
     private Itinerary itinerary;
 
     @Column(name = "booked_at", nullable = false)
