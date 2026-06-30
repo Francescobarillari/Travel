@@ -91,4 +91,39 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 }
 
+val compileCommon by tasks.registering(Exec::class) {
+    group = "build"
+    description = "Compiles the in_common Maven module"
+    workingDir = file("${projectDir}/../../in_common")
+    
+    // Incremental build tracking
+    inputs.dir(file("${projectDir}/../../in_common/src"))
+    inputs.file(file("${projectDir}/../../in_common/pom.xml"))
+    outputs.file(file("${projectDir}/../../in_common/target/common-dtos-1.0.0.jar"))
+    
+    val isWindows = System.getProperty("os.name").lowercase().contains("windows")
+    if (isWindows) {
+        commandLine("cmd", "/c", "mvn clean package")
+    } else {
+        commandLine("mvn", "clean", "package")
+    }
+}
+
+val copyCommonJar by tasks.registering(Copy::class) {
+    group = "build"
+    description = "Copies the compiled common-dtos jar to libs"
+    dependsOn(compileCommon)
+    from(file("${projectDir}/../../in_common/target/common-dtos-1.0.0.jar"))
+    into(file("${projectDir}/libs"))
+}
+
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+    dependsOn(copyCommonJar)
+}
+
+tasks.withType<JavaCompile>().configureEach {
+    dependsOn(copyCommonJar)
+}
+
+
 
