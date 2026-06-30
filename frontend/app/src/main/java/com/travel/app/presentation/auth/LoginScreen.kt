@@ -112,10 +112,10 @@ fun LoginScreen(
 @Composable
 fun LoginScreenPreview() {
     val mockApiService = object : ApiService {
-        override suspend fun login(request: com.travel.app.data.dto.LoginRequest) = "mock_token"
-        override suspend fun register(request: com.travel.app.data.dto.SignupRequest) = "mock_user_id"
-        override suspend fun getMe() = com.travel.app.data.dto.UserDTO(email = "test@travel.com")
-        override suspend fun updateMe(request: com.travel.app.data.dto.UserDTO) = request
+        override suspend fun login(request: it.unical.ea.dtos.authDto.LoginRequest) = "mock_token"
+        override suspend fun register(request: it.unical.ea.dtos.authDto.SignupRequest) = "mock_user_id"
+        override suspend fun getMe() = it.unical.ea.dtos.user.UserDTO().apply { email = "test@travel.com" }
+        override suspend fun updateMe(request: it.unical.ea.dtos.user.UserDTO) = request
         override suspend fun createActivity(request: it.unical.ea.dtos.activity.ActivityDto) = request
         override suspend fun getActivities() = emptyList<it.unical.ea.dtos.activity.ActivityDto>()
     }

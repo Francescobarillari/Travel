@@ -2,8 +2,9 @@ package com.travel.app.data.repository
 
 import com.google.gson.Gson
 import com.travel.app.data.dto.ErrorResponseDto
-import com.travel.app.data.dto.LoginRequest
-import com.travel.app.data.dto.SignupRequest
+import it.unical.ea.dtos.authDto.LoginRequest
+import it.unical.ea.dtos.authDto.SignupRequest
+import it.unical.ea.enums.UserType
 import com.travel.app.data.session.SessionManager
 import com.travel.app.domain.model.User
 import com.travel.app.domain.model.toDomain
@@ -46,7 +47,10 @@ class UserRepositoryImpl(
         }
 
         return try {
-            val token = apiService.login(LoginRequest(email = email, password = password))
+            val token = apiService.login(LoginRequest().apply {
+                this.email = email
+                this.password = password
+            })
             
             // 1. Salva la sessione con un utente provvisorio per abilitare l'AuthInterceptor
             val detectedType = if (email.contains("societa", ignoreCase = true) || email.contains("company", ignoreCase = true)) "SOCIETA" else "VIAGGIATORE"
@@ -75,14 +79,14 @@ class UserRepositoryImpl(
     ): Result<User> {
         return try {
             apiService.register(
-                SignupRequest(
-                    email = email,
-                    password = password,
-                    userType = SignupRequest.UserType.vIAGGIATORE,
-                    firstName = firstName,
-                    lastName = lastName,
-                    phone = phone
-                )
+                SignupRequest().apply {
+                    this.email = email
+                    this.password = password
+                    this.userType = UserType.VIAGGIATORE
+                    this.firstName = firstName
+                    this.lastName = lastName
+                    this.phone = phone
+                }
             )
             Result.success(
                 User(
@@ -108,14 +112,14 @@ class UserRepositoryImpl(
     ): Result<User> {
         return try {
             apiService.register(
-                SignupRequest(
-                    email = email,
-                    password = password,
-                    userType = SignupRequest.UserType.sOCIETA,
-                    companyName = companyName,
-                    vatNumber = vatNumber,
-                    phone = phone
-                )
+                SignupRequest().apply {
+                    this.email = email
+                    this.password = password
+                    this.userType = UserType.SOCIETA
+                    this.companyName = companyName
+                    this.vatNumber = vatNumber
+                    this.phone = phone
+                }
             )
             Result.success(
                 User(
@@ -158,7 +162,7 @@ class UserRepositoryImpl(
 
     override suspend fun updateMe(user: User): Result<User> {
         return try {
-            val dtoToSend = user.toDto().copy(password = user.password)
+            val dtoToSend = user.toDto().apply { password = user.password }
             val returnedDto = apiService.updateMe(dtoToSend)
             val updatedUser = returnedDto.toDomain().copy(password = user.password)
             val token = sessionManagerProvider().getSessionToken().orEmpty()
