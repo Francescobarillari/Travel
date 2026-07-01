@@ -58,8 +58,8 @@ fun FloatingBottomNavBar(
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             HomeTabItem(
-                icon = Icons.Default.Search,
-                label = "Esplora",
+                icon = if (isSocieta) Icons.Default.Dashboard else Icons.Default.Search,
+                label = if (isSocieta) "Dashboard" else "Esplora",
                 isSelected = selectedTab == HomeTab.ESPLORA,
                 onClick = { onTabSelected(HomeTab.ESPLORA) },
                 modifier = Modifier.weight(1f)
@@ -93,7 +93,7 @@ fun HomeTabItem(
     val contentColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
     val backgroundColor = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f) else Color.Transparent
 
-    Box(
+     Box(
         modifier = modifier
             .padding(vertical = 6.dp, horizontal = 4.dp)
             .height(48.dp)
@@ -102,26 +102,11 @@ fun HomeTabItem(
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-            modifier = Modifier.fillMaxHeight()
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = label,
-                tint = contentColor,
-                modifier = Modifier.size(20.dp)
-            )
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(
-                text = label,
-                color = contentColor,
-                style = MaterialTheme.typography.labelSmall.copy(
-                    fontSize = 11.sp,
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                )
-            )
-        }
+        Icon(
+            imageVector = icon,
+            contentDescription = label,
+            tint = contentColor,
+            modifier = Modifier.size(24.dp)
+        )
     }
 }

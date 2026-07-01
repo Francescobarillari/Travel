@@ -218,75 +218,9 @@ fun MenuScreen(
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        // SECTION: LETTURE CONSIGLIATE
+
         Text(
-            text = "Letture consigliate",
-            style = MaterialTheme.typography.titleSmall.copy(
-                fontWeight = FontWeight.Bold,
-                fontSize = 18.sp,
-                color = Color(0xFF1E293B)
-            ),
-            modifier = Modifier.padding(bottom = 16.dp)
-        )
-
-        // Skyscanner Recommended Read Card
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { Toast.makeText(context, "Letture Consigliate: Funzionalità in arrivo!", Toast.LENGTH_SHORT).show() },
-            shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
-            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Text(
-                        text = "Perché sceglierci?",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF0F172A)
-                    )
-                    Text(
-                        text = "Scopri come creiamo itinerari perfetti su misura per le tue esigenze.",
-                        fontSize = 13.sp,
-                        color = Color(0xFF64748B),
-                        lineHeight = 18.sp
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(16.dp))
-
-                Box(
-                    modifier = Modifier
-                        .size(56.dp)
-                        .background(Color(0xFFEFF6FF), RoundedCornerShape(12.dp)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Explore,
-                        contentDescription = "Esplora",
-                        tint = Color(0xFF2563EB),
-                        modifier = Modifier.size(28.dp)
-                    )
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        // SECTION: ALTRE IMPOSTAZIONI
-        Text(
-            text = "Altre Impostazioni",
+            text = "Impostazioni",
             style = MaterialTheme.typography.titleSmall.copy(
                 fontWeight = FontWeight.Bold,
                 fontSize = 18.sp,
@@ -298,7 +232,7 @@ fun MenuScreen(
         MenuCardContainer {
             MenuItemRow(
                 icon = Icons.Default.Notifications,
-                text = "Impostazioni Notifiche",
+                text = "Notifiche",
                 onClick = { Toast.makeText(context, "Notifiche: Funzionalità in arrivo!", Toast.LENGTH_SHORT).show() }
             )
             MenuDivider()
@@ -319,29 +253,11 @@ fun MenuScreen(
             )
             MenuDivider()
             MenuItemRow(
-                icon = Icons.Default.Info,
-                text = "Informazioni sull'Applicazione",
-                onClick = { Toast.makeText(context, "Informazioni: Funzionalità in arrivo!", Toast.LENGTH_SHORT).show() }
-            )
-            MenuDivider()
-            MenuItemRow(
-                icon = Icons.Default.QuestionAnswer,
-                text = "Centro Assistenza & FAQ",
-                onClick = { Toast.makeText(context, "Supporto: Funzionalità in arrivo!", Toast.LENGTH_SHORT).show() }
-            )
-            MenuDivider()
-            MenuItemRow(
                 icon = Icons.AutoMirrored.Filled.ExitToApp,
                 text = "Disconnetti",
-                onClick = onLogout
-            )
-            MenuDivider()
-            MenuItemRow(
-                icon = Icons.Default.Delete,
-                text = "Disattiva il mio Account",
                 textColor = Color(0xFFDC2626),
                 iconColor = Color(0xFFDC2626),
-                onClick = { Toast.makeText(context, "Funzionalità non attiva", Toast.LENGTH_SHORT).show() }
+                onClick = onLogout
             )
         }
 
