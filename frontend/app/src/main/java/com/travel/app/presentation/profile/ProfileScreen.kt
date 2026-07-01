@@ -1,5 +1,6 @@
 package com.travel.app.presentation.profile
 
+import android.os.Build
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -31,7 +32,6 @@ import androidx.compose.ui.unit.sp
 import com.travel.app.R
 import com.travel.app.domain.model.User
 import com.travel.app.presentation.theme.TravelTheme
-
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -43,8 +43,8 @@ fun ProfileScreen(
     modifier: Modifier = Modifier
 ) {
     val initialUser = user ?: User(
-        email = "johnkinggraphics.gmail.com",
-        username = "@johnkinggraphics",
+        email = "johnkinggraphics@gmail.com",
+        username = "johnkinggraphics",
         userType = "VIAGGIATORE",
         phone = "6895312",
         name = "Charlotte king",
@@ -62,15 +62,92 @@ fun ProfileScreen(
     var vatNumber by remember { mutableStateOf(initialUser.vatNumber.orEmpty()) }
     
     // Country code prefix state
-    var selectedCountryPrefix by remember { mutableStateOf("+91") }
+    var selectedCountryPrefix by remember { mutableStateOf("+39") }
     var isPrefixDropdownExpanded by remember { mutableStateOf(false) }
-    val countryPrefixes = listOf("+91", "+39", "+1", "+44", "+33", "+49")
 
     var isPasswordVisible by remember { mutableStateOf(false) }
     
     val coroutineScope = rememberCoroutineScope()
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    EditProfileForm(
+        initialUser = initialUser,
+        name = name,
+        onNameChange = { name = it },
+        email = email,
+        username = username,
+        onUsernameChange = { username = it },
+        password = password,
+        onPasswordChange = { password = it },
+        phoneNum = phoneNum,
+        onPhoneNumChange = { phoneNum = it },
+        vatNumber = vatNumber,
+        onVatNumberChange = { vatNumber = it },
+        selectedCountryPrefix = selectedCountryPrefix,
+        onSelectedCountryPrefixChange = { selectedCountryPrefix = it },
+        isPrefixDropdownExpanded = isPrefixDropdownExpanded,
+        onPrefixDropdownExpandedChange = { isPrefixDropdownExpanded = it },
+        isPasswordVisible = isPasswordVisible,
+        onPasswordVisibleChange = { isPasswordVisible = it },
+        isLoading = isLoading,
+        errorMessage = errorMessage,
+        onBack = onBack,
+        onSaveClick = {
+            val updatedUser = initialUser.copy(
+                name = name,
+                username = username,
+                password = password,
+                phone = phoneNum,
+                vatNumber = if (isSocieta) vatNumber else null
+            )
+            coroutineScope.launch {
+                isLoading = true
+                errorMessage = null
+                onSave(updatedUser).fold(
+                    onSuccess = {
+                        isLoading = false
+                    },
+                    onFailure = { error ->
+                        isLoading = false
+                        errorMessage = error.message ?: "Errore di salvataggio"
+                    }
+                )
+            }
+        },
+        modifier = modifier
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun EditProfileForm(
+    initialUser: User,
+    name: String,
+    onNameChange: (String) -> Unit,
+    email: String,
+    username: String,
+    onUsernameChange: (String) -> Unit,
+    password: String,
+    onPasswordChange: (String) -> Unit,
+    phoneNum: String,
+    onPhoneNumChange: (String) -> Unit,
+    vatNumber: String,
+    onVatNumberChange: (String) -> Unit,
+    selectedCountryPrefix: String,
+    onSelectedCountryPrefixChange: (String) -> Unit,
+    isPrefixDropdownExpanded: Boolean,
+    onPrefixDropdownExpandedChange: (Boolean) -> Unit,
+    isPasswordVisible: Boolean,
+    onPasswordVisibleChange: (Boolean) -> Unit,
+    isLoading: Boolean,
+    errorMessage: String?,
+    onBack: () -> Unit,
+    onSaveClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val isSocieta = initialUser.userType == "SOCIETA"
+    val countryPrefixes = listOf("+39", "+1", "+44", "+33", "+49")
 
     Column(
         modifier = modifier
@@ -106,28 +183,7 @@ fun ProfileScreen(
             )
 
             IconButton(
-                onClick = {
-                    val updatedUser = initialUser.copy(
-                        name = name,
-                        username = username,
-                        password = password,
-                        phone = phoneNum,
-                        vatNumber = if (isSocieta) vatNumber else null
-                    )
-                    coroutineScope.launch {
-                        isLoading = true
-                        errorMessage = null
-                        onSave(updatedUser).fold(
-                            onSuccess = {
-                                isLoading = false
-                            },
-                            onFailure = { error ->
-                                isLoading = false
-                                errorMessage = error.message ?: "Errore di salvataggio"
-                            }
-                        )
-                    }
-                },
+                onClick = onSaveClick,
                 modifier = Modifier.size(44.dp),
                 enabled = !isLoading
             ) {
@@ -172,6 +228,7 @@ fun ProfileScreen(
                     )
                 }
             }
+            
             // AVATAR AREA WITH CAMERA BADGE
             Box(
                 modifier = Modifier
@@ -197,7 +254,7 @@ fun ProfileScreen(
                         .clip(CircleShape)
                         .background(Color.White)
                         .border(1.dp, Color.LightGray.copy(alpha = 0.5f), CircleShape)
-                        .clickable { /* Photo upload logic would go here */ },
+                        .clickable { /* Photo upload logic */ },
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -209,11 +266,10 @@ fun ProfileScreen(
                 }
             }
 
-
             ProfileInputField(
                 label = if (isSocieta) "Nome Società" else "Nome e Cognome",
                 value = name,
-                onValueChange = { name = it }
+                onValueChange = onNameChange
             )
 
             ProfileInputField(
@@ -226,14 +282,14 @@ fun ProfileScreen(
             ProfileInputField(
                 label = if (isSocieta) "Username Azienda" else "Username",
                 value = username,
-                onValueChange = { username = it }
+                onValueChange = onUsernameChange
             )
 
             if (isSocieta) {
                 ProfileInputField(
                     label = "Partita IVA",
                     value = vatNumber,
-                    onValueChange = { vatNumber = it }
+                    onValueChange = onVatNumberChange
                 )
             }
 
@@ -249,12 +305,12 @@ fun ProfileScreen(
                 )
                 TextField(
                     value = password,
-                    onValueChange = { password = it },
+                    onValueChange = onPasswordChange,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
                     visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                     trailingIcon = {
-                        IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
+                        IconButton(onClick = { onPasswordVisibleChange(!isPasswordVisible) }) {
                             Icon(
                                 imageVector = if (isPasswordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
                                 contentDescription = if (isPasswordVisible) "Nascondi password" else "Mostra password",
@@ -291,14 +347,13 @@ fun ProfileScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Prefix Box Selector
                     Box {
                         Row(
                             modifier = Modifier
                                 .height(56.dp)
                                 .clip(RoundedCornerShape(16.dp))
                                 .background(Color(0xFFF8FAFC))
-                                .clickable { isPrefixDropdownExpanded = true }
+                                .clickable { onPrefixDropdownExpandedChange(true) }
                                 .padding(horizontal = 14.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(4.dp)
@@ -317,25 +372,24 @@ fun ProfileScreen(
 
                         DropdownMenu(
                             expanded = isPrefixDropdownExpanded,
-                            onDismissRequest = { isPrefixDropdownExpanded = false },
+                            onDismissRequest = { onPrefixDropdownExpandedChange(false) },
                             modifier = Modifier.background(Color.White)
                         ) {
                             countryPrefixes.forEach { prefix ->
                                 DropdownMenuItem(
                                     text = { Text(prefix) },
                                     onClick = {
-                                        selectedCountryPrefix = prefix
-                                        isPrefixDropdownExpanded = false
+                                        onSelectedCountryPrefixChange(prefix)
+                                        onPrefixDropdownExpandedChange(false)
                                     }
                                 )
                             }
                         }
                     }
 
-                    // Main Phone number input
                     TextField(
                         value = phoneNum,
-                        onValueChange = { phoneNum = it },
+                        onValueChange = onPhoneNumChange,
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(16.dp),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
