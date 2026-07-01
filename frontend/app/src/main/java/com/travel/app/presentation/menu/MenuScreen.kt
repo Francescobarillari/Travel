@@ -91,8 +91,7 @@ fun MenuScreen(
                                 colors = listOf(Color(0xFF8FA4A6), Color(0xFF6B7F82))
                             ),
                             shape = CircleShape
-                        )
-                        .clickable { onNavigateToProfile() },
+                        ),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
