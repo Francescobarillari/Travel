@@ -32,8 +32,9 @@ import kotlinx.coroutines.launch
 @Composable
 fun EditProfileScreen(
     user: User?,
+    viewModel: EditProfileViewModel,
     onBack: () -> Unit,
-    onSave: suspend (User) -> Result<User>,
+    onSaveSuccess: (User) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val initialUser = user ?: User(
@@ -45,55 +46,32 @@ fun EditProfileScreen(
         password = "password123"
     )
 
+    LaunchedEffect(initialUser) {
+        viewModel.initialize(initialUser)
+    }
+
     val isSocieta = initialUser.userType == "SOCIETA"
 
-    // Form states
-    var name by remember { mutableStateOf(initialUser.name.orEmpty()) }
-    val email by remember { mutableStateOf(initialUser.email) }
-    var username by remember { mutableStateOf(initialUser.username) }
-    var vatNumber by remember { mutableStateOf(initialUser.vatNumber.orEmpty()) }
-    
     // Country code prefix and phone number (read-only)
     val phoneNum = initialUser.phone.orEmpty()
     val selectedCountryPrefix = "+39" 
 
-    val coroutineScope = rememberCoroutineScope()
-    var isLoading by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
-
     EditProfileForm(
         initialUser = initialUser,
-        name = name,
-        onNameChange = { name = it },
-        email = email,
-        username = username,
-        onUsernameChange = { username = it },
-        vatNumber = vatNumber,
-        onVatNumberChange = { vatNumber = it },
+        name = viewModel.name,
+        onNameChange = { viewModel.name = it },
+        email = viewModel.email,
+        username = viewModel.username,
+        onUsernameChange = { viewModel.username = it },
+        vatNumber = viewModel.vatNumber,
+        onVatNumberChange = { viewModel.vatNumber = it },
         selectedCountryPrefix = selectedCountryPrefix,
         phoneNum = phoneNum,
-        isLoading = isLoading,
-        errorMessage = errorMessage,
+        isLoading = viewModel.isLoading,
+        errorMessage = viewModel.errorMessage,
         onBack = onBack,
         onSaveClick = {
-            val updatedUser = initialUser.copy(
-                name = name,
-                username = username,
-                vatNumber = if (isSocieta) vatNumber else null
-            )
-            coroutineScope.launch {
-                isLoading = true
-                errorMessage = null
-                onSave(updatedUser).fold(
-                    onSuccess = {
-                        isLoading = false
-                    },
-                    onFailure = { error ->
-                        isLoading = false
-                        errorMessage = error.message ?: "Errore di salvataggio"
-                    }
-                )
-            }
+            viewModel.saveProfile(onSaveSuccess)
         },
         modifier = modifier
     )
@@ -431,6 +409,20 @@ fun getInitials(name: String?): String {
 @Composable
 fun EditProfileScreenViaggiatorePreview() {
     TravelTheme {
+        val mockViewModel = remember {
+            EditProfileViewModel(
+                userRepository = object : com.travel.app.domain.repository.UserRepository {
+                    override fun getSessionUser(): User? = null
+                    override fun saveSession(user: User, token: String) {}
+                    override fun logout() {}
+                    override suspend fun login(email: String, password: String) = Result.failure<User>(Exception())
+                    override suspend fun registerViaggiatoreUser(email: String, firstName: String, lastName: String, password: String, phone: String?) = Result.failure<User>(Exception())
+                    override suspend fun registerSocietaUser(email: String, companyName: String, vatNumber: String, password: String, phone: String?) = Result.failure<User>(Exception())
+                    override suspend fun getMe() = Result.failure<User>(Exception())
+                    override suspend fun updateMe(user: User) = Result.success(user)
+                }
+            )
+        }
         EditProfileScreen(
             user = User(
                 email = "johnkinggraphics@gmail.com",
@@ -439,8 +431,9 @@ fun EditProfileScreenViaggiatorePreview() {
                 phone = "6895312",
                 name = "Charlotte king"
             ),
+            viewModel = mockViewModel,
             onBack = {},
-            onSave = { Result.success(it) }
+            onSaveSuccess = {}
         )
     }
 }
@@ -449,6 +442,20 @@ fun EditProfileScreenViaggiatorePreview() {
 @Composable
 fun EditProfileScreenSocietaPreview() {
     TravelTheme {
+        val mockViewModel = remember {
+            EditProfileViewModel(
+                userRepository = object : com.travel.app.domain.repository.UserRepository {
+                    override fun getSessionUser(): User? = null
+                    override fun saveSession(user: User, token: String) {}
+                    override fun logout() {}
+                    override suspend fun login(email: String, password: String) = Result.failure<User>(Exception())
+                    override suspend fun registerViaggiatoreUser(email: String, firstName: String, lastName: String, password: String, phone: String?) = Result.failure<User>(Exception())
+                    override suspend fun registerSocietaUser(email: String, companyName: String, vatNumber: String, password: String, phone: String?) = Result.failure<User>(Exception())
+                    override suspend fun getMe() = Result.failure<User>(Exception())
+                    override suspend fun updateMe(user: User) = Result.success(user)
+                }
+            )
+        }
         EditProfileScreen(
             user = User(
                 email = "societa@travel.com",
@@ -458,8 +465,9 @@ fun EditProfileScreenSocietaPreview() {
                 name = "Agenzia Viaggi Italia S.r.l.",
                 vatNumber = "01234567890"
             ),
+            viewModel = mockViewModel,
             onBack = {},
-            onSave = { Result.success(it) }
+            onSaveSuccess = {}
         )
     }
 }

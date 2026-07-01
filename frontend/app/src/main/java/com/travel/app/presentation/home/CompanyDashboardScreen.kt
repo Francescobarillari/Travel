@@ -13,7 +13,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.travel.app.data.AppContainer
 import com.travel.app.presentation.components.itinerary.ItineraryCard
 import com.travel.app.presentation.theme.TravelTheme
 import it.unical.ea.dtos.itinerary.ItineraryDto
@@ -21,27 +20,11 @@ import it.unical.ea.dtos.itinerary.ItineraryDto
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun CompanyDashboardScreen(
+    viewModel: CompanyDashboardViewModel,
     modifier: Modifier = Modifier
 ) {
-    var itineraries by remember { mutableStateOf<List<ItineraryDto>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
-
     LaunchedEffect(Unit) {
-        isLoading = true
-        errorMessage = null
-        try {
-            val result = AppContainer.itineraryRepository.getItineraries()
-            result.onSuccess { list ->
-                itineraries = list
-            }.onFailure { e ->
-                errorMessage = e.message ?: "Impossibile caricare gli itinerari"
-            }
-        } catch (e: Exception) {
-            errorMessage = e.message ?: "Errore imprevisto"
-        } finally {
-            isLoading = false
-        }
+        viewModel.fetchItineraries()
     }
 
     Column(
@@ -56,14 +39,14 @@ fun CompanyDashboardScreen(
             )
         )
 
-        if (isLoading) {
+        if (viewModel.isLoading) {
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
                 CircularProgressIndicator()
             }
-        } else if (errorMessage != null) {
+        } else if (viewModel.errorMessage != null) {
             Box(
                 modifier = Modifier.fillMaxSize().padding(24.dp),
                 contentAlignment = Alignment.Center
@@ -77,11 +60,11 @@ fun CompanyDashboardScreen(
                     ) {
                         Icon(Icons.Default.Error, contentDescription = null, tint = MaterialTheme.colorScheme.error)
                         Spacer(Modifier.width(8.dp))
-                        Text(errorMessage ?: "", color = MaterialTheme.colorScheme.onErrorContainer)
+                        Text(viewModel.errorMessage ?: "", color = MaterialTheme.colorScheme.onErrorContainer)
                     }
                 }
             }
-        } else if (itineraries.isEmpty()) {
+        } else if (viewModel.itineraries.isEmpty()) {
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
@@ -93,7 +76,7 @@ fun CompanyDashboardScreen(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(bottom = 100.dp)
             ) {
-                items(itineraries) { itinerary ->
+                items(viewModel.itineraries) { itinerary ->
                     ItineraryCard(
                         itinerary = itinerary,
                         actions = {
@@ -113,6 +96,13 @@ fun CompanyDashboardScreen(
 @Composable
 fun CompanyDashboardScreenPreview() {
     TravelTheme {
-        CompanyDashboardScreen()
+        val mockViewModel = remember {
+            CompanyDashboardViewModel(
+                itineraryRepository = object : com.travel.app.domain.repository.ItineraryRepository {
+                    override suspend fun getItineraries() = Result.success(emptyList<ItineraryDto>())
+                }
+            )
+        }
+        CompanyDashboardScreen(viewModel = mockViewModel)
     }
 }
