@@ -39,7 +39,6 @@ fun EditProfileScreen(
 ) {
     val initialUser = user ?: User(
         email = "johnkinggraphics@gmail.com",
-        username = "johnkinggraphics",
         userType = "VIAGGIATORE",
         phone = "6895312",
         name = "Charlotte king",
@@ -61,8 +60,6 @@ fun EditProfileScreen(
         name = viewModel.name,
         onNameChange = { viewModel.name = it },
         email = viewModel.email,
-        username = viewModel.username,
-        onUsernameChange = { viewModel.username = it },
         vatNumber = viewModel.vatNumber,
         onVatNumberChange = { viewModel.vatNumber = it },
         selectedCountryPrefix = selectedCountryPrefix,
@@ -84,8 +81,6 @@ fun EditProfileForm(
     name: String,
     onNameChange: (String) -> Unit,
     email: String,
-    username: String,
-    onUsernameChange: (String) -> Unit,
     vatNumber: String,
     onVatNumberChange: (String) -> Unit,
     selectedCountryPrefix: String,
@@ -249,11 +244,7 @@ fun EditProfileForm(
                 onValueChange = onNameChange
             )
 
-            ProfileInputField(
-                label = if (isSocieta) "Username Azienda" else "Username",
-                value = username,
-                onValueChange = onUsernameChange
-            )
+            // Username field removed
 
             ProfileInputField(
                 label = "Indirizzo Email",
@@ -426,7 +417,6 @@ fun EditProfileScreenViaggiatorePreview() {
         EditProfileScreen(
             user = User(
                 email = "johnkinggraphics@gmail.com",
-                username = "johnkinggraphics",
                 userType = "VIAGGIATORE",
                 phone = "6895312",
                 name = "Charlotte king"
@@ -459,7 +449,6 @@ fun EditProfileScreenSocietaPreview() {
         EditProfileScreen(
             user = User(
                 email = "societa@travel.com",
-                username = "travel_agency",
                 userType = "SOCIETA",
                 phone = "081765432",
                 name = "Agenzia Viaggi Italia S.r.l.",

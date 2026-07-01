@@ -5,7 +5,6 @@ import it.unical.ea.enums.UserType
 
 data class User(
     val email: String,
-    val username: String,
     val userType: String = "VIAGGIATORE",
     val phone: String? = null,
     val name: String? = null,
@@ -41,7 +40,6 @@ fun UserDTO.toDomain(): User {
     }
     return User(
         email = email.orEmpty(),
-        username = calculatedName ?: email?.split("@")?.firstOrNull() ?: "Utente",
         userType = detectedType,
         phone = phone,
         name = calculatedName,

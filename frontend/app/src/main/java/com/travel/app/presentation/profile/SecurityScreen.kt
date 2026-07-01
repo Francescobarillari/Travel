@@ -41,7 +41,6 @@ fun SecurityScreen(
 ) {
     val initialUser = user ?: User(
         email = "johnkinggraphics@gmail.com",
-        username = "johnkinggraphics",
         userType = "VIAGGIATORE",
         phone = "6895312",
         name = "Charlotte king"
@@ -200,25 +199,7 @@ fun SecurityScreen(
                 }
             }
 
-            // SECTION 1: CREDENZIALI DI ACCESSO
-            Text(
-                text = "Gestione Account",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier
-                    .align(Alignment.Start)
-                    .padding(top = 8.dp)
-            )
-
-            // Username input
-            ProfileInputField(
-                label = if (isSocieta) "Nome Utente Azienda" else "Nome Utente",
-                value = viewModel.username,
-                onValueChange = { viewModel.username = it }
-            )
-            
-            Spacer(modifier = Modifier.height(8.dp))
+            // Gestione Account removed
 
             // SECTION 2: MODIFICA PASSWORD
             Text(
@@ -315,7 +296,6 @@ fun SecurityScreenPreview() {
         SecurityScreen(
             user = User(
                 email = "johnkinggraphics@gmail.com",
-                username = "johnkinggraphics",
                 userType = "VIAGGIATORE",
                 phone = "6895312",
                 name = "Charlotte king"

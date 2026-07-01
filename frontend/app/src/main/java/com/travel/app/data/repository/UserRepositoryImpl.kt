@@ -24,7 +24,6 @@ class UserRepositoryImpl(
         if (email == "test@travel.com" && password == "travel") {
             val user = User(
                 email = email,
-                username = "johnkinggraphics",
                 userType = "VIAGGIATORE",
                 phone = "6895312",
                 name = "Charlotte king",
@@ -36,7 +35,6 @@ class UserRepositoryImpl(
         if (email == "societa@travel.com" && password == "travel") {
             val user = User(
                 email = email,
-                username = "travel_agency",
                 userType = "SOCIETA",
                 phone = "0984123456",
                 name = "Travel Agency S.r.l.",
@@ -54,7 +52,7 @@ class UserRepositoryImpl(
             
             // 1. Salva la sessione con un utente provvisorio per abilitare l'AuthInterceptor
             val detectedType = if (email.contains("societa", ignoreCase = true) || email.contains("company", ignoreCase = true)) "SOCIETA" else "VIAGGIATORE"
-            val tempUser = User(email = email, username = email.split("@")[0], userType = detectedType)
+            val tempUser = User(email = email, userType = detectedType)
             saveSession(tempUser, token)
 
             // 2. Chiama l'endpoint me per caricare i dettagli completi del profilo dal DB
@@ -91,7 +89,6 @@ class UserRepositoryImpl(
             Result.success(
                 User(
                     email = email,
-                    username = email.split("@")[0],
                     userType = "VIAGGIATORE",
                     phone = phone,
                     name = "$firstName $lastName",
@@ -124,7 +121,6 @@ class UserRepositoryImpl(
             Result.success(
                 User(
                     email = email,
-                    username = email.split("@")[0],
                     userType = "SOCIETA",
                     phone = phone,
                     name = companyName,

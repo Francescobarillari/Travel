@@ -32,7 +32,6 @@ fun HomeScreen(
     var currentUser by remember(user) { 
         mutableStateOf(user ?: User(
             email = "johnkinggraphics@gmail.com", 
-            username = "johnkinggraphics", 
             userType = "VIAGGIATORE",
             phone = "6895312",
             name = "Charlotte king",
@@ -163,7 +162,6 @@ fun HomeScreenViaggiatorePreview() {
         HomeScreen(
             user = User(
                 email = "viaggiatore@travel.com",
-                username = "viaggiatore123",
                 userType = "VIAGGIATORE",
                 name = "Marco Rossi"
             )
@@ -179,7 +177,6 @@ fun HomeScreenSocietaPreview() {
         HomeScreen(
             user = User(
                 email = "societa@travel.com",
-                username = "travel_agency",
                 userType = "SOCIETA",
                 name = "Travel Agency S.r.l."
             )

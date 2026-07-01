@@ -18,7 +18,6 @@ class EditProfileViewModel(
     // Form fields state
     var name by mutableStateOf("")
     var email by mutableStateOf("")
-    var username by mutableStateOf("")
     var vatNumber by mutableStateOf("")
     
     var isLoading by mutableStateOf(false)
@@ -30,7 +29,6 @@ class EditProfileViewModel(
             initialUser = user
             name = user.name.orEmpty()
             email = user.email
-            username = user.username
             vatNumber = user.vatNumber.orEmpty()
         }
     }
@@ -42,7 +40,6 @@ class EditProfileViewModel(
 
         val updatedUser = currentUser.copy(
             name = name,
-            username = username,
             vatNumber = if (isSocieta) vatNumber else null
         )
 

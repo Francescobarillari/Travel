@@ -15,7 +15,6 @@ class SessionManager(context: Context) {
         prefs.edit().apply {
             putString(KEY_TOKEN, token)
             putString(KEY_USER_EMAIL, user.email)
-            putString(KEY_USER_USERNAME, user.username)
             putString(KEY_USER_TYPE, user.userType)
             putString(KEY_USER_NAME, user.name)
             putString(KEY_USER_PHONE, user.phone)
@@ -29,14 +28,12 @@ class SessionManager(context: Context) {
 
     fun getSessionUser(): User? {
         val email = prefs.getString(KEY_USER_EMAIL, null) ?: return null
-        val username = prefs.getString(KEY_USER_USERNAME, null) ?: return null
         val userType = prefs.getString(KEY_USER_TYPE, "VIAGGIATORE") ?: "VIAGGIATORE"
         val name = prefs.getString(KEY_USER_NAME, null)
         val phone = prefs.getString(KEY_USER_PHONE, null)
 
         return User(
             email = email,
-            username = username,
             userType = userType,
             phone = phone,
             name = name,
@@ -60,7 +57,6 @@ class SessionManager(context: Context) {
         private const val PREFS_NAME = "travel_app_prefs"
         private const val KEY_TOKEN = "jwt_token"
         private const val KEY_USER_EMAIL = "user_email"
-        private const val KEY_USER_USERNAME = "user_username"
         private const val KEY_USER_TYPE = "user_type"
         private const val KEY_USER_NAME = "user_name"
         private const val KEY_USER_PHONE = "user_phone"

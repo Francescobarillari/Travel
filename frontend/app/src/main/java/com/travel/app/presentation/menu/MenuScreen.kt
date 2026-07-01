@@ -47,7 +47,7 @@ fun MenuScreen(
     val context = LocalContext.current
 
     // Initials Avatar calculation
-    val initials = user?.username?.let { name ->
+    val initials = user?.name?.let { name ->
         if (name.isNotBlank()) {
             name.split(" ").take(2).map { it.firstOrNull() ?: "" }.joinToString("").uppercase()
         } else null
@@ -73,7 +73,7 @@ fun MenuScreen(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = user?.name ?: user?.username ?: "Utente Ospite",
+                    text = user?.name ?: "Utente Ospite",
                     style = MaterialTheme.typography.titleLarge.copy(
                         fontWeight = FontWeight.ExtraBold,
                         fontSize = 28.sp,
@@ -389,7 +389,7 @@ fun MenuDivider() {
 fun MenuScreenViaggiatorePreview() {
     TravelTheme {
         MenuScreen(
-            user = User(email = "viaggiatore@travel.com", username = "Marco Rossi", userType = "VIAGGIATORE"),
+            user = User(email = "viaggiatore@travel.com", name = "Marco Rossi", userType = "VIAGGIATORE"),
             isDarkMode = false,
             onDarkModeChange = {},
             onBack = {},
@@ -405,7 +405,7 @@ fun MenuScreenViaggiatorePreview() {
 fun MenuScreenSocietaPreview() {
     TravelTheme {
         MenuScreen(
-            user = User(email = "societa@travel.com", username = "Travel Agenzia S.p.A.", userType = "SOCIETA"),
+            user = User(email = "societa@travel.com", name = "Travel Agenzia S.p.A.", userType = "SOCIETA"),
             isDarkMode = false,
             onDarkModeChange = {},
             onBack = {},

@@ -16,7 +16,6 @@ class SecurityViewModel(
     var initialUser by mutableStateOf<User?>(null)
     
     // Form fields state
-    var username by mutableStateOf("")
     var oldPassword by mutableStateOf("")
     var newPassword by mutableStateOf("")
     
@@ -27,7 +26,6 @@ class SecurityViewModel(
     fun initialize(user: User) {
         if (initialUser == null) {
             initialUser = user
-            username = user.username
             oldPassword = ""
             newPassword = ""
             errorMessage = null
@@ -37,11 +35,6 @@ class SecurityViewModel(
 
     fun saveSecurity(onSuccess: (User) -> Unit) {
         val currentUser = initialUser ?: return
-        
-        if (username.isBlank()) {
-            errorMessage = "Il nome utente non può essere vuoto"
-            return
-        }
 
         val hasNewPassword = newPassword.isNotEmpty()
         
@@ -55,6 +48,9 @@ class SecurityViewModel(
                 errorMessage = "La nuova password deve contenere almeno 8 caratteri, una maiuscola, una minuscola e un numero"
                 return
             }
+        } else {
+            errorMessage = "Inserisci una nuova password per procedere"
+            return
         }
 
         isLoading = true
@@ -65,29 +61,25 @@ class SecurityViewModel(
 
         viewModelScope.launch {
             // Se sta cambiando password, dobbiamo prima verificare la vecchia password
-            if (hasNewPassword) {
-                if (isMockUser) {
-                    val expectedOld = currentUser.password ?: "travel"
-                    if (oldPassword != expectedOld && oldPassword != "travel") {
-                        errorMessage = "La vecchia password non è corretta"
-                        isLoading = false
-                        return@launch
-                    }
-                } else {
-                    val loginResult = userRepository.login(currentUser.email, oldPassword)
-                    if (loginResult.isFailure) {
-                        errorMessage = "La vecchia password non è corretta"
-                        isLoading = false
-                        return@launch
-                    }
+            if (isMockUser) {
+                val expectedOld = currentUser.password ?: "travel"
+                if (oldPassword != expectedOld && oldPassword != "travel") {
+                    errorMessage = "La vecchia password non è corretta"
+                    isLoading = false
+                    return@launch
+                }
+            } else {
+                val loginResult = userRepository.login(currentUser.email, oldPassword)
+                if (loginResult.isFailure) {
+                    errorMessage = "La vecchia password non è corretta"
+                    isLoading = false
+                    return@launch
                 }
             }
 
-            // Procediamo all'aggiornamento
+            // Procediamo all'aggiornamento della password
             val updatedUser = currentUser.copy(
-                name = username,
-                username = username,
-                password = if (hasNewPassword) newPassword else null
+                password = newPassword
             )
 
             if (isMockUser) {
@@ -95,7 +87,7 @@ class SecurityViewModel(
                 initialUser = updatedUser
                 oldPassword = ""
                 newPassword = ""
-                successMessage = "Impostazioni di sicurezza aggiornate con successo"
+                successMessage = "Password aggiornata con successo"
                 onSuccess(updatedUser)
                 return@launch
             }
@@ -104,10 +96,10 @@ class SecurityViewModel(
             isLoading = false
             result.fold(
                 onSuccess = { savedUser ->
-                    initialUser = savedUser.copy(password = if (hasNewPassword) newPassword else currentUser.password)
+                    initialUser = savedUser.copy(password = newPassword)
                     oldPassword = ""
                     newPassword = ""
-                    successMessage = "Impostazioni di sicurezza aggiornate con successo"
+                    successMessage = "Password aggiornata con successo"
                     onSuccess(initialUser!!)
                 },
                 onFailure = { throwable ->
