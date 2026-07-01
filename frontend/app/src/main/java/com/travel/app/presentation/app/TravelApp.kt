@@ -14,7 +14,10 @@ import com.travel.app.presentation.home.HomeScreen
 import com.travel.app.presentation.navigation.Screen
 
 @Composable
-fun TravelApp() {
+fun TravelApp(
+    isDarkMode: Boolean,
+    onDarkModeChange: (Boolean) -> Unit
+) {
     val userRepository = AppContainer.userRepository
     val authViewModel = remember { AuthViewModel(userRepository) }
     var currentScreen by remember { mutableStateOf(Screen.LOGIN) }
@@ -70,6 +73,8 @@ fun TravelApp() {
             Screen.HOME -> {
                 HomeScreen(
                     user = currentUser,
+                    isDarkMode = isDarkMode,
+                    onDarkModeChange = onDarkModeChange,
                     onLogout = {
                         userRepository.logout()
                         currentUser = null

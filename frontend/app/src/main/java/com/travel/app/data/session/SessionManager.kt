@@ -48,6 +48,14 @@ class SessionManager(context: Context) {
         prefs.edit().clear().apply()
     }
 
+    fun setDarkMode(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_DARK_MODE, enabled).apply()
+    }
+
+    fun isDarkMode(): Boolean {
+        return prefs.getBoolean(KEY_DARK_MODE, false)
+    }
+
     companion object {
         private const val PREFS_NAME = "travel_app_prefs"
         private const val KEY_TOKEN = "jwt_token"
@@ -56,5 +64,6 @@ class SessionManager(context: Context) {
         private const val KEY_USER_TYPE = "user_type"
         private const val KEY_USER_NAME = "user_name"
         private const val KEY_USER_PHONE = "user_phone"
+        private const val KEY_DARK_MODE = "dark_mode"
     }
 }

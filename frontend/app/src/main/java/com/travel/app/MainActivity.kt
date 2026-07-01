@@ -19,8 +19,17 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            TravelTheme {
-                TravelApp()
+            var isDarkMode by remember {
+                mutableStateOf(AppContainer.sessionManager.isDarkMode())
+            }
+            TravelTheme(darkTheme = isDarkMode) {
+                TravelApp(
+                    isDarkMode = isDarkMode,
+                    onDarkModeChange = { enabled ->
+                        isDarkMode = enabled
+                        AppContainer.sessionManager.setDarkMode(enabled)
+                    }
+                )
             }
         }
     }

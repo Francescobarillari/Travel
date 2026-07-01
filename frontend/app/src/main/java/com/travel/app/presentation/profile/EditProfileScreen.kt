@@ -102,7 +102,7 @@ fun EditProfileForm(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(Color(0xFFF8FAFC)) // Consistent soft slate-grey background
+            .background(MaterialTheme.colorScheme.background) // Use theme background
             .statusBarsPadding()
     ) {
         // TOP NAVIGATION HEADER (consistent style)
@@ -117,14 +117,14 @@ fun EditProfileForm(
                 onClick = onBack,
                 modifier = Modifier
                     .size(40.dp)
-                    .background(Color.White, CircleShape)
-                    .border(1.dp, Color(0xFFE2E8F0), CircleShape),
+                    .background(MaterialTheme.colorScheme.surface, CircleShape)
+                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape),
                 enabled = !isLoading
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Indietro",
-                    tint = Color(0xFF334155),
+                    tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -133,15 +133,15 @@ fun EditProfileForm(
                 text = "Modifica Profilo",
                 fontSize = 22.sp,
                 fontWeight = FontWeight.ExtraBold,
-                color = Color(0xFF0F172A)
+                color = MaterialTheme.colorScheme.onBackground
             )
 
             IconButton(
                 onClick = onSaveClick,
                 modifier = Modifier
                     .size(40.dp)
-                    .background(Color.White, CircleShape)
-                    .border(1.dp, Color(0xFFE2E8F0), CircleShape),
+                    .background(MaterialTheme.colorScheme.surface, CircleShape)
+                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape),
                 enabled = !isLoading
             ) {
                 if (isLoading) {
@@ -239,7 +239,7 @@ fun EditProfileForm(
                 text = "Dettagli Account",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF0F172A),
+                color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier.align(Alignment.Start).padding(top = 8.dp)
             )
 
@@ -371,7 +371,7 @@ fun ProfileInputField(
             text = label,
             fontSize = 15.sp,
             fontWeight = FontWeight.Bold,
-            color = Color(0xFF334155) // Slate 700
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f)
         )
         OutlinedTextField(
             value = value,
@@ -381,15 +381,15 @@ fun ProfileInputField(
             enabled = enabled,
             singleLine = true,
             colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = Color.White,
-                unfocusedContainerColor = Color.White,
-                disabledContainerColor = Color(0xFFF1F5F9), // Soft slate for disabled
+                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
                 focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = Color(0xFFE2E8F0),
-                disabledBorderColor = Color(0xFFE2E8F0),
-                focusedTextColor = Color(0xFF0F172A),
-                unfocusedTextColor = Color(0xFF334155),
-                disabledTextColor = Color(0xFF64748B)
+                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                disabledBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                disabledTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
             )
         )
     }

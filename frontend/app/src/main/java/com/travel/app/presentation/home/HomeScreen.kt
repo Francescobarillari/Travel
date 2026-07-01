@@ -15,12 +15,19 @@ import com.travel.app.data.AppContainer
 import com.travel.app.presentation.menu.MenuScreen
 import com.travel.app.presentation.profile.EditProfileScreen
 import com.travel.app.presentation.profile.EditProfileViewModel
+import com.travel.app.presentation.profile.SecurityScreen
+import com.travel.app.presentation.profile.SecurityViewModel
 import com.travel.app.presentation.components.home.FloatingBottomNavBar
 import com.travel.app.presentation.theme.TravelTheme
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun HomeScreen(user: User? = null, onLogout: () -> Unit = {}) {
+fun HomeScreen(
+    user: User? = null,
+    isDarkMode: Boolean = false,
+    onDarkModeChange: (Boolean) -> Unit = {},
+    onLogout: () -> Unit = {}
+) {
     var selectedTab by remember { mutableStateOf(HomeTab.ESPLORA) }
     var currentUser by remember(user) { 
         mutableStateOf(user ?: User(
@@ -60,6 +67,12 @@ fun HomeScreen(user: User? = null, onLogout: () -> Unit = {}) {
         )
     }
 
+    val securityViewModel = remember {
+        SecurityViewModel(
+            userRepository = AppContainer.userRepository
+        )
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -94,10 +107,24 @@ fun HomeScreen(user: User? = null, onLogout: () -> Unit = {}) {
             }
             HomeTab.MENU -> MenuScreen(
                 user = currentUser,
+                isDarkMode = isDarkMode,
+                onDarkModeChange = onDarkModeChange,
                 onBack = { selectedTab = HomeTab.ESPLORA },
                 onNavigateToProfile = { selectedTab = HomeTab.PROFILO },
+                onNavigateToSecurity = { selectedTab = HomeTab.SICUREZZA },
                 onLogout = onLogout
             )
+            HomeTab.SICUREZZA -> {
+                SecurityScreen(
+                    user = currentUser,
+                    viewModel = securityViewModel,
+                    onBack = { selectedTab = HomeTab.MENU },
+                    onSaveSuccess = { savedUser ->
+                        currentUser = savedUser
+                        selectedTab = HomeTab.MENU
+                    }
+                )
+            }
         }
 
         Box(
