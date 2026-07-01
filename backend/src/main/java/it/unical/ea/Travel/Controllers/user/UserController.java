@@ -70,11 +70,11 @@ public class UserController {
 
     @Operation(summary = "Ottieni il profilo dell'utente autenticato", description = "Restituisce i dati dell'utente autenticato tramite il token JWT")
     @GetMapping("/me")
-    public UserDTO getMe(@AuthenticationPrincipal Jwt jwt, jakarta.servlet.http.HttpServletRequest request) {
-        String email = getEmailFromPrincipalOrHeader(jwt, request);
-        if (email == null) {
+    public UserDTO getMe(@AuthenticationPrincipal Jwt jwt) {
+        if (jwt == null) {
             throw new it.unical.ea.Travel.Exception.ApiException(HttpStatus.UNAUTHORIZED, "auth.login.invalidCredentials");
         }
+        String email = jwt.getClaimAsString("email");
         User user = userService.getUserByEmail(email);
         UserDTO userDTO = toDTO(user);
         userDTO.setPassword(null); // Sicurezza extra: Non restituire mai il campo password nelle risposte
@@ -83,36 +83,18 @@ public class UserController {
 
     @Operation(summary = "Aggiorna il profilo dell'utente autenticato")
     @PutMapping("/me")
-    public UserDTO updateMe(@AuthenticationPrincipal Jwt jwt, @Valid @RequestBody UserDTO userDto, jakarta.servlet.http.HttpServletRequest request) {
-        String email = getEmailFromPrincipalOrHeader(jwt, request);
-        if (email == null) {
+    public UserDTO updateMe(@AuthenticationPrincipal Jwt jwt, @Valid @RequestBody UserDTO userDto) {
+        if (jwt == null) {
             throw new it.unical.ea.Travel.Exception.ApiException(HttpStatus.UNAUTHORIZED, "auth.login.invalidCredentials");
         }
+        String email = jwt.getClaimAsString("email");
         User updatedUser = userService.updateUser(email, userDto);
         UserDTO result = toDTO(updatedUser);
         result.setPassword(null); // Sicurezza extra: Non restituire mai il campo password nelle risposte
         return result;
     }
 
-    private String getEmailFromPrincipalOrHeader(Jwt jwt, jakarta.servlet.http.HttpServletRequest request) {
-        if (jwt != null) {
-            return jwt.getClaimAsString("email");
-        }
-        String authHeader = request.getHeader("Authorization");
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            try {
-                String token = authHeader.substring(7);
-                String[] parts = token.split("\\.");
-                if (parts.length > 1) {
-                    String payload = new String(java.util.Base64.getUrlDecoder().decode(parts[1]));
-                    com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
-                    java.util.Map<?, ?> claims = mapper.readValue(payload, java.util.Map.class);
-                    return (String) claims.get("email");
-                }
-            } catch (Exception ignored) {}
-        }
-        return null;
-    }
+
 
     @Operation(summary = "Elimina un utente")
     @DeleteMapping("/{stringId}")

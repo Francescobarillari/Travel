@@ -19,7 +19,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.travel.app.presentation.theme.TravelTheme
+import it.unical.ea.dtos.activity.ActivityDto
 import it.unical.ea.dtos.itinerary.ItineraryDto
+import java.math.BigDecimal
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -187,12 +189,23 @@ fun ItineraryCardPreview() {
     val mockItinerary = ItineraryDto().apply {
         title = "Weekend a Roma"
         description = "Un fantastico weekend alla scoperta della città eterna."
-        startDateTime = LocalDateTime.now().plusDays(2)
-        endDateTime = LocalDateTime.now().plusDays(4)
+        startDateTime = LocalDateTime.of(2025, 7, 1, 9, 0)
+        endDateTime = LocalDateTime.of(2025, 7, 3, 18, 0)
         imageUrl = null
-        // activities = emptyList() // If activities is a list, sumOf works
+        activities = listOf(
+            ActivityDto().apply {
+                name = "Visita al Colosseo"
+                location = "Roma"
+                price = BigDecimal("15.50")
+            },
+            ActivityDto().apply {
+                name = "Cena a Trastevere"
+                location = "Roma"
+                price = BigDecimal("45.00")
+            }
+        )
     }
-    
+
     TravelTheme {
         ItineraryCard(
             itinerary = mockItinerary,
