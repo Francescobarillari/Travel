@@ -18,11 +18,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.travel.app.domain.model.User
 import com.travel.app.data.AppContainer
 import com.travel.app.presentation.menu.MenuScreen
-import com.travel.app.presentation.profile.ProfileScreen
+import com.travel.app.presentation.profile.EditProfileScreen
 import com.travel.app.presentation.components.home.FloatingBottomNavBar
 import com.travel.app.presentation.theme.TravelTheme
 
@@ -52,7 +51,11 @@ fun HomeScreen(user: User? = null, onLogout: () -> Unit = {}) {
 
         when (selectedTab) {
             HomeTab.ESPLORA -> {
-                EsploraScreen()
+                if (isSocieta) {
+                    CompanyDashboardScreen()
+                } else {
+                    EsploraScreen()
+                }
             }
             HomeTab.PREFERITI -> {
                 if (isSocieta) {
@@ -64,7 +67,7 @@ fun HomeScreen(user: User? = null, onLogout: () -> Unit = {}) {
             HomeTab.PROFILO -> {
                 val userRepository = AppContainer.userRepository
                 val isMockUser = currentUser.email in listOf("test@travel.com", "societa@travel.com", "johnkinggraphics@gmail.com")
-                ProfileScreen(
+                EditProfileScreen(
                     user = currentUser,
                     onBack = { selectedTab = HomeTab.MENU },
                     onSave = { updatedUser ->

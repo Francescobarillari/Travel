@@ -1,6 +1,6 @@
 package com.travel.app.presentation.profile
 
-import androidx.compose.foundation.Image
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -18,33 +17,28 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.travel.app.R
 import com.travel.app.domain.model.User
 import com.travel.app.presentation.theme.TravelTheme
-
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileScreen(
+fun EditProfileScreen(
     user: User?,
     onBack: () -> Unit,
     onSave: suspend (User) -> Result<User>,
     modifier: Modifier = Modifier
 ) {
     val initialUser = user ?: User(
-        email = "johnkinggraphics.gmail.com",
-        username = "@johnkinggraphics",
+        email = "johnkinggraphics@gmail.com",
+        username = "johnkinggraphics",
         userType = "VIAGGIATORE",
         phone = "6895312",
         name = "Charlotte king",
@@ -57,83 +51,124 @@ fun ProfileScreen(
     var name by remember { mutableStateOf(initialUser.name.orEmpty()) }
     val email by remember { mutableStateOf(initialUser.email) }
     var username by remember { mutableStateOf(initialUser.username) }
-    var password by remember { mutableStateOf(initialUser.password.orEmpty()) }
-    var phoneNum by remember { mutableStateOf(initialUser.phone.orEmpty()) }
     var vatNumber by remember { mutableStateOf(initialUser.vatNumber.orEmpty()) }
     
-    // Country code prefix state
-    var selectedCountryPrefix by remember { mutableStateOf("+91") }
-    var isPrefixDropdownExpanded by remember { mutableStateOf(false) }
-    val countryPrefixes = listOf("+91", "+39", "+1", "+44", "+33", "+49")
+    // Country code prefix and phone number (read-only)
+    val phoneNum = initialUser.phone.orEmpty()
+    val selectedCountryPrefix = "+39" 
 
-    var isPasswordVisible by remember { mutableStateOf(false) }
-    
     val coroutineScope = rememberCoroutineScope()
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
+    EditProfileForm(
+        initialUser = initialUser,
+        name = name,
+        onNameChange = { name = it },
+        email = email,
+        username = username,
+        onUsernameChange = { username = it },
+        vatNumber = vatNumber,
+        onVatNumberChange = { vatNumber = it },
+        selectedCountryPrefix = selectedCountryPrefix,
+        phoneNum = phoneNum,
+        isLoading = isLoading,
+        errorMessage = errorMessage,
+        onBack = onBack,
+        onSaveClick = {
+            val updatedUser = initialUser.copy(
+                name = name,
+                username = username,
+                vatNumber = if (isSocieta) vatNumber else null
+            )
+            coroutineScope.launch {
+                isLoading = true
+                errorMessage = null
+                onSave(updatedUser).fold(
+                    onSuccess = {
+                        isLoading = false
+                    },
+                    onFailure = { error ->
+                        isLoading = false
+                        errorMessage = error.message ?: "Errore di salvataggio"
+                    }
+                )
+            }
+        },
+        modifier = modifier
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun EditProfileForm(
+    initialUser: User,
+    name: String,
+    onNameChange: (String) -> Unit,
+    email: String,
+    username: String,
+    onUsernameChange: (String) -> Unit,
+    vatNumber: String,
+    onVatNumberChange: (String) -> Unit,
+    selectedCountryPrefix: String,
+    phoneNum: String,
+    isLoading: Boolean,
+    errorMessage: String?,
+    onBack: () -> Unit,
+    onSaveClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val isSocieta = initialUser.userType == "SOCIETA"
+    val context = LocalContext.current
+
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(Color.White)
+            .background(Color(0xFFF8FAFC)) // Consistent soft slate-grey background
             .statusBarsPadding()
     ) {
-        // TOP NAVIGATION HEADER
+        // TOP NAVIGATION HEADER (consistent style)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .padding(horizontal = 24.dp, vertical = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             IconButton(
                 onClick = onBack,
-                modifier = Modifier.size(44.dp),
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(Color.White, CircleShape)
+                    .border(1.dp, Color(0xFFE2E8F0), CircleShape),
                 enabled = !isLoading
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Indietro",
-                    tint = Color.Black
+                    tint = Color(0xFF334155),
+                    modifier = Modifier.size(20.dp)
                 )
             }
 
             Text(
                 text = "Modifica Profilo",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.Black
+                fontSize = 22.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = Color(0xFF0F172A)
             )
 
             IconButton(
-                onClick = {
-                    val updatedUser = initialUser.copy(
-                        name = name,
-                        username = username,
-                        password = password,
-                        phone = phoneNum,
-                        vatNumber = if (isSocieta) vatNumber else null
-                    )
-                    coroutineScope.launch {
-                        isLoading = true
-                        errorMessage = null
-                        onSave(updatedUser).fold(
-                            onSuccess = {
-                                isLoading = false
-                            },
-                            onFailure = { error ->
-                                isLoading = false
-                                errorMessage = error.message ?: "Errore di salvataggio"
-                            }
-                        )
-                    }
-                },
-                modifier = Modifier.size(44.dp),
+                onClick = onSaveClick,
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(Color.White, CircleShape)
+                    .border(1.dp, Color(0xFFE2E8F0), CircleShape),
                 enabled = !isLoading
             ) {
                 if (isLoading) {
                     CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
+                        modifier = Modifier.size(20.dp),
                         color = Color(0xFF22C55E),
                         strokeWidth = 2.dp
                     )
@@ -141,7 +176,8 @@ fun ProfileScreen(
                     Icon(
                         imageVector = Icons.Default.Check,
                         contentDescription = "Salva",
-                        tint = Color(0xFF22C55E)
+                        tint = Color(0xFF22C55E),
+                        modifier = Modifier.size(20.dp)
                     )
                 }
             }
@@ -152,7 +188,7 @@ fun ProfileScreen(
                 .fillMaxWidth()
                 .weight(1f)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp, vertical = 16.dp),
+                .padding(horizontal = 24.dp, vertical = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
@@ -172,23 +208,34 @@ fun ProfileScreen(
                     )
                 }
             }
-            // AVATAR AREA WITH CAMERA BADGE
+            
+            // AVATAR AREA WITH DYNAMIC INITIALS AND CAMERA OVERLAY
+            val initials = getInitials(name)
             Box(
                 modifier = Modifier
-                    .size(130.dp)
+                    .size(110.dp)
                     .padding(bottom = 8.dp),
                 contentAlignment = Alignment.BottomEnd
             ) {
-                // Main profile picture
-                Image(
-                    painter = painterResource(id = R.drawable.profile_avatar),
-                    contentDescription = "Foto profilo",
-                    contentScale = ContentScale.Crop,
+                // Main profile initials container (cohesive gradient)
+                Box(
                     modifier = Modifier
                         .fillMaxSize()
                         .clip(CircleShape)
-                        .border(1.dp, Color.LightGray.copy(alpha = 0.5f), CircleShape)
-                )
+                        .background(
+                            brush = Brush.radialGradient(
+                                colors = listOf(Color(0xFF8FA4A6), Color(0xFF6B7F82))
+                            )
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = initials,
+                        color = Color.White,
+                        fontSize = 36.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
 
                 // Camera icon overlay
                 Box(
@@ -196,24 +243,38 @@ fun ProfileScreen(
                         .size(36.dp)
                         .clip(CircleShape)
                         .background(Color.White)
-                        .border(1.dp, Color.LightGray.copy(alpha = 0.5f), CircleShape)
-                        .clickable { /* Photo upload logic would go here */ },
+                        .border(1.dp, Color(0xFFE2E8F0), CircleShape)
+                        .clickable { /* Photo upload logic */ },
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Default.PhotoCamera,
                         contentDescription = "Cambia foto",
-                        tint = Color.Black,
+                        tint = Color(0xFF475569),
                         modifier = Modifier.size(18.dp)
                     )
                 }
             }
 
+            // SECTION 1: DETTAGLI ACCOUNT
+            Text(
+                text = "Dettagli Account",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF0F172A),
+                modifier = Modifier.align(Alignment.Start).padding(top = 8.dp)
+            )
 
             ProfileInputField(
                 label = if (isSocieta) "Nome Società" else "Nome e Cognome",
                 value = name,
-                onValueChange = { name = it }
+                onValueChange = onNameChange
+            )
+
+            ProfileInputField(
+                label = if (isSocieta) "Username Azienda" else "Username",
+                value = username,
+                onValueChange = onUsernameChange
             )
 
             ProfileInputField(
@@ -223,67 +284,24 @@ fun ProfileScreen(
                 enabled = false
             )
 
-            ProfileInputField(
-                label = if (isSocieta) "Username Azienda" else "Username",
-                value = username,
-                onValueChange = { username = it }
-            )
-
             if (isSocieta) {
                 ProfileInputField(
                     label = "Partita IVA",
                     value = vatNumber,
-                    onValueChange = { vatNumber = it }
+                    onValueChange = onVatNumberChange
                 )
             }
 
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text(
-                    text = "Password",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Black
-                )
-                TextField(
-                    value = password,
-                    onValueChange = { password = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                    trailingIcon = {
-                        IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
-                            Icon(
-                                imageVector = if (isPasswordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                                contentDescription = if (isPasswordVisible) "Nascondi password" else "Mostra password",
-                                tint = Color.Gray
-                            )
-                        }
-                    },
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color(0xFFF8FAFC),
-                        unfocusedContainerColor = Color(0xFFF8FAFC),
-                        disabledContainerColor = Color(0xFFF8FAFC).copy(alpha = 0.6f),
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent,
-                        disabledIndicatorColor = Color.Transparent
-                    ),
-                    singleLine = true
-                )
-            }
-
-            // Phone Number field with Country prefix
+            // Phone Number field with Country prefix selector (Disabled/Read-only)
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
                     text = "Numero di Telefono",
-                    fontSize = 16.sp,
+                    fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.Black
+                    color = Color(0xFF334155)
                 )
                 
                 Row(
@@ -291,14 +309,13 @@ fun ProfileScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Prefix Box Selector
                     Box {
                         Row(
                             modifier = Modifier
                                 .height(56.dp)
                                 .clip(RoundedCornerShape(16.dp))
-                                .background(Color(0xFFF8FAFC))
-                                .clickable { isPrefixDropdownExpanded = true }
+                                .background(Color(0xFFF1F5F9))
+                                .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(16.dp))
                                 .padding(horizontal = 14.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(4.dp)
@@ -306,53 +323,56 @@ fun ProfileScreen(
                             Text(
                                 text = selectedCountryPrefix,
                                 fontSize = 15.sp,
-                                color = Color.Gray
+                                color = Color(0xFF64748B),
+                                fontWeight = FontWeight.Medium
                             )
                             Icon(
                                 imageVector = Icons.Default.ArrowDropDown,
-                                contentDescription = "Prefissi",
-                                tint = Color.Gray
+                                contentDescription = null,
+                                tint = Color(0xFF94A3B8)
                             )
-                        }
-
-                        DropdownMenu(
-                            expanded = isPrefixDropdownExpanded,
-                            onDismissRequest = { isPrefixDropdownExpanded = false },
-                            modifier = Modifier.background(Color.White)
-                        ) {
-                            countryPrefixes.forEach { prefix ->
-                                DropdownMenuItem(
-                                    text = { Text(prefix) },
-                                    onClick = {
-                                        selectedCountryPrefix = prefix
-                                        isPrefixDropdownExpanded = false
-                                    }
-                                )
-                            }
                         }
                     }
 
-                    // Main Phone number input
-                    TextField(
+                    OutlinedTextField(
                         value = phoneNum,
-                        onValueChange = { phoneNum = it },
+                        onValueChange = {},
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(16.dp),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                        colors = TextFieldDefaults.colors(
-                            focusedContainerColor = Color(0xFFF8FAFC),
-                            unfocusedContainerColor = Color(0xFFF8FAFC),
-                            disabledContainerColor = Color(0xFFF8FAFC).copy(alpha = 0.6f),
-                            focusedIndicatorColor = Color.Transparent,
-                            unfocusedIndicatorColor = Color.Transparent,
-                            disabledIndicatorColor = Color.Transparent
-                        ),
-                        singleLine = true
+                        enabled = false,
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            disabledContainerColor = Color(0xFFF1F5F9),
+                            disabledBorderColor = Color(0xFFE2E8F0),
+                            disabledTextColor = Color(0xFF64748B)
+                        )
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(60.dp))
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Action: Deactivate Account (outlined button style)
+            OutlinedButton(
+                onClick = { Toast.makeText(context, "Funzionalità non attiva", Toast.LENGTH_SHORT).show() },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+                shape = RoundedCornerShape(16.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFDC2626)),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = Color(0xFFDC2626),
+                    containerColor = Color.Transparent
+                )
+            ) {
+                Text(
+                    text = "Disattiva Account",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp
+                )
+            }
+
+            Spacer(modifier = Modifier.height(30.dp))
         }
     }
 }
@@ -371,35 +391,47 @@ fun ProfileInputField(
     ) {
         Text(
             text = label,
-            fontSize = 16.sp,
+            fontSize = 15.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.Black
+            color = Color(0xFF334155) // Slate 700
         )
-        TextField(
+        OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
             enabled = enabled,
-            colors = TextFieldDefaults.colors(
-                focusedContainerColor = Color(0xFFF8FAFC),
-                unfocusedContainerColor = Color(0xFFF8FAFC),
-                disabledContainerColor = Color(0xFFF8FAFC).copy(alpha = 0.6f),
-                focusedIndicatorColor = Color.Transparent,
-                unfocusedIndicatorColor = Color.Transparent,
-                disabledIndicatorColor = Color.Transparent,
-                disabledTextColor = Color.Gray.copy(alpha = 0.7f)
-            ),
-            singleLine = true
+            singleLine = true,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = Color.White,
+                unfocusedContainerColor = Color.White,
+                disabledContainerColor = Color(0xFFF1F5F9), // Soft slate for disabled
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = Color(0xFFE2E8F0),
+                disabledBorderColor = Color(0xFFE2E8F0),
+                focusedTextColor = Color(0xFF0F172A),
+                unfocusedTextColor = Color(0xFF334155),
+                disabledTextColor = Color(0xFF64748B)
+            )
         )
+    }
+}
+
+fun getInitials(name: String?): String {
+    if (name.isNullOrBlank()) return "U"
+    val parts = name.trim().split("\\s+".toRegex())
+    return when {
+        parts.size >= 2 -> "${parts[0].first().uppercase()}${parts[1].first().uppercase()}"
+        parts.isNotEmpty() && parts[0].isNotEmpty() -> parts[0].first().uppercase().toString()
+        else -> "U"
     }
 }
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
-fun ProfileScreenViaggiatorePreview() {
+fun EditProfileScreenViaggiatorePreview() {
     TravelTheme {
-        ProfileScreen(
+        EditProfileScreen(
             user = User(
                 email = "johnkinggraphics@gmail.com",
                 username = "johnkinggraphics",
@@ -415,9 +447,9 @@ fun ProfileScreenViaggiatorePreview() {
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
-fun ProfileScreenSocietaPreview() {
+fun EditProfileScreenSocietaPreview() {
     TravelTheme {
-        ProfileScreen(
+        EditProfileScreen(
             user = User(
                 email = "societa@travel.com",
                 username = "travel_agency",
