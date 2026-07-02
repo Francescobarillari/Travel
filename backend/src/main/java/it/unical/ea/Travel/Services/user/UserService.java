@@ -75,6 +75,7 @@ public class UserService {
             user.setVatNumber(request.getVatNumber());
             user.setDocumentPhotos(request.getDocumentPhotos());
             user.setRoles("ROLE_SOCIETA");
+            user.setApproved(false);
         }
 
         try {

@@ -1,0 +1,98 @@
+package it.unical.ea.Travel.Controllers.admin;
+
+import it.unical.ea.Travel.Entities.activity.Activity;
+import it.unical.ea.Travel.Entities.user.User;
+import it.unical.ea.Travel.Exception.ApiException;
+import it.unical.ea.Travel.Mappers.activity.ActivityMapper;
+import it.unical.ea.Travel.Mappers.user.UserMapper;
+import it.unical.ea.Travel.Repositories.activity.ActivityRepository;
+import it.unical.ea.Travel.Repositories.user.UserRepository;
+import it.unical.ea.Travel.Services.activity.ActivityService;
+import it.unical.ea.Travel.Services.keycloak.KeycloakAdminService;
+import it.unical.ea.dtos.activity.ActivityDto;
+import it.unical.ea.dtos.user.UserDTO;
+import it.unical.ea.enums.UserType;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.UUID;
+
+@RestController
+@RequestMapping("/api/admin")
+@RequiredArgsConstructor
+@Tag(name = "Admin", description = "Dashboard e moderazione amministratore")
+public class AdminController {
+
+    private final UserRepository userRepository;
+    private final ActivityRepository activityRepository;
+    private final ActivityService activityService;
+    private final KeycloakAdminService keycloakAdminService;
+    private final UserMapper userMapper;
+    private final ActivityMapper activityMapper;
+
+    @Operation(summary = "Ottieni società in attesa di approvazione")
+    @GetMapping("/companies/pending")
+    public List<UserDTO> getPendingCompanies() {
+        List<User> pending = userRepository.findByUserTypeAndApproved(UserType.SOCIETA, false);
+        return pending.stream().map(userMapper::toDTO).toList();
+    }
+
+    @Operation(summary = "Approva una società")
+    @PostMapping("/companies/{id}/approve")
+    public ResponseEntity<Void> approveCompany(@PathVariable String id) {
+        User user = userRepository.findById(UUID.fromString(id))
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "user.notFound"));
+        user.setApproved(true);
+        userRepository.save(user);
+        return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "Rifiuta ed elimina una società")
+    @PostMapping("/companies/{id}/reject")
+    public ResponseEntity<Void> rejectCompany(@PathVariable String id) {
+        User user = userRepository.findById(UUID.fromString(id))
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "user.notFound"));
+        
+        // Elimina l'utente da Keycloak
+        keycloakAdminService.deleteUser(user.getKeycloakId());
+        
+        // Elimina l'utente dal database locale
+        userRepository.delete(user);
+        return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "Ottieni attività in attesa di approvazione")
+    @GetMapping("/activities/pending")
+    public List<ActivityDto> getPendingActivities() {
+        List<Activity> pending = activityRepository.findByApproved(false);
+        List<ActivityDto> dtos = activityMapper.toDTOList(pending);
+        for (int i = 0; i < pending.size(); i++) {
+            dtos.get(i).setCurrentParticipants(activityService.calculateCurrentParticipants(pending.get(i)));
+        }
+        return dtos;
+    }
+
+    @Operation(summary = "Approva un'attività")
+    @PostMapping("/activities/{id}/approve")
+    public ResponseEntity<Void> approveActivity(@PathVariable String id) {
+        Activity activity = activityRepository.findById(UUID.fromString(id))
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "activity.notFound"));
+        activity.setApproved(true);
+        activityRepository.save(activity);
+        return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "Rifiuta o cancella un'attività")
+    @DeleteMapping("/activities/{id}")
+    public ResponseEntity<Void> rejectActivity(@PathVariable String id) {
+        Activity activity = activityRepository.findById(UUID.fromString(id))
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "activity.notFound"));
+        activityRepository.delete(activity);
+        return ResponseEntity.ok().build();
+    }
+}

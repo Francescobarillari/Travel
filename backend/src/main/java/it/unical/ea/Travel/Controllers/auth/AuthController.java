@@ -6,6 +6,7 @@ import it.unical.ea.Travel.Services.AuthService;
 import it.unical.ea.Travel.Services.keycloak.KeycloakUserAlreadyExistsException;
 import it.unical.ea.Travel.Exception.ApiException;
 import it.unical.ea.Travel.Services.user.UserService;
+import it.unical.ea.Travel.Entities.user.User;
 import it.unical.ea.Travel.Services.user.LoginAttemptService;
 import it.unical.ea.Travel.Services.keycloak.CaptchaService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -50,9 +51,26 @@ public class AuthController {
 
         try {
             String token = authService.login(request);
+
+            // Verifica approvazione per profili Società
+            try {
+                User user = userService.getUserByEmail(email);
+                if (user.getUserType() == it.unical.ea.enums.UserType.SOCIETA && !Boolean.TRUE.equals(user.getApproved())) {
+                    throw new ApiException(HttpStatus.FORBIDDEN, "auth.login.accountPendingApproval");
+                }
+            } catch (ApiException apiEx) {
+                if (apiEx.getStatus() == HttpStatus.FORBIDDEN) {
+                    throw apiEx;
+                }
+            } catch (Exception ignored) {
+                // Utente non presente nel DB locale (es. admin-user), procedi comunque
+            }
+
             // Autenticazione riuscita: azzera i tentativi falliti
             loginAttemptService.loginSucceeded(email);
             return ResponseEntity.ok(token);
+        } catch (ApiException e) {
+            throw e;
         } catch (BadCredentialsException e) {
             // Incrementa i tentativi falliti in caso di credenziali errate
             loginAttemptService.loginFailed(email);
