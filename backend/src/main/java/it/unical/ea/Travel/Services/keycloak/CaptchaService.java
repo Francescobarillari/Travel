@@ -30,14 +30,11 @@ public class CaptchaService {
      * @return true se il token è valido, false altrimenti.
      */
     public boolean verifyToken(String token) {
-        System.out.println("CAPTCHA: Verifying token: " + token);
         if (token == null || token.trim().isEmpty()) {
-            System.out.println("CAPTCHA: Token is null or empty!");
             return false;
         }
 
         try {
-            System.out.println("CAPTCHA: Sending request to google siteverify with secret: " + secretKey);
             Map<?, ?> response = restClient.post()
                     .uri(uriBuilder -> uriBuilder
                             .path("/recaptcha/api/siteverify")
@@ -47,7 +44,6 @@ public class CaptchaService {
                     .retrieve()
                     .body(Map.class);
 
-            System.out.println("CAPTCHA: Google verification response: " + response);
             if (response != null) {
                 Object success = response.get("success");
                 if (success instanceof Boolean) {
@@ -56,8 +52,6 @@ public class CaptchaService {
             }
             return false;
         } catch (Exception e) {
-            System.err.println("CAPTCHA: Error during validation request:");
-            e.printStackTrace();
             return false;
         }
     }
