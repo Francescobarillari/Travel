@@ -25,6 +25,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.travel.app.domain.model.User
+import com.travel.app.presentation.components.HeaderBackButton
+import com.travel.app.presentation.components.HeaderConfirmButton
 import com.travel.app.presentation.theme.TravelTheme
 import kotlinx.coroutines.launch
 
@@ -152,28 +154,10 @@ fun EditProfileForm(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Card(
+            HeaderBackButton(
                 onClick = onBack,
-                modifier = Modifier.size(40.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                    contentColor = MaterialTheme.colorScheme.onSurface
-                ),
-                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
                 enabled = !isLoading
-            ) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Indietro",
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-            }
+            )
 
             Text(
                 text = "Modifica Profilo",
@@ -182,36 +166,11 @@ fun EditProfileForm(
                 color = MaterialTheme.colorScheme.onBackground
             )
 
-            Card(
+            HeaderConfirmButton(
                 onClick = onSaveClick,
-                modifier = Modifier.size(40.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                    contentColor = MaterialTheme.colorScheme.primary
-                ),
-                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
-                enabled = !isLoading
-            ) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (isLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp),
-                            color = MaterialTheme.colorScheme.primary,
-                            strokeWidth = 2.dp
-                        )
-                    } else {
-                        Icon(
-                            imageVector = Icons.Default.Check,
-                            contentDescription = "Salva",
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                }
-            }
+                enabled = !isLoading,
+                isLoading = isLoading
+            )
         }
 
         Column(

@@ -28,6 +28,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.travel.app.domain.model.User
+import com.travel.app.presentation.components.HeaderBackButton
+import com.travel.app.presentation.components.HeaderConfirmButton
 import com.travel.app.presentation.theme.TravelTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -69,21 +71,10 @@ fun SecurityScreen(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            IconButton(
+            HeaderBackButton(
                 onClick = onBack,
-                modifier = Modifier
-                    .size(40.dp)
-                    .background(MaterialTheme.colorScheme.surface, CircleShape)
-                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape),
                 enabled = !viewModel.isLoading
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Indietro",
-                    tint = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
+            )
 
             Text(
                 text = "Sicurezza",
@@ -92,34 +83,17 @@ fun SecurityScreen(
                 color = MaterialTheme.colorScheme.onBackground
             )
 
-            IconButton(
+            HeaderConfirmButton(
                 onClick = {
                     viewModel.saveSecurity { savedUser ->
                         onSaveSuccess(savedUser)
                         Toast.makeText(context, "Modifiche salvate con successo!", Toast.LENGTH_SHORT).show()
                     }
                 },
-                modifier = Modifier
-                    .size(40.dp)
-                    .background(MaterialTheme.colorScheme.surface, CircleShape)
-                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape),
-                enabled = !viewModel.isLoading
-            ) {
-                if (viewModel.isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        color = if (isDark) Color(0xFFA78BFA) else Color(0xFF7C3AED),
-                        strokeWidth = 2.dp
-                    )
-                } else {
-                    Icon(
-                        imageVector = Icons.Default.Check,
-                        contentDescription = "Salva",
-                        tint = if (isDark) Color(0xFFA78BFA) else Color(0xFF7C3AED),
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-            }
+                enabled = !viewModel.isLoading,
+                isLoading = viewModel.isLoading,
+                iconColor = if (isDark) Color(0xFFA78BFA) else Color(0xFF7C3AED)
+            )
         }
 
         Column(
