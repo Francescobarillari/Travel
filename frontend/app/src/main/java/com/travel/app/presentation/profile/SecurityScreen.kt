@@ -54,151 +54,188 @@ fun SecurityScreen(
 
     val isSocieta = initialUser.userType == "SOCIETA"
     val context = LocalContext.current
-
     val isDark = isSystemInDarkTheme()
+    var showConfirmationDialog by remember { mutableStateOf(false) }
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .statusBarsPadding()
-    ) {
-        // TOP NAVIGATION HEADER (consistent style with purple accents for Security)
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            HeaderBackButton(
-                onClick = onBack,
-                enabled = !viewModel.isLoading
-            )
-
-            Text(
-                text = "Sicurezza",
-                fontSize = 22.sp,
-                fontWeight = FontWeight.ExtraBold,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-
-            HeaderConfirmButton(
-                onClick = {
-                    viewModel.saveSecurity { savedUser ->
-                        onSaveSuccess(savedUser)
-                        Toast.makeText(context, "Modifiche salvate con successo!", Toast.LENGTH_SHORT).show()
-                    }
-                },
-                enabled = !viewModel.isLoading,
-                isLoading = viewModel.isLoading,
-                iconColor = if (isDark) Color(0xFFA78BFA) else Color(0xFF7C3AED)
-            )
-        }
-
+    Box(modifier = modifier) {
         Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp, vertical = 8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(20.dp)
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+                .statusBarsPadding()
         ) {
-            // AVATAR AREA WITH LOCK ICON BACKGROUND
-            Box(
+            // TOP NAVIGATION HEADER (consistent style with purple accents for Security)
+            Row(
                 modifier = Modifier
-                    .size(110.dp)
-                    .padding(bottom = 8.dp),
-                contentAlignment = Alignment.BottomEnd
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                val purpleGradients = if (isDark) {
-                    listOf(Color(0xFF4C1D95), Color(0xFF2E1065))
-                } else {
-                    listOf(Color(0xFFEDE9FE), Color(0xFFDDD6FE))
-                }
+                HeaderBackButton(
+                    onClick = onBack,
+                    enabled = !viewModel.isLoading
+                )
+
+                Text(
+                    text = "Sicurezza",
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+
+                HeaderConfirmButton(
+                    onClick = {
+                        if (viewModel.newPassword.isNotEmpty()) {
+                            showConfirmationDialog = true
+                        } else {
+                            viewModel.saveSecurity { savedUser ->
+                                onSaveSuccess(savedUser)
+                                Toast.makeText(context, "Modifiche salvate con successo!", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    },
+                    enabled = !viewModel.isLoading,
+                    isLoading = viewModel.isLoading,
+                    iconColor = if (isDark) Color(0xFFA78BFA) else Color(0xFF7C3AED)
+                )
+            }
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 24.dp, vertical = 8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
+                // AVATAR AREA WITH LOCK ICON BACKGROUND
                 Box(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .clip(CircleShape)
-                        .background(
-                            brush = Brush.radialGradient(
-                                colors = purpleGradients
-                            )
-                        ),
-                    contentAlignment = Alignment.Center
+                        .size(110.dp)
+                        .padding(bottom = 8.dp),
+                    contentAlignment = Alignment.BottomEnd
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Security,
-                        contentDescription = "Security Status",
-                        tint = if (isDark) Color(0xFFA78BFA) else Color(0xFF7C3AED),
-                        modifier = Modifier.size(48.dp)
-                    )
+                    val purpleGradients = if (isDark) {
+                        listOf(Color(0xFF4C1D95), Color(0xFF2E1065))
+                    } else {
+                        listOf(Color(0xFFEDE9FE), Color(0xFFDDD6FE))
+                    }
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(CircleShape)
+                            .background(
+                                brush = Brush.radialGradient(
+                                    colors = purpleGradients
+                                )
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Security,
+                            contentDescription = "Security Status",
+                            tint = if (isDark) Color(0xFFA78BFA) else Color(0xFF7C3AED),
+                            modifier = Modifier.size(48.dp)
+                        )
+                    }
                 }
-            }
 
-            // Error Message Card
-            viewModel.errorMessage?.let { msg ->
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text(
-                        text = msg,
-                        color = MaterialTheme.colorScheme.onErrorContainer,
-                        modifier = Modifier.padding(12.dp),
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium
-                    )
+                // Error Message Card
+                viewModel.errorMessage?.let { msg ->
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(
+                            text = msg,
+                            color = MaterialTheme.colorScheme.onErrorContainer,
+                            modifier = Modifier.padding(12.dp),
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
                 }
-            }
 
-            // Success Message Card
-            viewModel.successMessage?.let { msg ->
-                val successBg = if (isDark) Color(0xFF064E3B) else Color(0xFFF0FDF4)
-                val successText = if (isDark) Color(0xFF6EE7B7) else Color(0xFF15803D)
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = successBg),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text(
-                        text = msg,
-                        color = successText,
-                        modifier = Modifier.padding(12.dp),
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium
-                    )
+                // Success Message Card
+                viewModel.successMessage?.let { msg ->
+                    val successBg = if (isDark) Color(0xFF064E3B) else Color(0xFFF0FDF4)
+                    val successText = if (isDark) Color(0xFF6EE7B7) else Color(0xFF15803D)
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = successBg),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(
+                            text = msg,
+                            color = successText,
+                            modifier = Modifier.padding(12.dp),
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
                 }
+
+                // Gestione Account removed
+
+                // SECTION 2: MODIFICA PASSWORD
+                Text(
+                    text = "Modifica Password",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.align(Alignment.Start)
+                )
+
+                // Old Password Field
+                PasswordInputField(
+                    label = "Vecchia Password",
+                    value = viewModel.oldPassword,
+                    onValueChange = { viewModel.oldPassword = it }
+                )
+
+                // New Password Field
+                PasswordInputField(
+                    label = "Nuova Password",
+                    value = viewModel.newPassword,
+                    onValueChange = { viewModel.newPassword = it }
+                )
+
+                Spacer(modifier = Modifier.height(30.dp))
             }
+        }
 
-            // Gestione Account removed
-
-            // SECTION 2: MODIFICA PASSWORD
-            Text(
-                text = "Modifica Password",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.align(Alignment.Start)
+        if (showConfirmationDialog) {
+            AlertDialog(
+                onDismissRequest = { showConfirmationDialog = false },
+                title = { Text(text = "Conferma cambio password") },
+                text = { Text(text = "Sei sicuro di voler modificare la tua password di accesso?") },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            showConfirmationDialog = false
+                            viewModel.saveSecurity { savedUser ->
+                                onSaveSuccess(savedUser)
+                                Toast.makeText(context, "Modifiche salvate con successo!", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    ) {
+                        Text(text = "Conferma", color = if (isDark) Color(0xFFA78BFA) else Color(0xFF7C3AED))
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = { showConfirmationDialog = false }
+                    ) {
+                        Text(text = "Annulla", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                },
+                shape = RoundedCornerShape(28.dp),
+                containerColor = MaterialTheme.colorScheme.surface,
+                tonalElevation = 6.dp
             )
-
-            // Old Password Field
-            PasswordInputField(
-                label = "Vecchia Password",
-                value = viewModel.oldPassword,
-                onValueChange = { viewModel.oldPassword = it }
-            )
-
-            // New Password Field
-            PasswordInputField(
-                label = "Nuova Password",
-                value = viewModel.newPassword,
-                onValueChange = { viewModel.newPassword = it }
-            )
-
-            Spacer(modifier = Modifier.height(30.dp))
         }
     }
 }
