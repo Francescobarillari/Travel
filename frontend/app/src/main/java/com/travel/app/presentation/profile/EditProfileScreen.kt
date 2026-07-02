@@ -50,28 +50,72 @@ fun EditProfileScreen(
     }
 
     val isSocieta = initialUser.userType == "SOCIETA"
+    var showConfirmationDialog by remember { mutableStateOf(false) }
+    val isNameChanged = remember(initialUser.name, viewModel.name) {
+        viewModel.name.trim() != initialUser.name.orEmpty().trim()
+    }
 
     // Country code prefix and phone number (read-only)
     val phoneNum = initialUser.phone.orEmpty()
     val selectedCountryPrefix = "+39" 
 
-    EditProfileForm(
-        initialUser = initialUser,
-        name = viewModel.name,
-        onNameChange = { viewModel.name = it },
-        email = viewModel.email,
-        vatNumber = viewModel.vatNumber,
-        onVatNumberChange = { viewModel.vatNumber = it },
-        selectedCountryPrefix = selectedCountryPrefix,
-        phoneNum = phoneNum,
-        isLoading = viewModel.isLoading,
-        errorMessage = viewModel.errorMessage,
-        onBack = onBack,
-        onSaveClick = {
-            viewModel.saveProfile(onSaveSuccess)
-        },
-        modifier = modifier
-    )
+    Box(modifier = modifier) {
+        EditProfileForm(
+            initialUser = initialUser,
+            name = viewModel.name,
+            onNameChange = { viewModel.name = it },
+            email = viewModel.email,
+            vatNumber = viewModel.vatNumber,
+            onVatNumberChange = { viewModel.vatNumber = it },
+            selectedCountryPrefix = selectedCountryPrefix,
+            phoneNum = phoneNum,
+            isLoading = viewModel.isLoading,
+            errorMessage = viewModel.errorMessage,
+            onBack = onBack,
+            onSaveClick = {
+                if (isNameChanged) {
+                    showConfirmationDialog = true
+                } else {
+                    viewModel.saveProfile(onSaveSuccess)
+                }
+            }
+        )
+
+        if (showConfirmationDialog) {
+            AlertDialog(
+                onDismissRequest = { showConfirmationDialog = false },
+                title = { Text(text = "Conferma modifica") },
+                text = {
+                    val message = if (isSocieta) {
+                        "Sei sicuro di voler modificare la ragione sociale in \"${viewModel.name}\"?"
+                    } else {
+                        "Sei sicuro di voler modificare il tuo nome e cognome in \"${viewModel.name}\"?"
+                    }
+                    Text(text = message)
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            showConfirmationDialog = false
+                            viewModel.saveProfile(onSaveSuccess)
+                        }
+                    ) {
+                        Text(text = "Conferma", color = MaterialTheme.colorScheme.primary)
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = { showConfirmationDialog = false }
+                    ) {
+                        Text(text = "Annulla", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                },
+                shape = RoundedCornerShape(28.dp),
+                containerColor = MaterialTheme.colorScheme.surface,
+                tonalElevation = 6.dp
+            )
+        }
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -108,20 +152,27 @@ fun EditProfileForm(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            IconButton(
+            Card(
                 onClick = onBack,
-                modifier = Modifier
-                    .size(40.dp)
-                    .background(MaterialTheme.colorScheme.surface, CircleShape)
-                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape),
+                modifier = Modifier.size(40.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ),
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
                 enabled = !isLoading
             ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Indietro",
-                    tint = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.size(20.dp)
-                )
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Indietro",
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
             }
 
             Text(
@@ -131,27 +182,34 @@ fun EditProfileForm(
                 color = MaterialTheme.colorScheme.onBackground
             )
 
-            IconButton(
+            Card(
                 onClick = onSaveClick,
-                modifier = Modifier
-                    .size(40.dp)
-                    .background(MaterialTheme.colorScheme.surface, CircleShape)
-                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape),
+                modifier = Modifier.size(40.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                    contentColor = MaterialTheme.colorScheme.primary
+                ),
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
                 enabled = !isLoading
             ) {
-                if (isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        color = Color(0xFF22C55E),
-                        strokeWidth = 2.dp
-                    )
-                } else {
-                    Icon(
-                        imageVector = Icons.Default.Check,
-                        contentDescription = "Salva",
-                        tint = Color(0xFF22C55E),
-                        modifier = Modifier.size(20.dp)
-                    )
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            color = MaterialTheme.colorScheme.primary,
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = "Salva",
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
                 }
             }
         }
@@ -257,7 +315,8 @@ fun EditProfileForm(
                 ProfileInputField(
                     label = "Partita IVA",
                     value = vatNumber,
-                    onValueChange = onVatNumberChange
+                    onValueChange = {},
+                    enabled = false
                 )
             }
 
