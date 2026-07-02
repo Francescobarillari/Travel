@@ -7,7 +7,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import com.travel.app.domain.model.User
 import com.travel.app.data.AppContainer
-import com.travel.app.presentation.auth.AuthViewModel
+import com.travel.app.presentation.auth.LoginViewModel
+import com.travel.app.presentation.auth.RegisterViewModel
 import com.travel.app.presentation.auth.LoginScreen
 import com.travel.app.presentation.auth.RegisterScreen
 import com.travel.app.presentation.home.HomeScreen
@@ -19,7 +20,8 @@ fun TravelApp(
     onDarkModeChange: (Boolean) -> Unit
 ) {
     val userRepository = AppContainer.userRepository
-    val authViewModel = remember { AuthViewModel(userRepository) }
+    val loginViewModel = remember { LoginViewModel(userRepository) }
+    val registerViewModel = remember { RegisterViewModel(userRepository) }
     var currentScreen by remember { mutableStateOf(Screen.LOGIN) }
     var currentUser by remember { mutableStateOf<User?>(null) }
 
@@ -52,7 +54,7 @@ fun TravelApp(
         when (currentScreen) {
             Screen.LOGIN -> {
                 LoginScreen(
-                    viewModel = authViewModel,
+                    viewModel = loginViewModel,
                     onNavigateToRegister = { currentScreen = Screen.REGISTER },
                     onLoginSuccess = { user ->
                         currentUser = user
@@ -62,7 +64,7 @@ fun TravelApp(
             }
             Screen.REGISTER -> {
                 RegisterScreen(
-                    viewModel = authViewModel,
+                    viewModel = registerViewModel,
                     onNavigateToLogin = { currentScreen = Screen.LOGIN },
                     onRegisterSuccess = { user ->
                         currentUser = user

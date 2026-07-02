@@ -34,7 +34,7 @@ import com.travel.app.service.ApiService
 
 @Composable
 fun RegisterScreen(
-    viewModel: AuthViewModel,
+    viewModel: RegisterViewModel,
     onNavigateToLogin: () -> Unit,
     onRegisterSuccess: (User) -> Unit,
 ) {
@@ -176,7 +176,7 @@ fun RegisterScreenPreview() {
     }
     TravelTheme {
         RegisterScreen(
-            viewModel = AuthViewModel(UserRepositoryImpl(mockApiService) { error("Not used in preview") }),
+            viewModel = RegisterViewModel(UserRepositoryImpl(mockApiService) { error("Not used in preview") }),
             onNavigateToLogin = {},
             onRegisterSuccess = {}
         )

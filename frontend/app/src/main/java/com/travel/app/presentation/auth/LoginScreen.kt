@@ -32,7 +32,7 @@ import com.travel.app.service.ApiService
 
 @Composable
 fun LoginScreen(
-    viewModel: AuthViewModel,
+    viewModel: LoginViewModel,
     onNavigateToRegister: () -> Unit,
     onLoginSuccess: (User) -> Unit,
 ) {
@@ -143,7 +143,7 @@ fun LoginScreenPreview() {
     }
     TravelTheme {
         LoginScreen(
-            viewModel = AuthViewModel(UserRepositoryImpl(mockApiService) { error("Not used in preview") }),
+            viewModel = LoginViewModel(UserRepositoryImpl(mockApiService) { error("Not used in preview") }),
             onNavigateToRegister = {},
             onLoginSuccess = {}
         )

@@ -8,7 +8,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.travel.app.data.AppContainer
 import com.travel.app.data.repository.UserRepositoryImpl
 import com.travel.app.presentation.app.TravelApp
-import com.travel.app.presentation.auth.AuthViewModel
+import com.travel.app.presentation.auth.LoginViewModel
 import com.travel.app.presentation.auth.LoginScreen
 import com.travel.app.presentation.auth.RegisterScreen
 import com.travel.app.presentation.theme.TravelTheme
@@ -56,7 +56,7 @@ fun LoginScreenPreview() {
         override suspend fun deleteItinerary(id: String) {}
     }
     val mockRepo = UserRepositoryImpl(mockApiService) { error("Not used in preview") }
-    val mockViewModel = AuthViewModel(mockRepo)
+    val mockViewModel = LoginViewModel(mockRepo)
     TravelTheme {
         LoginScreen(viewModel = mockViewModel, onNavigateToRegister = {}, onLoginSuccess = {})
     }

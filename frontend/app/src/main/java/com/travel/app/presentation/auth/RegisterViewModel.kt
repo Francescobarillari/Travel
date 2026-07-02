@@ -7,20 +7,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.travel.app.domain.model.User
 import com.travel.app.domain.repository.UserRepository
-import com.travel.app.data.repository.CaptchaRequiredException
 import kotlinx.coroutines.launch
 
 enum class UserType { VIAGGIATORE, SOCIETA }
 
-class AuthViewModel(
+class RegisterViewModel(
     private val userRepository: UserRepository
 ) : ViewModel() {
-
-    // Stato del form di Login
-    var loginEmail by mutableStateOf("")
-    var loginPassword by mutableStateOf("")
-    var loginError by mutableStateOf<String?>(null)
-    var isCaptchaRequiredState by mutableStateOf(false)
 
     // Stato del form di Registrazione - Comune
     var registerUserType by mutableStateOf(UserType.VIAGGIATORE)
@@ -39,33 +32,6 @@ class AuthViewModel(
     var registerVatNumber by mutableStateOf("")
 
     var isLoading by mutableStateOf(false)
-
-    fun login(captchaToken: String? = null, onSuccess: (User) -> Unit) {
-        if (loginEmail.isBlank() || loginPassword.isBlank()) {
-            loginError = "Compila tutti i campi"
-            return
-        }
-        viewModelScope.launch {
-            isLoading = true
-            loginError = null
-            val result = userRepository.login(loginEmail, loginPassword, captchaToken)
-            isLoading = false
-            result.fold(
-                onSuccess = { user ->
-                    loginEmail = ""
-                    loginPassword = ""
-                    isCaptchaRequiredState = false
-                    onSuccess(user)
-                },
-                onFailure = { throwable ->
-                    if (throwable is CaptchaRequiredException) {
-                        isCaptchaRequiredState = true
-                    }
-                    loginError = throwable.message ?: "Errore di autenticazione"
-                }
-            )
-        }
-    }
 
     fun register(captchaToken: String, onSuccess: (User) -> Unit) {
         if (registerEmail.isBlank() || registerPassword.isBlank()) {
