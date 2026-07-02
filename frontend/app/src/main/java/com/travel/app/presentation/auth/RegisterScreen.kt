@@ -11,7 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -28,6 +28,7 @@ import com.travel.app.domain.model.User
 import com.travel.app.presentation.components.auth.ErrorBanner
 import com.travel.app.presentation.components.auth.PasswordField
 import com.travel.app.presentation.components.auth.TravelTextField
+import com.travel.app.presentation.components.auth.ReCaptchaDialog
 import com.travel.app.presentation.theme.TravelTheme
 import com.travel.app.service.ApiService
 
@@ -37,6 +38,8 @@ fun RegisterScreen(
     onNavigateToLogin: () -> Unit,
     onRegisterSuccess: (User) -> Unit,
 ) {
+    var showCaptcha by remember { mutableStateOf(false) }
+
     TravelTheme(darkTheme = false) {
         Box(
             modifier = Modifier
@@ -112,7 +115,19 @@ fun RegisterScreen(
                         viewModel.registerError?.let { ErrorBanner(message = it) }
 
                         Button(
-                            onClick = { viewModel.register(onRegisterSuccess) },
+                            onClick = {
+                                if (viewModel.registerEmail.isBlank() || viewModel.registerPassword.isBlank()) {
+                                    viewModel.registerError = "Email e password sono obbligatorie"
+                                } else if (viewModel.registerPassword != viewModel.registerConfirmPassword) {
+                                    viewModel.registerError = "Le password non coincidono"
+                                } else if (viewModel.registerUserType == UserType.VIAGGIATORE && (viewModel.registerFirstName.isBlank() || viewModel.registerLastName.isBlank())) {
+                                    viewModel.registerError = "Nome e cognome sono obbligatori"
+                                } else if (viewModel.registerUserType == UserType.SOCIETA && (viewModel.registerCompanyName.isBlank() || viewModel.registerVatNumber.isBlank())) {
+                                    viewModel.registerError = "Ragione sociale e Partita IVA sono obbligatorie"
+                                } else {
+                                    showCaptcha = true
+                                }
+                            },
                             modifier = Modifier.fillMaxWidth().height(52.dp).padding(top = 8.dp),
                             shape = RoundedCornerShape(16.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = Color.White),
@@ -130,6 +145,16 @@ fun RegisterScreen(
                         Text("Accedi", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.secondary)
                     }
                 }
+            }
+
+            if (showCaptcha) {
+                ReCaptchaDialog(
+                    onDismiss = { showCaptcha = false },
+                    onSuccess = { token ->
+                        showCaptcha = false
+                        viewModel.register(token, onRegisterSuccess)
+                    }
+                )
             }
         }
     }

@@ -415,9 +415,9 @@ fun EditProfileScreenViaggiatorePreview() {
                     override fun getSessionUser(): User? = null
                     override fun saveSession(user: User, token: String) {}
                     override fun logout() {}
-                    override suspend fun login(email: String, password: String) = Result.failure<User>(Exception())
-                    override suspend fun registerViaggiatoreUser(email: String, firstName: String, lastName: String, password: String, phone: String?) = Result.failure<User>(Exception())
-                    override suspend fun registerSocietaUser(email: String, companyName: String, vatNumber: String, password: String, phone: String?) = Result.failure<User>(Exception())
+                    override suspend fun login(email: String, password: String, captchaToken: String?) = Result.failure<User>(Exception())
+                    override suspend fun registerViaggiatoreUser(email: String, firstName: String, lastName: String, password: String, phone: String?, captchaToken: String?) = Result.failure<User>(Exception())
+                    override suspend fun registerSocietaUser(email: String, companyName: String, vatNumber: String, password: String, phone: String?, captchaToken: String?) = Result.failure<User>(Exception())
                     override suspend fun getMe() = Result.failure<User>(Exception())
                     override suspend fun updateMe(user: User) = Result.success(user)
                 }
@@ -448,9 +448,9 @@ fun EditProfileScreenSocietaPreview() {
                     override fun getSessionUser(): User? = null
                     override fun saveSession(user: User, token: String) {}
                     override fun logout() {}
-                    override suspend fun login(email: String, password: String) = Result.failure<User>(Exception())
-                    override suspend fun registerViaggiatoreUser(email: String, firstName: String, lastName: String, password: String, phone: String?) = Result.failure<User>(Exception())
-                    override suspend fun registerSocietaUser(email: String, companyName: String, vatNumber: String, password: String, phone: String?) = Result.failure<User>(Exception())
+                    override suspend fun login(email: String, password: String, captchaToken: String?) = Result.failure<User>(Exception())
+                    override suspend fun registerViaggiatoreUser(email: String, firstName: String, lastName: String, password: String, phone: String?, captchaToken: String?) = Result.failure<User>(Exception())
+                    override suspend fun registerSocietaUser(email: String, companyName: String, vatNumber: String, password: String, phone: String?, captchaToken: String?) = Result.failure<User>(Exception())
                     override suspend fun getMe() = Result.failure<User>(Exception())
                     override suspend fun updateMe(user: User) = Result.success(user)
                 }

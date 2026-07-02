@@ -505,9 +505,9 @@ fun CompanyAddOfferScreenPreview() {
                 },
                 userRepository = object : com.travel.app.domain.repository.UserRepository {
                     override fun getSessionUser(): com.travel.app.domain.model.User? = null
-                    override suspend fun login(email: String, password: String) = Result.failure<com.travel.app.domain.model.User>(Exception())
-                    override suspend fun registerViaggiatoreUser(email: String, firstName: String, lastName: String, password: String, phone: String?) = Result.failure<com.travel.app.domain.model.User>(Exception())
-                    override suspend fun registerSocietaUser(email: String, companyName: String, vatNumber: String, password: String, phone: String?) = Result.failure<com.travel.app.domain.model.User>(Exception())
+                    override suspend fun login(email: String, password: String, captchaToken: String?) = Result.failure<com.travel.app.domain.model.User>(Exception())
+                    override suspend fun registerViaggiatoreUser(email: String, firstName: String, lastName: String, password: String, phone: String?, captchaToken: String?) = Result.failure<com.travel.app.domain.model.User>(Exception())
+                    override suspend fun registerSocietaUser(email: String, companyName: String, vatNumber: String, password: String, phone: String?, captchaToken: String?) = Result.failure<com.travel.app.domain.model.User>(Exception())
                     override suspend fun getMe() = Result.failure<com.travel.app.domain.model.User>(Exception())
                     override suspend fun updateMe(user: com.travel.app.domain.model.User) = Result.success(user)
                     override fun logout() {}

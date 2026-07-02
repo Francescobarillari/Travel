@@ -9,7 +9,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -26,6 +26,7 @@ import com.travel.app.domain.model.User
 import com.travel.app.presentation.components.auth.ErrorBanner
 import com.travel.app.presentation.components.auth.PasswordField
 import com.travel.app.presentation.components.auth.TravelTextField
+import com.travel.app.presentation.components.auth.ReCaptchaDialog
 import com.travel.app.presentation.theme.TravelTheme
 import com.travel.app.service.ApiService
 
@@ -35,6 +36,8 @@ fun LoginScreen(
     onNavigateToRegister: () -> Unit,
     onLoginSuccess: (User) -> Unit,
 ) {
+    var showCaptcha by remember { mutableStateOf(false) }
+
     TravelTheme(darkTheme = false) {
         Box(
             modifier = Modifier
@@ -85,7 +88,13 @@ fun LoginScreen(
                         viewModel.loginError?.let { ErrorBanner(message = it) }
 
                         Button(
-                            onClick = { viewModel.login(onLoginSuccess) },
+                            onClick = {
+                                if (viewModel.isCaptchaRequiredState) {
+                                    showCaptcha = true
+                                } else {
+                                    viewModel.login(null, onLoginSuccess)
+                                }
+                            },
                             modifier = Modifier.fillMaxWidth().height(52.dp),
                             shape = RoundedCornerShape(16.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = Color.White),
@@ -103,6 +112,16 @@ fun LoginScreen(
                         Text("Registrati", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.secondary)
                     }
                 }
+            }
+
+            if (showCaptcha) {
+                ReCaptchaDialog(
+                    onDismiss = { showCaptcha = false },
+                    onSuccess = { token ->
+                        showCaptcha = false
+                        viewModel.login(token, onSuccess = onLoginSuccess)
+                    }
+                )
             }
         }
     }

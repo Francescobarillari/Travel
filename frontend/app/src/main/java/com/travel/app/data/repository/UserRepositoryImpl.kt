@@ -19,7 +19,7 @@ class UserRepositoryImpl(
     private val sessionManagerProvider: () -> SessionManager
 ) : UserRepository {
 
-    override suspend fun login(email: String, password: String): Result<User> {
+    override suspend fun login(email: String, password: String, captchaToken: String?): Result<User> {
         // Credenziali hardcoded per test offline/sviluppo locale
         if (email == "test@travel.com" && password == "travel") {
             val user = User(
@@ -50,6 +50,7 @@ class UserRepositoryImpl(
             val token = apiService.login(LoginRequest().apply {
                 this.email = email
                 this.password = password
+                this.captchaToken = captchaToken
             })
             
             // 1. Salva la sessione con un utente provvisorio per abilitare l'AuthInterceptor
@@ -66,7 +67,11 @@ class UserRepositoryImpl(
             
             Result.success(user)
         } catch (e: Exception) {
-            Result.failure(Exception(handleError(e)))
+            if (e is HttpException && e.code() == 403) {
+                Result.failure(CaptchaRequiredException(handleError(e)))
+            } else {
+                Result.failure(Exception(handleError(e)))
+            }
         }
     }
 
@@ -75,7 +80,8 @@ class UserRepositoryImpl(
         firstName: String,
         lastName: String,
         password: String,
-        phone: String?
+        phone: String?,
+        captchaToken: String?
     ): Result<User> {
         return try {
             apiService.register(
@@ -86,6 +92,7 @@ class UserRepositoryImpl(
                     this.firstName = firstName
                     this.lastName = lastName
                     this.phone = phone
+                    this.captchaToken = captchaToken
                 }
             )
             Result.success(
@@ -108,7 +115,8 @@ class UserRepositoryImpl(
         companyName: String,
         vatNumber: String,
         password: String,
-        phone: String?
+        phone: String?,
+        captchaToken: String?
     ): Result<User> {
         return try {
             apiService.register(
@@ -119,6 +127,7 @@ class UserRepositoryImpl(
                     this.companyName = companyName
                     this.vatNumber = vatNumber
                     this.phone = phone
+                    this.captchaToken = captchaToken
                 }
             )
             Result.success(
@@ -193,3 +202,5 @@ class UserRepositoryImpl(
         }
     }
 }
+
+class CaptchaRequiredException(message: String) : Exception(message)

@@ -55,5 +55,8 @@ public class SignupRequest {
     @Size(max = 30, message = "Il numero di telefono non può superare i 30 caratteri")
     @Schema(format = "phone", example = "+39 333 1234567")
     private String phone;
+
+    @Schema(description = "Token CAPTCHA fornito da Google reCAPTCHA", requiredMode = Schema.RequiredMode.REQUIRED)
+    private String captchaToken;
 }
 
