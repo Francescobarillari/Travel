@@ -18,6 +18,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import it.unical.ea.Travel.Services.storage.FileStorageService;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import java.util.List;
 import java.util.UUID;
@@ -32,6 +39,7 @@ public class AdminController {
     private final ActivityRepository activityRepository;
     private final ActivityService activityService;
     private final KeycloakAdminService keycloakAdminService;
+    private final FileStorageService fileStorageService;
     private final UserMapper userMapper;
     private final ActivityMapper activityMapper;
 
@@ -94,5 +102,21 @@ public class AdminController {
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "activity.notFound"));
         activityRepository.delete(activity);
         return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "Scarica un documento di registrazione della società", description = "Restituisce l'immagine inline. Endpoint protetto dell'admin.")
+    @GetMapping("/documents/{filename}")
+    public ResponseEntity<Resource> getDocument(@PathVariable String filename) throws IOException {
+        Resource resource = fileStorageService.load("companies/documents/" + filename);
+
+        String contentType = Files.probeContentType(Path.of(resource.getFilename()));
+        if (contentType == null) {
+            contentType = MediaType.APPLICATION_OCTET_STREAM_VALUE;
+        }
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(contentType))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
+                .body(resource);
     }
 }

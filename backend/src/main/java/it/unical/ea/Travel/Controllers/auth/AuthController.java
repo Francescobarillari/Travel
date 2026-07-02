@@ -24,6 +24,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.http.MediaType;
+import it.unical.ea.Travel.Services.storage.FileStorageService;
 
 @RequiredArgsConstructor
 @RestController
@@ -36,6 +40,7 @@ public class AuthController {
     private final MessageSource messageSource;
     private final LoginAttemptService loginAttemptService;
     private final CaptchaService captchaService;
+    private final FileStorageService fileStorageService;
 
     @Operation(summary = "Login utente", description = "Autentica l'utente e restituisce un token JWT")
     @PostMapping("/login")
@@ -100,6 +105,13 @@ public class AuthController {
         } catch (KeycloakUserAlreadyExistsException e) {
             throw new ApiException(HttpStatus.CONFLICT, "auth.signup.emailAlreadyExists");
         }
+    }
+
+    @Operation(summary = "Carica un documento di registrazione per la società", description = "Accetta un file immagine (JPEG, PNG, WebP)")
+    @PostMapping(value = "/upload-document", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<String> uploadDocument(@RequestPart("file") MultipartFile file) {
+        String filePath = fileStorageService.store(file, "companies/documents");
+        return ResponseEntity.ok(filePath);
     }
 
     private boolean isDuplicateEmailError(DataIntegrityViolationException exception) {
