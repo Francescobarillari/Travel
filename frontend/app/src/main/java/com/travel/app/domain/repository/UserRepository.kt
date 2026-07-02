@@ -18,7 +18,8 @@ interface UserRepository {
         vatNumber: String,
         password: String,
         phone: String? = null,
-        captchaToken: String? = null
+        captchaToken: String? = null,
+        documentPhotos: List<String> = emptyList()
     ): Result<User>
 
     fun getSessionUser(): User?
@@ -27,4 +28,8 @@ interface UserRepository {
 
     suspend fun getMe(): Result<User>
     suspend fun updateMe(user: User): Result<User>
+    suspend fun uploadDocument(fileBytes: ByteArray, filename: String): Result<String>
+    suspend fun getAllCompanies(): Result<List<User>>
+    suspend fun blockCompany(id: String): Result<Unit>
+    suspend fun unblockCompany(id: String): Result<Unit>
 }

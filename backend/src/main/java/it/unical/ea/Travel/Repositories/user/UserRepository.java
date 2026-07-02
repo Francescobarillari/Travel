@@ -16,6 +16,7 @@ import it.unical.ea.Travel.Entities.user.User;
 public interface UserRepository extends JpaRepository<User, UUID> {
     public Optional<User> getUserByEmail(String email);
     public List<User> findByUserTypeAndApproved(UserType userType, Boolean approved);
+    public List<User> findByUserType(UserType userType);
 
     // bisogna cambiare questa query in sql -> JPA Specifications
     @Query(value = "SELECT * FROM users WHERE email = ?1", nativeQuery = true)

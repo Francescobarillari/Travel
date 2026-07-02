@@ -38,4 +38,8 @@ public class UserDTO {
     private String fullName;
     @Schema(format = "password", example = "Password1@", accessMode = Schema.AccessMode.WRITE_ONLY)
     private String password;
+    @Schema(description = "Stato di approvazione dell'utente")
+    private Boolean approved = true;
+    @Schema(description = "Stato di blocco dell'utente")
+    private Boolean blocked = false;
 }

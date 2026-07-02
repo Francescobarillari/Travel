@@ -119,4 +119,31 @@ public class AdminController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
                 .body(resource);
     }
+
+    @Operation(summary = "Ottieni tutte le società")
+    @GetMapping("/companies")
+    public List<UserDTO> getAllCompanies() {
+        List<User> companies = userRepository.findByUserType(UserType.SOCIETA);
+        return companies.stream().map(userMapper::toDTO).toList();
+    }
+
+    @Operation(summary = "Blocca una società")
+    @PostMapping("/companies/{id}/block")
+    public ResponseEntity<Void> blockCompany(@PathVariable String id) {
+        User user = userRepository.findById(UUID.fromString(id))
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "user.notFound"));
+        user.setBlocked(true);
+        userRepository.save(user);
+        return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "Sblocca una società")
+    @PostMapping("/companies/{id}/unblock")
+    public ResponseEntity<Void> unblockCompany(@PathVariable String id) {
+        User user = userRepository.findById(UUID.fromString(id))
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "user.notFound"));
+        user.setBlocked(false);
+        userRepository.save(user);
+        return ResponseEntity.ok().build();
+    }
 }

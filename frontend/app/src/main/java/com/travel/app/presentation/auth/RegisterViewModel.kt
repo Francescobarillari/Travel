@@ -30,8 +30,27 @@ class RegisterViewModel(
     // Stato del form di Registrazione - Solo SOCIETA
     var registerCompanyName by mutableStateOf("")
     var registerVatNumber by mutableStateOf("")
+    var registerDocumentPhotos by mutableStateOf<List<String>>(emptyList())
+    var isUploadingDocument by mutableStateOf(false)
 
     var isLoading by mutableStateOf(false)
+
+    fun uploadDocumentFile(fileBytes: ByteArray, filename: String) {
+        viewModelScope.launch {
+            isUploadingDocument = true
+            registerError = null
+            userRepository.uploadDocument(fileBytes, filename).fold(
+                onSuccess = { path ->
+                    registerDocumentPhotos = registerDocumentPhotos + path
+                    isUploadingDocument = false
+                },
+                onFailure = { throwable ->
+                    registerError = throwable.message ?: "Errore durante il caricamento del documento"
+                    isUploadingDocument = false
+                }
+            )
+        }
+    }
 
     fun register(captchaToken: String, onSuccess: (User) -> Unit) {
         if (registerEmail.isBlank() || registerPassword.isBlank()) {
@@ -74,7 +93,8 @@ class RegisterViewModel(
                     vatNumber = registerVatNumber,
                     password = registerPassword,
                     phone = registerPhone.takeIf { it.isNotBlank() },
-                    captchaToken = captchaToken
+                    captchaToken = captchaToken,
+                    documentPhotos = registerDocumentPhotos
                 )
             }
             isLoading = false
@@ -88,6 +108,7 @@ class RegisterViewModel(
                     registerPassword = ""
                     registerConfirmPassword = ""
                     registerPhone = ""
+                    registerDocumentPhotos = emptyList()
                     onSuccess(user)
                 },
                 onFailure = { throwable ->

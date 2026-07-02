@@ -13,6 +13,7 @@ import com.travel.app.domain.repository.UserRepository
 import com.travel.app.service.ApiService
 import retrofit2.HttpException
 import java.io.IOException
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 
 class UserRepositoryImpl(
     private val apiService: ApiService,
@@ -113,7 +114,8 @@ class UserRepositoryImpl(
         vatNumber: String,
         password: String,
         phone: String?,
-        captchaToken: String?
+        captchaToken: String?,
+        documentPhotos: List<String>
     ): Result<User> {
         return try {
             apiService.register(
@@ -125,6 +127,7 @@ class UserRepositoryImpl(
                     this.vatNumber = vatNumber
                     this.phone = phone
                     this.captchaToken = captchaToken
+                    this.documentPhotos = ArrayList(documentPhotos)
                 }
             )
             Result.success(
@@ -133,7 +136,8 @@ class UserRepositoryImpl(
                     userType = "SOCIETA",
                     phone = phone,
                     name = companyName,
-                    password = password
+                    password = password,
+                    vatNumber = vatNumber
                 )
             )
         } catch (e: Exception) {
@@ -173,6 +177,51 @@ class UserRepositoryImpl(
             val token = sessionManagerProvider().getSessionToken().orEmpty()
             saveSession(updatedUser, token)
             Result.success(updatedUser)
+        } catch (e: Exception) {
+            Result.failure(Exception(handleError(e)))
+        }
+    }
+
+    override suspend fun uploadDocument(fileBytes: ByteArray, filename: String): Result<String> {
+        return try {
+            val extension = filename.substringAfterLast('.', "").lowercase()
+            val mimeType = when (extension) {
+                "png" -> "image/png"
+                "webp" -> "image/webp"
+                else -> "image/jpeg"
+            }
+            val mediaType = mimeType.toMediaTypeOrNull()
+            val requestBody = okhttp3.RequestBody.Companion.create(mediaType, fileBytes)
+            val part = okhttp3.MultipartBody.Part.createFormData("file", filename, requestBody)
+            val path = apiService.uploadDocument(part)
+            Result.success(path)
+        } catch (e: Exception) {
+            Result.failure(Exception(handleError(e)))
+        }
+    }
+
+    override suspend fun getAllCompanies(): Result<List<User>> {
+        return try {
+            val list = apiService.getAllCompanies().map { it.toDomain() }
+            Result.success(list)
+        } catch (e: Exception) {
+            Result.failure(Exception(handleError(e)))
+        }
+    }
+
+    override suspend fun blockCompany(id: String): Result<Unit> {
+        return try {
+            apiService.blockCompany(id)
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(Exception(handleError(e)))
+        }
+    }
+
+    override suspend fun unblockCompany(id: String): Result<Unit> {
+        return try {
+            apiService.unblockCompany(id)
+            Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(Exception(handleError(e)))
         }

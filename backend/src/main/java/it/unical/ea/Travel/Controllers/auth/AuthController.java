@@ -60,6 +60,9 @@ public class AuthController {
             // Verifica approvazione per profili Società
             try {
                 User user = userService.getUserByEmail(email);
+                if (user.getUserType() == it.unical.ea.enums.UserType.SOCIETA && Boolean.TRUE.equals(user.getBlocked())) {
+                    throw new ApiException(HttpStatus.FORBIDDEN, "auth.login.accountBlocked");
+                }
                 if (user.getUserType() == it.unical.ea.enums.UserType.SOCIETA && !Boolean.TRUE.equals(user.getApproved())) {
                     throw new ApiException(HttpStatus.FORBIDDEN, "auth.login.accountPendingApproval");
                 }

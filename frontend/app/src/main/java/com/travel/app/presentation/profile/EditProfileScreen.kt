@@ -426,9 +426,13 @@ fun EditProfileScreenViaggiatorePreview() {
                     override fun logout() {}
                     override suspend fun login(email: String, password: String, captchaToken: String?) = Result.failure<User>(Exception())
                     override suspend fun registerViaggiatoreUser(email: String, firstName: String, lastName: String, password: String, phone: String?, captchaToken: String?) = Result.failure<User>(Exception())
-                    override suspend fun registerSocietaUser(email: String, companyName: String, vatNumber: String, password: String, phone: String?, captchaToken: String?) = Result.failure<User>(Exception())
+                    override suspend fun registerSocietaUser(email: String, companyName: String, vatNumber: String, password: String, phone: String?, captchaToken: String?, documentPhotos: List<String>) = Result.failure<User>(Exception())
                     override suspend fun getMe() = Result.failure<User>(Exception())
                     override suspend fun updateMe(user: User) = Result.success(user)
+                    override suspend fun uploadDocument(fileBytes: ByteArray, filename: String) = Result.success("mock")
+                    override suspend fun getAllCompanies() = Result.success(emptyList<User>())
+                    override suspend fun blockCompany(id: String) = Result.success(Unit)
+                    override suspend fun unblockCompany(id: String) = Result.success(Unit)
                 }
             )
         }
@@ -458,9 +462,13 @@ fun EditProfileScreenSocietaPreview() {
                     override fun logout() {}
                     override suspend fun login(email: String, password: String, captchaToken: String?) = Result.failure<User>(Exception())
                     override suspend fun registerViaggiatoreUser(email: String, firstName: String, lastName: String, password: String, phone: String?, captchaToken: String?) = Result.failure<User>(Exception())
-                    override suspend fun registerSocietaUser(email: String, companyName: String, vatNumber: String, password: String, phone: String?, captchaToken: String?) = Result.failure<User>(Exception())
+                    override suspend fun registerSocietaUser(email: String, companyName: String, vatNumber: String, password: String, phone: String?, captchaToken: String?, documentPhotos: List<String>) = Result.failure<User>(Exception())
                     override suspend fun getMe() = Result.failure<User>(Exception())
                     override suspend fun updateMe(user: User) = Result.success(user)
+                    override suspend fun uploadDocument(fileBytes: ByteArray, filename: String) = Result.success("mock")
+                    override suspend fun getAllCompanies() = Result.success(emptyList<User>())
+                    override suspend fun blockCompany(id: String) = Result.success(Unit)
+                    override suspend fun unblockCompany(id: String) = Result.success(Unit)
                 }
             )
         }

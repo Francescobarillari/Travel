@@ -75,6 +75,17 @@ public class UserController {
         if (email == null) {
             throw new it.unical.ea.Travel.Exception.ApiException(HttpStatus.UNAUTHORIZED, "auth.login.invalidCredentials");
         }
+
+        // Gestione speciale per l'utente ADMIN che non risiede nel DB locale
+        if (isAdmin(jwt, request)) {
+            UserDTO adminDTO = new UserDTO();
+            adminDTO.setEmail(email);
+            adminDTO.setFirstName("Admin");
+            adminDTO.setLastName("User");
+            adminDTO.setFullName("Admin User");
+            return adminDTO;
+        }
+
         User user = userService.getUserByEmail(email);
         UserDTO userDTO = toDTO(user);
         userDTO.setPassword(null); // Sicurezza extra: Non restituire mai il campo password nelle risposte
@@ -92,6 +103,70 @@ public class UserController {
         UserDTO result = toDTO(updatedUser);
         result.setPassword(null); // Sicurezza extra: Non restituire mai il campo password nelle risposte
         return result;
+    }
+
+    private boolean isAdmin(Jwt jwt, jakarta.servlet.http.HttpServletRequest request) {
+        if (jwt != null) {
+            // 1. Controlla claim top-level "roles"
+            List<String> roles = jwt.getClaimAsStringList("roles");
+            if (roles != null && roles.contains("ADMIN")) {
+                return true;
+            }
+            
+            // 2. Controlla standard Keycloak "resource_access.ae-client.roles"
+            java.util.Map<String, Object> resourceAccess = jwt.getClaim("resource_access");
+            if (resourceAccess != null) {
+                Object clientAccess = resourceAccess.get("ae-client");
+                if (clientAccess instanceof java.util.Map<?, ?> clientAccessMap) {
+                    Object clientRoles = clientAccessMap.get("roles");
+                    if (clientRoles instanceof java.util.Collection<?> roleCollection) {
+                        if (roleCollection.contains("ADMIN")) {
+                            return true;
+                        }
+                    }
+                }
+            }
+            
+            // 3. Controlla fallback basato sull'email dell'amministratore
+            String email = jwt.getClaimAsString("email");
+            if ("admin-user@example.com".equals(email)) {
+                return true;
+            }
+        }
+        
+        // 4. Se jwt è null (es. in modalità dev), decodifica manualmente l'header
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            try {
+                String token = authHeader.substring(7);
+                String[] parts = token.split("\\.");
+                if (parts.length > 1) {
+                    String payload = new String(java.util.Base64.getUrlDecoder().decode(parts[1]));
+                    com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+                    java.util.Map<?, ?> claims = mapper.readValue(payload, java.util.Map.class);
+                    
+                    // Controlla email
+                    String email = (String) claims.get("email");
+                    if ("admin-user@example.com".equals(email)) {
+                        return true;
+                    }
+                    
+                    // Controlla ruoli in resource_access
+                    java.util.Map<?, ?> resourceAccess = (java.util.Map<?, ?>) claims.get("resource_access");
+                    if (resourceAccess != null) {
+                        java.util.Map<?, ?> clientAccess = (java.util.Map<?, ?>) resourceAccess.get("ae-client");
+                        if (clientAccess != null) {
+                            java.util.Collection<?> roles = (java.util.Collection<?>) clientAccess.get("roles");
+                            if (roles != null && roles.contains("ADMIN")) {
+                                return true;
+                            }
+                        }
+                    }
+                }
+            } catch (Exception ignored) {}
+        }
+        
+        return false;
     }
 
     private String getEmailFromPrincipalOrHeader(Jwt jwt, jakarta.servlet.http.HttpServletRequest request) {
