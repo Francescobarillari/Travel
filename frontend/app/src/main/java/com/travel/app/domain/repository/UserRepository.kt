@@ -3,20 +3,22 @@ package com.travel.app.domain.repository
 import com.travel.app.domain.model.User
 
 interface UserRepository {
-    suspend fun login(email: String, password: String): Result<User>
+    suspend fun login(email: String, password: String, captchaToken: String? = null): Result<User>
     suspend fun registerViaggiatoreUser(
         email: String,
         firstName: String,
         lastName: String,
         password: String,
-        phone: String? = null
+        phone: String? = null,
+        captchaToken: String? = null
     ): Result<User>
     suspend fun registerSocietaUser(
         email: String,
         companyName: String,
         vatNumber: String,
         password: String,
-        phone: String? = null
+        phone: String? = null,
+        captchaToken: String? = null
     ): Result<User>
 
     fun getSessionUser(): User?
