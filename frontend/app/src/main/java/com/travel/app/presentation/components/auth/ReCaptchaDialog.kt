@@ -91,7 +91,7 @@ fun ReCaptchaDialog(
                                 <body style="margin: 0; padding: 20px 0; background-color: #ffffff; text-align: center;">
                                     <div style="display: inline-block; text-align: left;">
                                         <div class="g-recaptcha" 
-                                             data-sitekey="6Le1E0EtAAAAAFLk46hSwsuSD25M9q7l7Gf6UoWs" 
+                                             data-sitekey="6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI" 
                                              data-callback="onCaptchaSuccess">
                                         </div>
                                     </div>

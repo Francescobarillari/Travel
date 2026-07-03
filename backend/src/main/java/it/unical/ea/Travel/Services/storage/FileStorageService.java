@@ -121,9 +121,14 @@ public class FileStorageService {
             throw new ApiException(HttpStatus.BAD_REQUEST, "file.empty");
         }
 
-        String contentType = file.getContentType();
-        if (contentType == null || !ALLOWED_CONTENT_TYPES.contains(contentType)) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "file.invalidType");
+        try {
+            org.apache.tika.Tika tika = new org.apache.tika.Tika();
+            String detectedType = tika.detect(file.getInputStream());
+            if (detectedType == null || !ALLOWED_CONTENT_TYPES.contains(detectedType)) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "file.invalidType");
+            }
+        } catch (IOException e) {
+            throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "file.readError");
         }
     }
 

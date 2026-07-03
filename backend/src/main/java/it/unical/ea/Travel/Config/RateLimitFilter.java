@@ -3,6 +3,8 @@ package it.unical.ea.Travel.Config;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
 import io.github.bucket4j.ConsumptionProbe;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -14,20 +16,25 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.time.Duration;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 public class RateLimitFilter extends OncePerRequestFilter {
 
-    /** Numero massimo di richieste consentite nella finestra temporale */
     private static final int MAX_REQUESTS = 5;
-
-    /** Periodo di refill: ogni REFILL_PERIOD tutti i token vengono ripristinati */
     private static final Duration REFILL_PERIOD = Duration.ofMinutes(1);
 
-    private static final String LOGIN_PATH = "/api/auth/login";
+    private static final int UPLOAD_MAX_REQUESTS = 20;
+    private static final Duration UPLOAD_REFILL_PERIOD = Duration.ofHours(1);
 
-    private final ConcurrentHashMap<String, Bucket> buckets = new ConcurrentHashMap<>();
+    private final Cache<String, Bucket> loginBuckets = Caffeine.newBuilder()
+            .expireAfterAccess(Duration.ofMinutes(10))
+            .maximumSize(10000)
+            .build();
+
+    private final Cache<String, Bucket> uploadBuckets = Caffeine.newBuilder()
+            .expireAfterAccess(Duration.ofHours(2))
+            .maximumSize(10000)
+            .build();
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -35,13 +42,22 @@ public class RateLimitFilter extends OncePerRequestFilter {
                                     FilterChain filterChain)
             throws ServletException, IOException {
 
-        if (!LOGIN_PATH.equals(request.getRequestURI()) || !"POST".equalsIgnoreCase(request.getMethod())) {
+        String path = request.getRequestURI();
+        boolean isLogin = "/api/auth/login".equals(path) && "POST".equalsIgnoreCase(request.getMethod());
+        boolean isUpload = "/api/auth/upload-document".equals(path) && "POST".equalsIgnoreCase(request.getMethod());
+
+        if (!isLogin && !isUpload) {
             filterChain.doFilter(request, response);
             return;
         }
 
         String clientIp = resolveClientIp(request);
-        Bucket bucket = buckets.computeIfAbsent(clientIp, k -> createBucket());
+        Bucket bucket;
+        if (isLogin) {
+            bucket = loginBuckets.get(clientIp, k -> createBucket(MAX_REQUESTS, REFILL_PERIOD));
+        } else {
+            bucket = uploadBuckets.get(clientIp, k -> createBucket(UPLOAD_MAX_REQUESTS, UPLOAD_REFILL_PERIOD));
+        }
 
         ConsumptionProbe probe = bucket.tryConsumeAndReturnRemaining(1);
 
@@ -55,18 +71,14 @@ public class RateLimitFilter extends OncePerRequestFilter {
             response.setHeader("Retry-After", String.valueOf(retryAfterSeconds));
             response.setHeader("X-Rate-Limit-Remaining", "0");
             response.getWriter().write(
-                    "{\"error\":\"Troppi tentativi di login. Riprova tra " + retryAfterSeconds + " secondi.\"}");
+                    "{\"error\":\"Troppe richieste. Riprova tra " + retryAfterSeconds + " secondi.\"}");
         }
     }
 
-    /**
-     * Crea un nuovo bucket con la bandwidth configurata.
-     * Intervallo-based refill: ogni REFILL_PERIOD il bucket torna a MAX_REQUESTS token.
-     */
-    private Bucket createBucket() {
+    private Bucket createBucket(int capacity, Duration refillPeriod) {
         Bandwidth bandwidth = Bandwidth.builder()
-                .capacity(MAX_REQUESTS)
-                .refillIntervallyAligned(MAX_REQUESTS, REFILL_PERIOD, java.time.Instant.now())
+                .capacity(capacity)
+                .refillIntervallyAligned(capacity, refillPeriod, java.time.Instant.now())
                 .build();
 
         return Bucket.builder()
@@ -74,14 +86,9 @@ public class RateLimitFilter extends OncePerRequestFilter {
                 .build();
     }
 
-    /**
-     * Risolve l'IP reale del client, considerando eventuali proxy/load balancer.
-     */
     private String resolveClientIp(HttpServletRequest request) {
-        String xff = request.getHeader("X-Forwarded-For");
-        if (xff != null && !xff.isBlank()) {
-            return xff.split(",")[0].trim();
-        }
+        // Usa solo l'indirizzo remoto effettivo (proxy o client), ignorando X-Forwarded-For per 
+        // evitare IP Spoofing, a meno che non ci sia una configurazione esplicita per proxy trusted.
         return request.getRemoteAddr();
     }
 }

@@ -62,11 +62,7 @@ public class KeycloakAdminService {
                 "lastName", lastName,
                 "enabled", true,
                 "emailVerified", false,
-                "requiredActions", List.of(),
-                "credentials", List.of(Map.of(
-                        "type", "password",
-                        "value", request.getPassword(),
-                        "temporary", false)));
+                "requiredActions", List.of());
 
         try {
             ResponseEntity<Void> response = restClient.post()
@@ -77,6 +73,20 @@ public class KeycloakAdminService {
                     .toBodilessEntity();
 
             String userId = extractUserId(response.getHeaders().getLocation());
+            
+            // Imposta esplicitamente la password usando l'endpoint di reset per garantire che venga salvata correttamente in Keycloak
+            Map<String, Object> credential = Map.of(
+                    "type", "password",
+                    "value", request.getPassword(),
+                    "temporary", false);
+            
+            restClient.put()
+                    .uri("/admin/realms/{realm}/users/{userId}/reset-password", realm, userId)
+                    .header("Authorization", "Bearer " + token)
+                    .body(credential)
+                    .retrieve()
+                    .toBodilessEntity();
+
             assignDefaultClientRole(token, userId);
             return userId;
         } catch (HttpClientErrorException.Conflict exception) {

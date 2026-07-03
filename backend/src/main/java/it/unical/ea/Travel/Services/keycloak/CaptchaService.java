@@ -19,7 +19,7 @@ public class CaptchaService {
 
     public CaptchaService(
             RestClient.Builder restClientBuilder,
-            @Value("${google.recaptcha.secret-key:6Le1E0EtAAAAALWoQm7pXWN7ITD8tNFFtoLb5bc9}") String secretKey) {
+            @Value("${google.recaptcha.secret-key:6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe}") String secretKey) {
         this.restClient = restClientBuilder.baseUrl("https://www.google.com").build();
         this.secretKey = secretKey;
     }
