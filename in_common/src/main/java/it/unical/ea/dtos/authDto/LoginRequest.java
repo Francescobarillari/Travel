@@ -17,12 +17,10 @@ public class LoginRequest {
     private String email;
 
     @NotBlank(message = "{validation.password.notBlank}")
-    @Size(min = 8, message = "{validation.password.minSize}")
-    @Pattern(
-        regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).*$",
-        message = "{validation.password.pattern}"
-    )
     @Schema(format = "password", example = "Password1")
     private String password;
+
+    @Schema(description = "Token CAPTCHA fornito da Google reCAPTCHA", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    private String captchaToken;
 }
 

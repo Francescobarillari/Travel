@@ -11,14 +11,9 @@ import kotlinx.coroutines.launch
 
 enum class UserType { VIAGGIATORE, SOCIETA }
 
-class AuthViewModel(
+class RegisterViewModel(
     private val userRepository: UserRepository
 ) : ViewModel() {
-
-    // Stato del form di Login
-    var loginEmail by mutableStateOf("")
-    var loginPassword by mutableStateOf("")
-    var loginError by mutableStateOf<String?>(null)
 
     // Stato del form di Registrazione - Comune
     var registerUserType by mutableStateOf(UserType.VIAGGIATORE)
@@ -35,33 +30,29 @@ class AuthViewModel(
     // Stato del form di Registrazione - Solo SOCIETA
     var registerCompanyName by mutableStateOf("")
     var registerVatNumber by mutableStateOf("")
+    var registerDocumentPhotos by mutableStateOf<List<String>>(emptyList())
+    var isUploadingDocument by mutableStateOf(false)
 
     var isLoading by mutableStateOf(false)
 
-    fun login(onSuccess: (User) -> Unit) {
-        if (loginEmail.isBlank() || loginPassword.isBlank()) {
-            loginError = "Compila tutti i campi"
-            return
-        }
+    fun uploadDocumentFile(fileBytes: ByteArray, filename: String) {
         viewModelScope.launch {
-            isLoading = true
-            loginError = null
-            val result = userRepository.login(loginEmail, loginPassword)
-            isLoading = false
-            result.fold(
-                onSuccess = { user ->
-                    loginEmail = ""
-                    loginPassword = ""
-                    onSuccess(user)
+            isUploadingDocument = true
+            registerError = null
+            userRepository.uploadDocument(fileBytes, filename).fold(
+                onSuccess = { path ->
+                    registerDocumentPhotos = registerDocumentPhotos + path
+                    isUploadingDocument = false
                 },
                 onFailure = { throwable ->
-                    loginError = throwable.message ?: "Errore di autenticazione"
+                    registerError = throwable.message ?: "Errore durante il caricamento del documento"
+                    isUploadingDocument = false
                 }
             )
         }
     }
 
-    fun register(onSuccess: (User) -> Unit) {
+    fun register(captchaToken: String, onSuccess: (User) -> Unit) {
         if (registerEmail.isBlank() || registerPassword.isBlank()) {
             registerError = "Email e password sono obbligatorie"
             return
@@ -92,7 +83,8 @@ class AuthViewModel(
                     firstName = registerFirstName,
                     lastName = registerLastName,
                     password = registerPassword,
-                    phone = registerPhone.takeIf { it.isNotBlank() }
+                    phone = registerPhone.takeIf { it.isNotBlank() },
+                    captchaToken = captchaToken
                 )
             } else {
                 userRepository.registerSocietaUser(
@@ -100,7 +92,9 @@ class AuthViewModel(
                     companyName = registerCompanyName,
                     vatNumber = registerVatNumber,
                     password = registerPassword,
-                    phone = registerPhone.takeIf { it.isNotBlank() }
+                    phone = registerPhone.takeIf { it.isNotBlank() },
+                    captchaToken = captchaToken,
+                    documentPhotos = registerDocumentPhotos
                 )
             }
             isLoading = false
@@ -114,6 +108,7 @@ class AuthViewModel(
                     registerPassword = ""
                     registerConfirmPassword = ""
                     registerPhone = ""
+                    registerDocumentPhotos = emptyList()
                     onSuccess(user)
                 },
                 onFailure = { throwable ->

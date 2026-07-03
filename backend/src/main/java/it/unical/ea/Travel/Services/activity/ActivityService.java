@@ -34,7 +34,7 @@ public class ActivityService {
     private final FileStorageService fileStorageService;
 
     public List<ActivityDto> getAllActivities() {
-        List<Activity> activities = activityRepository.findAll();
+        List<Activity> activities = activityRepository.findByApproved(true);
         List<ActivityDto> dtos = activityMapper.toDTOList(activities);
 
         // Arricchisci ogni DTO con il conteggio dinamico dei partecipanti
@@ -46,13 +46,9 @@ public class ActivityService {
     }
 
     public ActivityDto createActivity(ActivityDto activityDto) {
-        
         Activity activity = activityMapper.toEntity(activityDto);
-        
-        
+        activity.setApproved(false);
         Activity savedActivity = activityRepository.save(activity);
-        
-        
         return activityMapper.toDTO(savedActivity);
     }
 

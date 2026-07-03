@@ -25,6 +25,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.travel.app.domain.model.User
+import com.travel.app.presentation.components.HeaderBackButton
+import com.travel.app.presentation.components.HeaderConfirmButton
 import com.travel.app.presentation.theme.TravelTheme
 import kotlinx.coroutines.launch
 
@@ -39,7 +41,6 @@ fun EditProfileScreen(
 ) {
     val initialUser = user ?: User(
         email = "johnkinggraphics@gmail.com",
-        username = "johnkinggraphics",
         userType = "VIAGGIATORE",
         phone = "6895312",
         name = "Charlotte king",
@@ -51,30 +52,72 @@ fun EditProfileScreen(
     }
 
     val isSocieta = initialUser.userType == "SOCIETA"
+    var showConfirmationDialog by remember { mutableStateOf(false) }
+    val isNameChanged = remember(initialUser.name, viewModel.name) {
+        viewModel.name.trim() != initialUser.name.orEmpty().trim()
+    }
 
     // Country code prefix and phone number (read-only)
     val phoneNum = initialUser.phone.orEmpty()
     val selectedCountryPrefix = "+39" 
 
-    EditProfileForm(
-        initialUser = initialUser,
-        name = viewModel.name,
-        onNameChange = { viewModel.name = it },
-        email = viewModel.email,
-        username = viewModel.username,
-        onUsernameChange = { viewModel.username = it },
-        vatNumber = viewModel.vatNumber,
-        onVatNumberChange = { viewModel.vatNumber = it },
-        selectedCountryPrefix = selectedCountryPrefix,
-        phoneNum = phoneNum,
-        isLoading = viewModel.isLoading,
-        errorMessage = viewModel.errorMessage,
-        onBack = onBack,
-        onSaveClick = {
-            viewModel.saveProfile(onSaveSuccess)
-        },
-        modifier = modifier
-    )
+    Box(modifier = modifier) {
+        EditProfileForm(
+            initialUser = initialUser,
+            name = viewModel.name,
+            onNameChange = { viewModel.name = it },
+            email = viewModel.email,
+            vatNumber = viewModel.vatNumber,
+            onVatNumberChange = { viewModel.vatNumber = it },
+            selectedCountryPrefix = selectedCountryPrefix,
+            phoneNum = phoneNum,
+            isLoading = viewModel.isLoading,
+            errorMessage = viewModel.errorMessage,
+            onBack = onBack,
+            onSaveClick = {
+                if (isNameChanged) {
+                    showConfirmationDialog = true
+                } else {
+                    viewModel.saveProfile(onSaveSuccess)
+                }
+            }
+        )
+
+        if (showConfirmationDialog) {
+            AlertDialog(
+                onDismissRequest = { showConfirmationDialog = false },
+                title = { Text(text = "Conferma modifica") },
+                text = {
+                    val message = if (isSocieta) {
+                        "Sei sicuro di voler modificare la ragione sociale in \"${viewModel.name}\"?"
+                    } else {
+                        "Sei sicuro di voler modificare il tuo nome e cognome in \"${viewModel.name}\"?"
+                    }
+                    Text(text = message)
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            showConfirmationDialog = false
+                            viewModel.saveProfile(onSaveSuccess)
+                        }
+                    ) {
+                        Text(text = "Conferma", color = MaterialTheme.colorScheme.primary)
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = { showConfirmationDialog = false }
+                    ) {
+                        Text(text = "Annulla", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                },
+                shape = RoundedCornerShape(28.dp),
+                containerColor = MaterialTheme.colorScheme.surface,
+                tonalElevation = 6.dp
+            )
+        }
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -84,8 +127,6 @@ fun EditProfileForm(
     name: String,
     onNameChange: (String) -> Unit,
     email: String,
-    username: String,
-    onUsernameChange: (String) -> Unit,
     vatNumber: String,
     onVatNumberChange: (String) -> Unit,
     selectedCountryPrefix: String,
@@ -102,7 +143,7 @@ fun EditProfileForm(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(Color(0xFFF8FAFC)) // Consistent soft slate-grey background
+            .background(MaterialTheme.colorScheme.background) // Use theme background
             .statusBarsPadding()
     ) {
         // TOP NAVIGATION HEADER (consistent style)
@@ -113,52 +154,23 @@ fun EditProfileForm(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            IconButton(
+            HeaderBackButton(
                 onClick = onBack,
-                modifier = Modifier
-                    .size(40.dp)
-                    .background(Color.White, CircleShape)
-                    .border(1.dp, Color(0xFFE2E8F0), CircleShape),
                 enabled = !isLoading
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Indietro",
-                    tint = Color(0xFF334155),
-                    modifier = Modifier.size(20.dp)
-                )
-            }
+            )
 
             Text(
                 text = "Modifica Profilo",
                 fontSize = 22.sp,
                 fontWeight = FontWeight.ExtraBold,
-                color = Color(0xFF0F172A)
+                color = MaterialTheme.colorScheme.onBackground
             )
 
-            IconButton(
+            HeaderConfirmButton(
                 onClick = onSaveClick,
-                modifier = Modifier
-                    .size(40.dp)
-                    .background(Color.White, CircleShape)
-                    .border(1.dp, Color(0xFFE2E8F0), CircleShape),
-                enabled = !isLoading
-            ) {
-                if (isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        color = Color(0xFF22C55E),
-                        strokeWidth = 2.dp
-                    )
-                } else {
-                    Icon(
-                        imageVector = Icons.Default.Check,
-                        contentDescription = "Salva",
-                        tint = Color(0xFF22C55E),
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-            }
+                enabled = !isLoading,
+                isLoading = isLoading
+            )
         }
 
         Column(
@@ -239,7 +251,7 @@ fun EditProfileForm(
                 text = "Dettagli Account",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF0F172A),
+                color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier.align(Alignment.Start).padding(top = 8.dp)
             )
 
@@ -249,11 +261,7 @@ fun EditProfileForm(
                 onValueChange = onNameChange
             )
 
-            ProfileInputField(
-                label = if (isSocieta) "Username Azienda" else "Username",
-                value = username,
-                onValueChange = onUsernameChange
-            )
+            // Username field removed
 
             ProfileInputField(
                 label = "Indirizzo Email",
@@ -266,7 +274,8 @@ fun EditProfileForm(
                 ProfileInputField(
                     label = "Partita IVA",
                     value = vatNumber,
-                    onValueChange = onVatNumberChange
+                    onValueChange = {},
+                    enabled = false
                 )
             }
 
@@ -371,7 +380,7 @@ fun ProfileInputField(
             text = label,
             fontSize = 15.sp,
             fontWeight = FontWeight.Bold,
-            color = Color(0xFF334155) // Slate 700
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f)
         )
         OutlinedTextField(
             value = value,
@@ -381,15 +390,15 @@ fun ProfileInputField(
             enabled = enabled,
             singleLine = true,
             colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = Color.White,
-                unfocusedContainerColor = Color.White,
-                disabledContainerColor = Color(0xFFF1F5F9), // Soft slate for disabled
+                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
                 focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = Color(0xFFE2E8F0),
-                disabledBorderColor = Color(0xFFE2E8F0),
-                focusedTextColor = Color(0xFF0F172A),
-                unfocusedTextColor = Color(0xFF334155),
-                disabledTextColor = Color(0xFF64748B)
+                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                disabledBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                disabledTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
             )
         )
     }
@@ -415,18 +424,21 @@ fun EditProfileScreenViaggiatorePreview() {
                     override fun getSessionUser(): User? = null
                     override fun saveSession(user: User, token: String) {}
                     override fun logout() {}
-                    override suspend fun login(email: String, password: String) = Result.failure<User>(Exception())
-                    override suspend fun registerViaggiatoreUser(email: String, firstName: String, lastName: String, password: String, phone: String?) = Result.failure<User>(Exception())
-                    override suspend fun registerSocietaUser(email: String, companyName: String, vatNumber: String, password: String, phone: String?) = Result.failure<User>(Exception())
+                    override suspend fun login(email: String, password: String, captchaToken: String?) = Result.failure<User>(Exception())
+                    override suspend fun registerViaggiatoreUser(email: String, firstName: String, lastName: String, password: String, phone: String?, captchaToken: String?) = Result.failure<User>(Exception())
+                    override suspend fun registerSocietaUser(email: String, companyName: String, vatNumber: String, password: String, phone: String?, captchaToken: String?, documentPhotos: List<String>) = Result.failure<User>(Exception())
                     override suspend fun getMe() = Result.failure<User>(Exception())
                     override suspend fun updateMe(user: User) = Result.success(user)
+                    override suspend fun uploadDocument(fileBytes: ByteArray, filename: String) = Result.success("mock")
+                    override suspend fun getAllCompanies() = Result.success(emptyList<User>())
+                    override suspend fun blockCompany(id: String) = Result.success(Unit)
+                    override suspend fun unblockCompany(id: String) = Result.success(Unit)
                 }
             )
         }
         EditProfileScreen(
             user = User(
                 email = "johnkinggraphics@gmail.com",
-                username = "johnkinggraphics",
                 userType = "VIAGGIATORE",
                 phone = "6895312",
                 name = "Charlotte king"
@@ -448,18 +460,21 @@ fun EditProfileScreenSocietaPreview() {
                     override fun getSessionUser(): User? = null
                     override fun saveSession(user: User, token: String) {}
                     override fun logout() {}
-                    override suspend fun login(email: String, password: String) = Result.failure<User>(Exception())
-                    override suspend fun registerViaggiatoreUser(email: String, firstName: String, lastName: String, password: String, phone: String?) = Result.failure<User>(Exception())
-                    override suspend fun registerSocietaUser(email: String, companyName: String, vatNumber: String, password: String, phone: String?) = Result.failure<User>(Exception())
+                    override suspend fun login(email: String, password: String, captchaToken: String?) = Result.failure<User>(Exception())
+                    override suspend fun registerViaggiatoreUser(email: String, firstName: String, lastName: String, password: String, phone: String?, captchaToken: String?) = Result.failure<User>(Exception())
+                    override suspend fun registerSocietaUser(email: String, companyName: String, vatNumber: String, password: String, phone: String?, captchaToken: String?, documentPhotos: List<String>) = Result.failure<User>(Exception())
                     override suspend fun getMe() = Result.failure<User>(Exception())
                     override suspend fun updateMe(user: User) = Result.success(user)
+                    override suspend fun uploadDocument(fileBytes: ByteArray, filename: String) = Result.success("mock")
+                    override suspend fun getAllCompanies() = Result.success(emptyList<User>())
+                    override suspend fun blockCompany(id: String) = Result.success(Unit)
+                    override suspend fun unblockCompany(id: String) = Result.success(Unit)
                 }
             )
         }
         EditProfileScreen(
             user = User(
                 email = "societa@travel.com",
-                username = "travel_agency",
                 userType = "SOCIETA",
                 phone = "081765432",
                 name = "Agenzia Viaggi Italia S.r.l.",

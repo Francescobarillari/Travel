@@ -8,7 +8,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.travel.app.data.AppContainer
 import com.travel.app.data.repository.UserRepositoryImpl
 import com.travel.app.presentation.app.TravelApp
-import com.travel.app.presentation.auth.AuthViewModel
+import com.travel.app.presentation.auth.LoginViewModel
 import com.travel.app.presentation.auth.LoginScreen
 import com.travel.app.presentation.auth.RegisterScreen
 import com.travel.app.presentation.theme.TravelTheme
@@ -19,8 +19,17 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            TravelTheme {
-                TravelApp()
+            var isDarkMode by remember {
+                mutableStateOf(AppContainer.sessionManager.isDarkMode())
+            }
+            TravelTheme(darkTheme = isDarkMode) {
+                TravelApp(
+                    isDarkMode = isDarkMode,
+                    onDarkModeChange = { enabled ->
+                        isDarkMode = enabled
+                        AppContainer.sessionManager.setDarkMode(enabled)
+                    }
+                )
             }
         }
     }
@@ -45,9 +54,19 @@ fun LoginScreenPreview() {
             creatorId = request.creatorId as UUID?
         }
         override suspend fun deleteItinerary(id: String) {}
+        override suspend fun uploadDocument(file: okhttp3.MultipartBody.Part) = "mock"
+        override suspend fun getPendingCompanies() = emptyList<it.unical.ea.dtos.user.UserDTO>()
+        override suspend fun approveCompany(id: String) {}
+        override suspend fun rejectCompany(id: String) {}
+        override suspend fun getPendingActivities() = emptyList<it.unical.ea.dtos.activity.ActivityDto>()
+        override suspend fun approveActivity(id: String) {}
+        override suspend fun rejectActivity(id: String) {}
+        override suspend fun getAllCompanies() = emptyList<it.unical.ea.dtos.user.UserDTO>()
+        override suspend fun blockCompany(id: String) {}
+        override suspend fun unblockCompany(id: String) {}
     }
     val mockRepo = UserRepositoryImpl(mockApiService) { error("Not used in preview") }
-    val mockViewModel = AuthViewModel(mockRepo)
+    val mockViewModel = LoginViewModel(mockRepo)
     TravelTheme {
         LoginScreen(viewModel = mockViewModel, onNavigateToRegister = {}, onLoginSuccess = {})
     }

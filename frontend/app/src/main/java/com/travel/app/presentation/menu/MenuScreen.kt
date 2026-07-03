@@ -34,18 +34,20 @@ import com.travel.app.presentation.theme.TravelTheme
 @Composable
 fun MenuScreen(
     user: User?,
+    isDarkMode: Boolean,
+    onDarkModeChange: (Boolean) -> Unit,
     onBack: () -> Unit,
     onNavigateToProfile: () -> Unit,
+    onNavigateToSecurity: () -> Unit,
     onLogout: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val scrollState = rememberScrollState()
     val isSocieta = user?.userType == "SOCIETA"
-    var isDarkModeEnabled by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
     // Initials Avatar calculation
-    val initials = user?.username?.let { name ->
+    val initials = user?.name?.let { name ->
         if (name.isNotBlank()) {
             name.split(" ").take(2).map { it.firstOrNull() ?: "" }.joinToString("").uppercase()
         } else null
@@ -54,7 +56,7 @@ fun MenuScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(Color(0xFFF8FAFC)) // Soft, modern slate-grey background
+            .background(MaterialTheme.colorScheme.background)
             .verticalScroll(scrollState)
             .padding(horizontal = 24.dp, vertical = 16.dp)
     ) {
@@ -71,11 +73,11 @@ fun MenuScreen(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = user?.name ?: user?.username ?: "Utente Ospite",
+                    text = user?.name ?: "Utente Ospite",
                     style = MaterialTheme.typography.titleLarge.copy(
                         fontWeight = FontWeight.ExtraBold,
                         fontSize = 28.sp,
-                        color = Color(0xFF0F172A)
+                        color = MaterialTheme.colorScheme.onBackground
                     ),
                     modifier = Modifier.weight(1f)
                 )
@@ -91,8 +93,7 @@ fun MenuScreen(
                                 colors = listOf(Color(0xFF8FA4A6), Color(0xFF6B7F82))
                             ),
                             shape = CircleShape
-                        )
-                        .clickable { onNavigateToProfile() },
+                        ),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
@@ -107,7 +108,7 @@ fun MenuScreen(
             Text(
                 text = if (isSocieta) "Account Società Partner" else "Account Viaggiatore",
                 style = MaterialTheme.typography.bodyMedium.copy(
-                    color = Color(0xFF64748B),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontWeight = FontWeight.Medium
                 )
             )
@@ -119,7 +120,7 @@ fun MenuScreen(
             style = MaterialTheme.typography.titleSmall.copy(
                 fontWeight = FontWeight.Bold,
                 fontSize = 18.sp,
-                color = Color(0xFF1E293B)
+                color = MaterialTheme.colorScheme.onBackground
             ),
             modifier = Modifier.padding(bottom = 16.dp)
         )
@@ -166,7 +167,7 @@ fun MenuScreen(
                     iconColor = Color(0xFF7C3AED),
                     iconBg = Color(0xFFF5F3FF),
                     modifier = Modifier.weight(1f),
-                    onClick = { Toast.makeText(context, "Sicurezza: Funzionalità in arrivo!", Toast.LENGTH_SHORT).show() }
+                    onClick = onNavigateToSecurity
                 )
             }
         } else {
@@ -211,7 +212,7 @@ fun MenuScreen(
                     iconColor = Color(0xFF7C3AED),
                     iconBg = Color(0xFFF5F3FF),
                     modifier = Modifier.weight(1f),
-                    onClick = { Toast.makeText(context, "Sicurezza e Password: Funzionalità in arrivo!", Toast.LENGTH_SHORT).show() }
+                    onClick = onNavigateToSecurity
                 )
             }
         }
@@ -224,7 +225,7 @@ fun MenuScreen(
             style = MaterialTheme.typography.titleSmall.copy(
                 fontWeight = FontWeight.Bold,
                 fontSize = 18.sp,
-                color = Color(0xFF1E293B)
+                color = MaterialTheme.colorScheme.onBackground
             ),
             modifier = Modifier.padding(bottom = 12.dp)
         )
@@ -239,11 +240,11 @@ fun MenuScreen(
             MenuItemRow(
                 icon = Icons.Default.DarkMode,
                 text = "Modalità Scura",
-                onClick = {},
+                onClick = { onDarkModeChange(!isDarkMode) },
                 trailingComponent = {
                     Switch(
-                        checked = isDarkModeEnabled,
-                        onCheckedChange = { isDarkModeEnabled = it },
+                        checked = isDarkMode,
+                        onCheckedChange = { onDarkModeChange(it) },
                         colors = SwitchDefaults.colors(
                             checkedThumbColor = MaterialTheme.colorScheme.primary,
                             checkedTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
@@ -279,7 +280,7 @@ fun MenuGridCard(
             .height(150.dp)
             .clickable { onClick() },
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFF1F5F9)), // Premium Slate 100 background
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
@@ -307,7 +308,7 @@ fun MenuGridCard(
                 text = title,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF334155) // Slate 700
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -320,8 +321,8 @@ fun MenuCardContainer(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         content = content
     )
@@ -332,8 +333,8 @@ fun MenuItemRow(
     icon: ImageVector,
     text: String,
     onClick: () -> Unit,
-    textColor: Color = Color(0xFF1E293B),
-    iconColor: Color = Color(0xFF64748B),
+    textColor: Color = MaterialTheme.colorScheme.onSurface,
+    iconColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
     trailingComponent: @Composable (() -> Unit)? = null
 ) {
     Row(
@@ -368,7 +369,8 @@ fun MenuItemRow(
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = null,
-                tint = Color(0xFF94A3B8)
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(20.dp)
             )
         }
     }
@@ -378,7 +380,7 @@ fun MenuItemRow(
 fun MenuDivider() {
     HorizontalDivider(
         modifier = Modifier.padding(horizontal = 20.dp),
-        color = Color(0xFFF1F5F9)
+        color = MaterialTheme.colorScheme.outlineVariant
     )
 }
 
@@ -387,9 +389,12 @@ fun MenuDivider() {
 fun MenuScreenViaggiatorePreview() {
     TravelTheme {
         MenuScreen(
-            user = User(email = "viaggiatore@travel.com", username = "Marco Rossi", userType = "VIAGGIATORE"),
+            user = User(email = "viaggiatore@travel.com", name = "Marco Rossi", userType = "VIAGGIATORE"),
+            isDarkMode = false,
+            onDarkModeChange = {},
             onBack = {},
             onNavigateToProfile = {},
+            onNavigateToSecurity = {},
             onLogout = {}
         )
     }
@@ -400,9 +405,12 @@ fun MenuScreenViaggiatorePreview() {
 fun MenuScreenSocietaPreview() {
     TravelTheme {
         MenuScreen(
-            user = User(email = "societa@travel.com", username = "Travel Agenzia S.p.A.", userType = "SOCIETA"),
+            user = User(email = "societa@travel.com", name = "Travel Agenzia S.p.A.", userType = "SOCIETA"),
+            isDarkMode = false,
+            onDarkModeChange = {},
             onBack = {},
             onNavigateToProfile = {},
+            onNavigateToSecurity = {},
             onLogout = {}
         )
     }

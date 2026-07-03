@@ -8,11 +8,13 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 @Repository
 public interface ActivityRepository extends JpaRepository<Activity, UUID> {
+    List<Activity> findByApproved(Boolean approved);
     
     @Lock(LockModeType.OPTIMISTIC_FORCE_INCREMENT)
     @Query("SELECT a FROM Activity a WHERE a.id = :id")

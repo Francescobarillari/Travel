@@ -3,20 +3,23 @@ package com.travel.app.domain.repository
 import com.travel.app.domain.model.User
 
 interface UserRepository {
-    suspend fun login(email: String, password: String): Result<User>
+    suspend fun login(email: String, password: String, captchaToken: String? = null): Result<User>
     suspend fun registerViaggiatoreUser(
         email: String,
         firstName: String,
         lastName: String,
         password: String,
-        phone: String? = null
+        phone: String? = null,
+        captchaToken: String? = null
     ): Result<User>
     suspend fun registerSocietaUser(
         email: String,
         companyName: String,
         vatNumber: String,
         password: String,
-        phone: String? = null
+        phone: String? = null,
+        captchaToken: String? = null,
+        documentPhotos: List<String> = emptyList()
     ): Result<User>
 
     fun getSessionUser(): User?
@@ -25,4 +28,8 @@ interface UserRepository {
 
     suspend fun getMe(): Result<User>
     suspend fun updateMe(user: User): Result<User>
+    suspend fun uploadDocument(fileBytes: ByteArray, filename: String): Result<String>
+    suspend fun getAllCompanies(): Result<List<User>>
+    suspend fun blockCompany(id: String): Result<Unit>
+    suspend fun unblockCompany(id: String): Result<Unit>
 }

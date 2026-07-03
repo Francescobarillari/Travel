@@ -45,6 +45,9 @@ object AppContainer {
     lateinit var sessionManager: SessionManager
         private set
 
+    val isInitialized: Boolean
+        get() = ::sessionManager.isInitialized
+
     fun initialize(context: Context) {
         sessionManager = SessionManager(context.applicationContext)
     }
@@ -69,7 +72,7 @@ object AppContainer {
         .addConverterFactory(GsonConverterFactory.create(gson))
         .build()
 
-    private val apiService: ApiService = retrofit.create(ApiService::class.java)
+    val apiService: ApiService = retrofit.create(ApiService::class.java)
 
     val userRepository: UserRepository = UserRepositoryImpl(apiService, { sessionManager })
     val activityRepository: ActivityRepository = ActivityRepositoryImpl(apiService)

@@ -6,6 +6,9 @@ import it.unical.ea.Travel.Services.AuthService;
 import it.unical.ea.Travel.Services.keycloak.KeycloakUserAlreadyExistsException;
 import it.unical.ea.Travel.Exception.ApiException;
 import it.unical.ea.Travel.Services.user.UserService;
+import it.unical.ea.Travel.Entities.user.User;
+import it.unical.ea.Travel.Services.user.LoginAttemptService;
+import it.unical.ea.Travel.Services.keycloak.CaptchaService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -21,6 +24,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.http.MediaType;
+import it.unical.ea.Travel.Services.storage.FileStorageService;
 
 @RequiredArgsConstructor
 @RestController
@@ -31,14 +38,50 @@ public class AuthController {
     private final UserService userService;
     private final AuthService authService;
     private final MessageSource messageSource;
+    private final LoginAttemptService loginAttemptService;
+    private final CaptchaService captchaService;
+    private final FileStorageService fileStorageService;
 
     @Operation(summary = "Login utente", description = "Autentica l'utente e restituisce un token JWT")
     @PostMapping("/login")
     public ResponseEntity<String> login(@Valid @RequestBody LoginRequest request) {
+        String email = request.getEmail();
+        
+        // Verifica se è necessario il CAPTCHA a causa di troppi tentativi falliti
+        if (loginAttemptService.isCaptchaRequired(email)) {
+            if (request.getCaptchaToken() == null || !captchaService.verifyToken(request.getCaptchaToken())) {
+                throw new ApiException(HttpStatus.FORBIDDEN, "auth.login.invalidCredentials");
+            }
+        }
+
         try {
             String token = authService.login(request);
+
+            // Verifica approvazione per profili Società
+            try {
+                User user = userService.getUserByEmail(email);
+                if (user.getUserType() == it.unical.ea.enums.UserType.SOCIETA && Boolean.TRUE.equals(user.getBlocked())) {
+                    throw new ApiException(HttpStatus.FORBIDDEN, "auth.login.accountBlocked");
+                }
+                if (user.getUserType() == it.unical.ea.enums.UserType.SOCIETA && !Boolean.TRUE.equals(user.getApproved())) {
+                    throw new ApiException(HttpStatus.FORBIDDEN, "auth.login.accountPendingApproval");
+                }
+            } catch (ApiException apiEx) {
+                if (apiEx.getStatus() == HttpStatus.FORBIDDEN) {
+                    throw apiEx;
+                }
+            } catch (Exception ignored) {
+                // Utente non presente nel DB locale (es. admin-user), procedi comunque
+            }
+
+            // Autenticazione riuscita: azzera i tentativi falliti
+            loginAttemptService.loginSucceeded(email);
             return ResponseEntity.ok(token);
+        } catch (ApiException e) {
+            throw e;
         } catch (BadCredentialsException e) {
+            // Incrementa i tentativi falliti in caso di credenziali errate
+            loginAttemptService.loginFailed(email);
             throw new ApiException(HttpStatus.UNAUTHORIZED, "auth.login.invalidCredentials");
         } catch (Exception e) {
             throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "auth.login.error");
@@ -48,6 +91,11 @@ public class AuthController {
     @Operation(summary = "Registrazione utente", description = "Registra un nuovo utente (Viaggiatore o Società) e lo crea anche su Keycloak")
     @PostMapping("/signup")
     public ResponseEntity<String> signup(@Valid @RequestBody SignupRequest request) {
+        // La registrazione richiede sempre un CAPTCHA valido
+        if (request.getCaptchaToken() == null || !captchaService.verifyToken(request.getCaptchaToken())) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "auth.signup.captchaInvalid");
+        }
+
         try {
             userService.saveUser(request);
             return ResponseEntity.ok()
@@ -60,6 +108,13 @@ public class AuthController {
         } catch (KeycloakUserAlreadyExistsException e) {
             throw new ApiException(HttpStatus.CONFLICT, "auth.signup.emailAlreadyExists");
         }
+    }
+
+    @Operation(summary = "Carica un documento di registrazione per la società", description = "Accetta un file immagine (JPEG, PNG, WebP)")
+    @PostMapping(value = "/upload-document", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<String> uploadDocument(@RequestPart("file") MultipartFile file) {
+        String filePath = fileStorageService.store(file, "companies/documents");
+        return ResponseEntity.ok(filePath);
     }
 
     private boolean isDuplicateEmailError(DataIntegrityViolationException exception) {

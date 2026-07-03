@@ -90,6 +90,12 @@ public class User {
     @Column(name = "roles", nullable = false)
     private String roles = "ROLE_USER";
 
+    @Column(name = "approved", nullable = false)
+    private Boolean approved = true;
+
+    @Column(name = "blocked", nullable = false)
+    private Boolean blocked = false;
+
     public boolean isDeleted() {
         return deletedAt != null;
     }

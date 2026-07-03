@@ -13,18 +13,18 @@ import com.travel.app.domain.repository.UserRepository
 import com.travel.app.service.ApiService
 import retrofit2.HttpException
 import java.io.IOException
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 
 class UserRepositoryImpl(
     private val apiService: ApiService,
     private val sessionManagerProvider: () -> SessionManager
 ) : UserRepository {
 
-    override suspend fun login(email: String, password: String): Result<User> {
+    override suspend fun login(email: String, password: String, captchaToken: String?): Result<User> {
         // Credenziali hardcoded per test offline/sviluppo locale
         if (email == "test@travel.com" && password == "travel") {
             val user = User(
                 email = email,
-                username = "johnkinggraphics",
                 userType = "VIAGGIATORE",
                 phone = "6895312",
                 name = "Charlotte king",
@@ -36,7 +36,6 @@ class UserRepositoryImpl(
         if (email == "societa@travel.com" && password == "travel") {
             val user = User(
                 email = email,
-                username = "travel_agency",
                 userType = "SOCIETA",
                 phone = "0984123456",
                 name = "Travel Agency S.r.l.",
@@ -50,11 +49,12 @@ class UserRepositoryImpl(
             val token = apiService.login(LoginRequest().apply {
                 this.email = email
                 this.password = password
+                this.captchaToken = captchaToken
             })
             
             // 1. Salva la sessione con un utente provvisorio per abilitare l'AuthInterceptor
             val detectedType = if (email.contains("societa", ignoreCase = true) || email.contains("company", ignoreCase = true)) "SOCIETA" else "VIAGGIATORE"
-            val tempUser = User(email = email, username = email.split("@")[0], userType = detectedType)
+            val tempUser = User(email = email, userType = detectedType)
             saveSession(tempUser, token)
 
             // 2. Chiama l'endpoint me per caricare i dettagli completi del profilo dal DB
@@ -66,7 +66,11 @@ class UserRepositoryImpl(
             
             Result.success(user)
         } catch (e: Exception) {
-            Result.failure(Exception(handleError(e)))
+            if (e is HttpException && e.code() == 403) {
+                Result.failure(CaptchaRequiredException(handleError(e)))
+            } else {
+                Result.failure(Exception(handleError(e)))
+            }
         }
     }
 
@@ -75,7 +79,8 @@ class UserRepositoryImpl(
         firstName: String,
         lastName: String,
         password: String,
-        phone: String?
+        phone: String?,
+        captchaToken: String?
     ): Result<User> {
         return try {
             apiService.register(
@@ -86,12 +91,12 @@ class UserRepositoryImpl(
                     this.firstName = firstName
                     this.lastName = lastName
                     this.phone = phone
+                    this.captchaToken = captchaToken
                 }
             )
             Result.success(
                 User(
                     email = email,
-                    username = email.split("@")[0],
                     userType = "VIAGGIATORE",
                     phone = phone,
                     name = "$firstName $lastName",
@@ -108,7 +113,9 @@ class UserRepositoryImpl(
         companyName: String,
         vatNumber: String,
         password: String,
-        phone: String?
+        phone: String?,
+        captchaToken: String?,
+        documentPhotos: List<String>
     ): Result<User> {
         return try {
             apiService.register(
@@ -119,16 +126,18 @@ class UserRepositoryImpl(
                     this.companyName = companyName
                     this.vatNumber = vatNumber
                     this.phone = phone
+                    this.captchaToken = captchaToken
+                    this.documentPhotos = ArrayList(documentPhotos)
                 }
             )
             Result.success(
                 User(
                     email = email,
-                    username = email.split("@")[0],
                     userType = "SOCIETA",
                     phone = phone,
                     name = companyName,
-                    password = password
+                    password = password,
+                    vatNumber = vatNumber
                 )
             )
         } catch (e: Exception) {
@@ -173,6 +182,51 @@ class UserRepositoryImpl(
         }
     }
 
+    override suspend fun uploadDocument(fileBytes: ByteArray, filename: String): Result<String> {
+        return try {
+            val extension = filename.substringAfterLast('.', "").lowercase()
+            val mimeType = when (extension) {
+                "png" -> "image/png"
+                "webp" -> "image/webp"
+                else -> "image/jpeg"
+            }
+            val mediaType = mimeType.toMediaTypeOrNull()
+            val requestBody = okhttp3.RequestBody.Companion.create(mediaType, fileBytes)
+            val part = okhttp3.MultipartBody.Part.createFormData("file", filename, requestBody)
+            val path = apiService.uploadDocument(part)
+            Result.success(path)
+        } catch (e: Exception) {
+            Result.failure(Exception(handleError(e)))
+        }
+    }
+
+    override suspend fun getAllCompanies(): Result<List<User>> {
+        return try {
+            val list = apiService.getAllCompanies().map { it.toDomain() }
+            Result.success(list)
+        } catch (e: Exception) {
+            Result.failure(Exception(handleError(e)))
+        }
+    }
+
+    override suspend fun blockCompany(id: String): Result<Unit> {
+        return try {
+            apiService.blockCompany(id)
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(Exception(handleError(e)))
+        }
+    }
+
+    override suspend fun unblockCompany(id: String): Result<Unit> {
+        return try {
+            apiService.unblockCompany(id)
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(Exception(handleError(e)))
+        }
+    }
+
     private fun handleError(e: Exception): String {
         return when (e) {
             is HttpException -> {
@@ -193,3 +247,5 @@ class UserRepositoryImpl(
         }
     }
 }
+
+class CaptchaRequiredException(message: String) : Exception(message)

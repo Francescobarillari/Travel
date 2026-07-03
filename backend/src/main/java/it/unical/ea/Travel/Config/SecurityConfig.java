@@ -46,7 +46,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/activity/images/*").permitAll()
                 .requestMatchers(HttpMethod.GET, "/user/*/avatar").permitAll()
                 .requestMatchers("/api/basic").hasRole("BASIC")
-                .requestMatchers("/api/admin").hasRole("ADMIN")
+                .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated()              
             )
             .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)

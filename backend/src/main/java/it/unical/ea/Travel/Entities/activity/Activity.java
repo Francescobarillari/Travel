@@ -73,6 +73,9 @@ public class Activity {
     @Version
     private Long version;
 
+    @Column(name = "approved", nullable = false)
+    private Boolean approved = true;
+
     public boolean isDeleted() {
         return deletedAt != null;
     }

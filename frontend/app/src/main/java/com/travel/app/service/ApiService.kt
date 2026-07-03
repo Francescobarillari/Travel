@@ -50,4 +50,39 @@ interface ApiService {
     // Chiamata per eliminare un itinerario
     @DELETE("itinerary/{id}")
     suspend fun deleteItinerary(@Path("id") id: String)
+
+    // Caricamento documenti
+    @retrofit2.http.Multipart
+    @POST("api/auth/upload-document")
+    suspend fun uploadDocument(
+        @retrofit2.http.Part file: okhttp3.MultipartBody.Part
+    ): String
+
+    // Endpoint Admin
+    @GET("api/admin/companies/pending")
+    suspend fun getPendingCompanies(): List<UserDTO>
+
+    @POST("api/admin/companies/{id}/approve")
+    suspend fun approveCompany(@Path("id") id: String)
+
+    @POST("api/admin/companies/{id}/reject")
+    suspend fun rejectCompany(@Path("id") id: String)
+
+    @GET("api/admin/activities/pending")
+    suspend fun getPendingActivities(): List<ActivityDto>
+
+    @POST("api/admin/activities/{id}/approve")
+    suspend fun approveActivity(@Path("id") id: String)
+
+    @DELETE("api/admin/activities/{id}")
+    suspend fun rejectActivity(@Path("id") id: String)
+
+    @GET("api/admin/companies")
+    suspend fun getAllCompanies(): List<UserDTO>
+
+    @POST("api/admin/companies/{id}/block")
+    suspend fun blockCompany(@Path("id") id: String)
+
+    @POST("api/admin/companies/{id}/unblock")
+    suspend fun unblockCompany(@Path("id") id: String)
 }
