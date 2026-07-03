@@ -60,6 +60,13 @@ public class GlobalExceptionHandler {
         String translatedMessage = messageSource.getMessage("error.optimisticLock", null, locale);
         return new ResponseEntity<>(Map.of("error", translatedMessage), HttpStatus.CONFLICT);
     }
+
+    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+    public ResponseEntity<Map<String, String>> handleMaxUploadSizeExceededException(
+            org.springframework.web.multipart.MaxUploadSizeExceededException ex, Locale locale) {
+        String translatedMessage = messageSource.getMessage("file.maxSizeExceeded", null, "Il file caricato supera la dimensione massima consentita.", locale);
+        return new ResponseEntity<>(Map.of("error", translatedMessage), HttpStatus.PAYLOAD_TOO_LARGE);
+    }
 }
 
 

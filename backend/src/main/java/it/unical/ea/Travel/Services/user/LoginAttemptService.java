@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 public class LoginAttemptService {
 
-    private static final int MAX_ATTEMPTS = 2;
+    private static final int MAX_ATTEMPTS = 5;
     private static final long EXPIRE_TIME_MS = 10 * 60 * 1000; // 10 minuti
 
     private static class Attempt {

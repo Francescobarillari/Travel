@@ -147,6 +147,13 @@ public class ActivityService {
     // Carica una o più immagini per l'attività specificata
     @Transactional
     public ActivityDto uploadImages(String activityId, MultipartFile[] files) {
+        if (files == null || files.length == 0) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "file.empty");
+        }
+        if (files.length > 5) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "activity.images.maxCountExceeded");
+        }
+
         UUID uuid = UUID.fromString(activityId);
         Activity activity = activityRepository.findById(uuid)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "activity.notFound"));

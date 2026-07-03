@@ -1,5 +1,6 @@
 package it.unical.ea.Travel.Services.activity;
 
+import it.unical.ea.dtos.activity.ActivityDto;
 import it.unical.ea.Travel.Entities.activity.Activity;
 import it.unical.ea.Travel.Entities.activity.ActivityBooking;
 import it.unical.ea.Travel.Entities.user.User;
@@ -244,6 +245,63 @@ class ActivityServiceTest {
             int count = activityService.calculateCurrentParticipants(futureActivity);
 
             assertEquals(0, count);
+        }
+    }
+
+    @Nested
+    @DisplayName("uploadImages")
+    class UploadImagesTests {
+
+        @Test
+        @DisplayName("Dovrebbe lanciare eccezione se l'array dei file è nullo o vuoto")
+        void shouldThrowIfFilesNullOrEmpty() {
+            ApiException exNull = assertThrows(ApiException.class,
+                    () -> activityService.uploadImages(activityId.toString(), null));
+            assertEquals(HttpStatus.BAD_REQUEST, exNull.getStatus());
+            assertEquals("file.empty", exNull.getMessageKey());
+
+            org.springframework.web.multipart.MultipartFile[] emptyArray = new org.springframework.web.multipart.MultipartFile[0];
+            ApiException exEmpty = assertThrows(ApiException.class,
+                    () -> activityService.uploadImages(activityId.toString(), emptyArray));
+            assertEquals(HttpStatus.BAD_REQUEST, exEmpty.getStatus());
+            assertEquals("file.empty", exEmpty.getMessageKey());
+        }
+
+        @Test
+        @DisplayName("Dovrebbe lanciare eccezione se vengono caricati più di 5 file")
+        void shouldThrowIfTooManyFiles() {
+            org.springframework.web.multipart.MultipartFile mockFile = mock(org.springframework.web.multipart.MultipartFile.class);
+            org.springframework.web.multipart.MultipartFile[] tooManyFiles = new org.springframework.web.multipart.MultipartFile[6];
+            for (int i = 0; i < 6; i++) {
+                tooManyFiles[i] = mockFile;
+            }
+
+            ApiException ex = assertThrows(ApiException.class,
+                    () -> activityService.uploadImages(activityId.toString(), tooManyFiles));
+            assertEquals(HttpStatus.BAD_REQUEST, ex.getStatus());
+            assertEquals("activity.images.maxCountExceeded", ex.getMessageKey());
+        }
+
+        @Test
+        @DisplayName("Dovrebbe caricare correttamente fino a 5 immagini")
+        void shouldUploadImagesSuccessfully() {
+            org.springframework.web.multipart.MultipartFile file1 = mock(org.springframework.web.multipart.MultipartFile.class);
+            org.springframework.web.multipart.MultipartFile file2 = mock(org.springframework.web.multipart.MultipartFile.class);
+            org.springframework.web.multipart.MultipartFile[] files = {file1, file2};
+
+            when(activityRepository.findById(activityId)).thenReturn(Optional.of(futureActivity));
+            when(fileStorageService.store(file1, "activities")).thenReturn("activities/img1.jpg");
+            when(fileStorageService.store(file2, "activities")).thenReturn("activities/img2.jpg");
+            when(activityRepository.save(any(Activity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+            when(activityMapper.toDTO(any(Activity.class))).thenReturn(new ActivityDto());
+
+            assertDoesNotThrow(() -> activityService.uploadImages(activityId.toString(), files));
+
+            verify(fileStorageService).store(file1, "activities");
+            verify(fileStorageService).store(file2, "activities");
+            verify(activityRepository).save(futureActivity);
+            assertTrue(futureActivity.getImages().contains("activities/img1.jpg"));
+            assertTrue(futureActivity.getImages().contains("activities/img2.jpg"));
         }
     }
 }
