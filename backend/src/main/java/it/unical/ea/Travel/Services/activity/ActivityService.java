@@ -45,6 +45,19 @@ public class ActivityService {
         return dtos; 
     }
 
+    @Transactional(readOnly = true)
+    public org.springframework.data.domain.Page<ActivityDto> searchActivities(String keyword, Double minPrice, Double maxPrice, int page, int size) {
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
+        String safeKeyword = (keyword == null) ? "" : keyword.trim();
+        org.springframework.data.domain.Page<Activity> activities = activityRepository.searchByKeyword(safeKeyword, minPrice, maxPrice, pageable);
+        
+        return activities.map(activity -> {
+            ActivityDto dto = activityMapper.toDTO(activity);
+            dto.setCurrentParticipants(calculateCurrentParticipants(activity));
+            return dto;
+        });
+    }
+
     public ActivityDto createActivity(ActivityDto activityDto) {
         Activity activity = activityMapper.toEntity(activityDto);
         activity.setApproved(false);
