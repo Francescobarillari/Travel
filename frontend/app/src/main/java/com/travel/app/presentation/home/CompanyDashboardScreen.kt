@@ -76,15 +76,38 @@ fun CompanyDashboardScreen(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(bottom = 100.dp)
             ) {
-                items(viewModel.itineraries) { itinerary ->
-                    ItineraryCard(
-                        itinerary = itinerary,
-                        actions = {
-                            TextButton(onClick = { /* TODO */ }) {
-                                Text("Modifica")
+                val chunks = viewModel.itineraries.chunked(2)
+                items(chunks.size) { chunkIndex ->
+                    val chunk = chunks[chunkIndex]
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        ItineraryCard(
+                            itinerary = chunk[0],
+                            modifier = Modifier.weight(1f),
+                            actions = {
+                                TextButton(onClick = { /* TODO */ }) {
+                                    Text("Modifica")
+                                }
                             }
+                        )
+                        if (chunk.size > 1) {
+                            ItineraryCard(
+                                itinerary = chunk[1],
+                                modifier = Modifier.weight(1f),
+                                actions = {
+                                    TextButton(onClick = { /* TODO */ }) {
+                                        Text("Modifica")
+                                    }
+                                }
+                            )
+                        } else {
+                            Spacer(modifier = Modifier.weight(1f))
                         }
-                    )
+                    }
                 }
             }
         }
