@@ -19,6 +19,8 @@ import com.travel.app.presentation.profile.SecurityScreen
 import com.travel.app.presentation.profile.SecurityViewModel
 import com.travel.app.presentation.components.home.FloatingBottomNavBar
 import com.travel.app.presentation.theme.TravelTheme
+import com.travel.app.presentation.components.itinerary.ItineraryDetailScreen
+import it.unical.ea.dtos.itinerary.ItineraryDto
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -32,6 +34,7 @@ fun HomeScreen(
     var selectedItemId by remember { mutableStateOf<String?>(null) }
     var selectedItemIsTrip by remember { mutableStateOf(true) }
     var selectedActivityIdForBookings by remember { mutableStateOf<String?>(null) }
+    var selectedItinerary by remember { mutableStateOf<ItineraryDto?>(null) }
 
     var currentUser by remember(user) { 
         mutableStateOf(user ?: User(
@@ -84,8 +87,14 @@ fun HomeScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-
-        when (selectedTab) {
+        if (selectedItinerary != null) {
+            ItineraryDetailScreen(
+                itinerary = selectedItinerary!!,
+                onNavigateBack = { selectedItinerary = null }
+            )
+        } else {
+            Box(modifier = Modifier.fillMaxSize()) {
+                when (selectedTab) {
             HomeTab.ESPLORA -> {
                 if (isSocieta) {
                     if (selectedActivityIdForBookings != null) {
@@ -107,7 +116,8 @@ fun HomeScreen(
                             },
                             onViewBookingsClick = { activityId ->
                                 selectedActivityIdForBookings = activityId
-                            }
+                            },
+                            onItineraryClick = { selectedItinerary = it }
                         )
                     }
                 } else {
@@ -147,7 +157,8 @@ fun HomeScreen(
                     CompanyDashboardScreen(
                         viewModel = companyDashboardViewModel,
                         onEditActivityClick = {},
-                        onViewBookingsClick = {}
+                        onViewBookingsClick = {},
+                        onItineraryClick = { selectedItinerary = it }
                     )
                 }
             }
@@ -184,21 +195,23 @@ fun HomeScreen(
             }
         }
 
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-        ) {
-            FloatingBottomNavBar(
-                selectedTab = selectedTab,
-                isSocieta = isSocieta,
-                onTabSelected = { 
-                    if (it == HomeTab.PREFERITI && isSocieta) {
-                        companyAddOfferViewModel.resetForm()
-                    }
-                    selectedTab = it 
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                ) {
+                    FloatingBottomNavBar(
+                        selectedTab = selectedTab,
+                        isSocieta = isSocieta,
+                        onTabSelected = { 
+                            if (it == HomeTab.PREFERITI && isSocieta) {
+                                companyAddOfferViewModel.resetForm()
+                            }
+                            selectedTab = it 
+                        }
+                    )
                 }
-            )
+            }
         }
     }
 }

@@ -7,6 +7,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -30,7 +32,8 @@ fun CompanyDashboardScreen(
     viewModel: CompanyDashboardViewModel,
     onEditActivityClick: (String) -> Unit,
     onViewBookingsClick: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onItineraryClick: (ItineraryDto) -> Unit = {}
 ) {
     LaunchedEffect(Unit) {
         viewModel.fetchDashboardData()
@@ -95,7 +98,17 @@ fun CompanyDashboardScreen(
                     }
                     items(viewModel.itineraries) { itinerary ->
                         ItineraryCard(
-                            itinerary = itinerary
+                            itinerary = itinerary,
+                            onClick = { onItineraryClick(itinerary) },
+                            actions = {
+                                IconButton(onClick = { /* TODO */ }) {
+                                    Icon(
+                                        imageVector = Icons.Default.Edit,
+                                        contentDescription = "Modifica",
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            }
                         )
                     }
                 }
