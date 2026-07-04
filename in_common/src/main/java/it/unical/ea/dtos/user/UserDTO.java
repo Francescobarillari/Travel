@@ -1,6 +1,7 @@
 package it.unical.ea.dtos.user;
 
 import it.unical.ea.enums.UserType;
+import it.unical.ea.enums.TravelTag;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
@@ -8,6 +9,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.HashSet;
 import java.util.UUID;
 
 @Data
@@ -42,4 +45,7 @@ public class UserDTO {
     private Boolean approved = true;
     @Schema(description = "Stato di blocco dell'utente")
     private Boolean blocked = false;
+
+    @Schema(description = "Preferenze del viaggiatore")
+    private Set<TravelTag> preferences = new HashSet<>();
 }

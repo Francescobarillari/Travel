@@ -133,6 +133,11 @@ public class UserService {
             user.setPhone(userDto.getPhone().strip().isEmpty() ? null : userDto.getPhone());
         }
 
+        // Aggiorna preferenze se presenti nel DTO
+        if (userDto.getPreferences() != null) {
+            user.setPreferences(userDto.getPreferences());
+        }
+
         // Se è specificata una nuova password, validala e aggiornala in Keycloak
         if (userDto.getPassword() != null && !userDto.getPassword().strip().isEmpty()) {
             String pwd = userDto.getPassword();

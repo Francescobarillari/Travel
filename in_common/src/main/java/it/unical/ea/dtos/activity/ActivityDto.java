@@ -5,10 +5,13 @@ import jakarta.validation.constraints.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import it.unical.ea.enums.TravelTag;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
+import java.util.HashSet;
 import java.util.UUID;
 
 @Getter
@@ -59,4 +62,7 @@ public class ActivityDto {
 
     @Schema(type = "string", format = "date-time", example = "2025-06-25T10:30:00")
     private LocalDateTime createdAt;
+
+    @Schema(description = "Tag/Categorie associate all'attività")
+    private Set<TravelTag> tags = new HashSet<>();
 }

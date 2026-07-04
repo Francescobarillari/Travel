@@ -7,10 +7,13 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
+import it.unical.ea.enums.TravelTag;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
+import java.util.HashSet;
 import java.util.UUID;
 
 @Getter
@@ -72,6 +75,15 @@ public class Activity extends AuditBaseEntity {
 
     @Column(name = "approved", nullable = false)
     private Boolean approved = true;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(
+        name = "activity_tags",
+        joinColumns = @JoinColumn(name = "activity_id")
+    )
+    @Column(name = "tag")
+    @Enumerated(EnumType.STRING)
+    private Set<TravelTag> tags = new HashSet<>();
 
     public boolean isDeleted() {
         return deletedAt != null;

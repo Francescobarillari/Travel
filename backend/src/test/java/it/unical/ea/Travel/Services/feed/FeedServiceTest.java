@@ -1,0 +1,170 @@
+package it.unical.ea.Travel.Services.feed;
+
+import it.unical.ea.Travel.Entities.activity.Activity;
+import it.unical.ea.Travel.Entities.activity.ActivityBooking;
+import it.unical.ea.Travel.Entities.trip.Trip;
+import it.unical.ea.Travel.Entities.user.User;
+import it.unical.ea.Travel.Mappers.trip.TripMapper;
+import it.unical.ea.Travel.Repositories.activity.ActivityBookingRepository;
+import it.unical.ea.Travel.Repositories.trip.TripRepository;
+import it.unical.ea.Travel.Repositories.user.UserRepository;
+import it.unical.ea.dtos.trip.TripDto;
+import it.unical.ea.enums.TravelTag;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.jpa.domain.Specification;
+
+import java.util.*;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+class FeedServiceTest {
+
+    @Mock
+    private UserRepository userRepository;
+
+    @Mock
+    private TripRepository tripRepository;
+
+    @Mock
+    private ActivityBookingRepository activityBookingRepository;
+
+    @Mock
+    private TripMapper tripMapper;
+
+    @InjectMocks
+    private FeedService feedService;
+
+    private User testUser;
+    private final String userEmail = "traveler@example.com";
+
+    @BeforeEach
+    void setUp() {
+        testUser = new User();
+        testUser.setId(UUID.randomUUID());
+        testUser.setEmail(userEmail);
+        testUser.setPreferences(new HashSet<>());
+    }
+
+    @Test
+    void shouldReturnAllTripsIfNoPreferencesAndNoBookings() {
+        when(userRepository.getUserByEmail(userEmail)).thenReturn(Optional.of(testUser));
+        when(activityBookingRepository.findByUserId(testUser.getId())).thenReturn(Collections.emptyList());
+
+        Trip trip = new Trip();
+        trip.setId(UUID.randomUUID());
+        trip.setTitle("Test Trip");
+
+        TripDto dto = new TripDto();
+        dto.setId(trip.getId());
+        dto.setTitle(trip.getTitle());
+
+        when(tripRepository.findAll()).thenReturn(Collections.singletonList(trip));
+        when(tripMapper.toDto(trip)).thenReturn(dto);
+
+        List<TripDto> result = feedService.getPersonalizedFeed(userEmail);
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals("Test Trip", result.get(0).getTitle());
+        verify(tripRepository, times(1)).findAll();
+        verify(tripRepository, never()).findAll(any(Specification.class));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void shouldQueryUsingSpecificationIfPreferencesExist() {
+        testUser.getPreferences().add(TravelTag.AVVENTURA);
+        when(userRepository.getUserByEmail(userEmail)).thenReturn(Optional.of(testUser));
+        when(activityBookingRepository.findByUserId(testUser.getId())).thenReturn(Collections.emptyList());
+
+        Trip trip = new Trip();
+        trip.setId(UUID.randomUUID());
+        trip.setTitle("Adventure Trip");
+
+        TripDto dto = new TripDto();
+        dto.setId(trip.getId());
+        dto.setTitle(trip.getTitle());
+
+        when(tripRepository.findAll(any(Specification.class))).thenReturn(Collections.singletonList(trip));
+        when(tripMapper.toDto(trip)).thenReturn(dto);
+
+        List<TripDto> result = feedService.getPersonalizedFeed(userEmail);
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals("Adventure Trip", result.get(0).getTitle());
+        verify(tripRepository, times(1)).findAll(any(Specification.class));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void shouldExtractPastBookingsAndUseSpecification() {
+        when(userRepository.getUserByEmail(userEmail)).thenReturn(Optional.of(testUser));
+
+        Activity activity = new Activity();
+        activity.setLocation("Roma, Italia");
+        activity.setTags(new HashSet<>(Collections.singletonList(TravelTag.STORIA)));
+
+        ActivityBooking booking = new ActivityBooking();
+        booking.setActivity(activity);
+
+        when(activityBookingRepository.findByUserId(testUser.getId())).thenReturn(Collections.singletonList(booking));
+
+        Trip trip = new Trip();
+        trip.setId(UUID.randomUUID());
+        trip.setTitle("Rome Historic Trip");
+
+        TripDto dto = new TripDto();
+        dto.setId(trip.getId());
+        dto.setTitle(trip.getTitle());
+
+        when(tripRepository.findAll(any(Specification.class))).thenReturn(Collections.singletonList(trip));
+        when(tripMapper.toDto(trip)).thenReturn(dto);
+
+        List<TripDto> result = feedService.getPersonalizedFeed(userEmail);
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals("Rome Historic Trip", result.get(0).getTitle());
+        verify(tripRepository, times(1)).findAll(any(Specification.class));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void shouldFallbackToAllTripsIfSpecificationReturnsNoResults() {
+        testUser.getPreferences().add(TravelTag.RELAX);
+        when(userRepository.getUserByEmail(userEmail)).thenReturn(Optional.of(testUser));
+        when(activityBookingRepository.findByUserId(testUser.getId())).thenReturn(Collections.emptyList());
+
+        // Spec query returns empty
+        when(tripRepository.findAll(any(Specification.class))).thenReturn(Collections.emptyList());
+
+        // Fallback: findAll returns trips
+        Trip trip = new Trip();
+        trip.setId(UUID.randomUUID());
+        trip.setTitle("Relaxing Trip");
+
+        TripDto dto = new TripDto();
+        dto.setId(trip.getId());
+        dto.setTitle(trip.getTitle());
+
+        when(tripRepository.findAll()).thenReturn(Collections.singletonList(trip));
+        when(tripMapper.toDto(trip)).thenReturn(dto);
+
+        List<TripDto> result = feedService.getPersonalizedFeed(userEmail);
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals("Relaxing Trip", result.get(0).getTitle());
+        verify(tripRepository, times(1)).findAll(any(Specification.class));
+        verify(tripRepository, times(1)).findAll();
+    }
+}

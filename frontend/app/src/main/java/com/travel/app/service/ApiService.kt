@@ -64,6 +64,9 @@ interface ApiService {
     @GET("activity/{id}")
     suspend fun getActivityById(@Path("id") id: String): ActivityDto = throw NotImplementedError()
 
+    @GET("api/feed/personalized")
+    suspend fun getPersonalizedFeed(): List<it.unical.ea.dtos.trip.TripDto> = throw NotImplementedError()
+
     // Chiamata per recuperare tutti gli itinerari
     @GET("itinerary")
     suspend fun getItineraries(): List<ItineraryDto>
