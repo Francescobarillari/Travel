@@ -33,9 +33,11 @@ import java.time.format.DateTimeFormatter
 fun ItineraryCard(
     itinerary: ItineraryDto,
     modifier: Modifier = Modifier,
+    onClick: () -> Unit = {},
     actions: @Composable RowScope.() -> Unit = {}
 ) {
     Card(
+        onClick = onClick,
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 20.dp, vertical = 8.dp),
@@ -51,7 +53,7 @@ fun ItineraryCard(
                     .height(180.dp)
             ) {
                 AsyncImage(
-                    model = itinerary.imageUrl ?: "https://via.placeholder.com/600x400?text=No+Image",
+                    model = itinerary.getImageUrl() ?: "https://via.placeholder.com/600x400?text=No+Image",
                     contentDescription = null,
                     modifier = Modifier
                         .fillMaxSize()
@@ -73,7 +75,7 @@ fun ItineraryCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = itinerary.title ?: "Senza Titolo",
+                        text = itinerary.getTitle() ?: "Senza Titolo",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface,
@@ -83,7 +85,7 @@ fun ItineraryCard(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     
-                    val totalPrice = itinerary.activities?.sumOf { it.price?.toDouble() ?: 0.0 } ?: 0.0
+                    val totalPrice = itinerary.getActivities()?.sumOf { it.getPrice()?.toDouble() ?: 0.0 } ?: 0.0
                     Text(
                         text = "€${String.format("%.2f", totalPrice)}",
                         style = MaterialTheme.typography.titleSmall,
@@ -93,7 +95,7 @@ fun ItineraryCard(
                 }
 
                 // Dynamic tags inherited from its activities
-                val itineraryTags = itinerary.activities?.flatMap { it.tags ?: emptySet() }?.toSet() ?: emptySet()
+                val itineraryTags = itinerary.getActivities()?.flatMap { it.getTags() ?: emptySet() }?.toSet() ?: emptySet()
                 if (itineraryTags.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(2.dp))
                     androidx.compose.foundation.lazy.LazyRow(
@@ -105,12 +107,12 @@ fun ItineraryCard(
                                 if (it.isLowerCase()) it.titlecase(java.util.Locale.getDefault()) else it.toString() 
                             }
                             val bgColor = try {
-                                Color(android.graphics.Color.parseColor(tag.bgColorHex))
+                                Color(android.graphics.Color.parseColor(tag.getBgColorHex()))
                             } catch (e: Exception) {
                                 MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
                             }
                             val textColor = try {
-                                Color(android.graphics.Color.parseColor(tag.textColorHex))
+                                Color(android.graphics.Color.parseColor(tag.getTextColorHex()))
                             } catch (e: Exception) {
                                 MaterialTheme.colorScheme.primary
                             }
@@ -135,7 +137,7 @@ fun ItineraryCard(
                 }
 
                 // Destination
-                val destination = itinerary.activities?.firstOrNull()?.location ?: "Destinazione non specificata"
+                val destination = itinerary.getActivities()?.firstOrNull()?.getLocation() ?: "Destinazione non specificata"
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
@@ -155,9 +157,9 @@ fun ItineraryCard(
                     )
                 }
 
-                if (!itinerary.description.isNullOrBlank()) {
+                if (!itinerary.getDescription().isNullOrBlank()) {
                     Text(
-                        text = itinerary.description ?: "",
+                        text = itinerary.getDescription() ?: "",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
                         maxLines = 2,
@@ -186,8 +188,8 @@ fun ItineraryCard(
                             tint = MaterialTheme.colorScheme.secondary,
                             modifier = Modifier.size(14.dp)
                         )
-                        val start = itinerary.startDateTime
-                        val end = itinerary.endDateTime
+                        val start = itinerary.getStartDateTime()
+                        val end = itinerary.getEndDateTime()
                         if (start != null && end != null) {
                             Text(
                                 text = "${formatDate(start)} - ${formatDate(end)}",

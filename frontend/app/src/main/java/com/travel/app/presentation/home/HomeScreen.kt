@@ -19,6 +19,8 @@ import com.travel.app.presentation.profile.SecurityScreen
 import com.travel.app.presentation.profile.SecurityViewModel
 import com.travel.app.presentation.components.home.FloatingBottomNavBar
 import com.travel.app.presentation.theme.TravelTheme
+import com.travel.app.presentation.components.itinerary.ItineraryDetailScreen
+import it.unical.ea.dtos.itinerary.ItineraryDto
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -31,6 +33,7 @@ fun HomeScreen(
     var selectedTab by remember { mutableStateOf(HomeTab.ESPLORA) }
     var selectedItemId by remember { mutableStateOf<String?>(null) }
     var selectedItemIsTrip by remember { mutableStateOf(true) }
+    var selectedItinerary by remember { mutableStateOf<ItineraryDto?>(null) }
 
     var currentUser by remember(user) { 
         mutableStateOf(user ?: User(
@@ -81,11 +84,20 @@ fun HomeScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-
-        when (selectedTab) {
+        if (selectedItinerary != null) {
+            ItineraryDetailScreen(
+                itinerary = selectedItinerary!!,
+                onNavigateBack = { selectedItinerary = null }
+            )
+        } else {
+            Box(modifier = Modifier.fillMaxSize()) {
+                when (selectedTab) {
             HomeTab.ESPLORA -> {
                 if (isSocieta) {
-                    CompanyDashboardScreen(viewModel = companyDashboardViewModel)
+                    CompanyDashboardScreen(
+                        viewModel = companyDashboardViewModel,
+                        onItineraryClick = { selectedItinerary = it }
+                    )
                 } else {
                     EsploraScreen(
                         viewModel = esploraViewModel,
@@ -117,7 +129,10 @@ fun HomeScreen(
                 if (isSocieta) {
                     CompanyAddOfferScreen(viewModel = companyAddOfferViewModel)
                 } else {
-                    CompanyDashboardScreen(viewModel = companyDashboardViewModel)
+                    CompanyDashboardScreen(
+                        viewModel = companyDashboardViewModel,
+                        onItineraryClick = { selectedItinerary = it }
+                    )
                 }
             }
             HomeTab.PROFILO -> {
@@ -153,16 +168,18 @@ fun HomeScreen(
             }
         }
 
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-        ) {
-            FloatingBottomNavBar(
-                selectedTab = selectedTab,
-                isSocieta = isSocieta,
-                onTabSelected = { selectedTab = it }
-            )
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                ) {
+                    FloatingBottomNavBar(
+                        selectedTab = selectedTab,
+                        isSocieta = isSocieta,
+                        onTabSelected = { selectedTab = it }
+                    )
+                }
+            }
         }
     }
 }

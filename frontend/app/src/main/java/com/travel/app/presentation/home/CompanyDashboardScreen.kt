@@ -23,7 +23,8 @@ import it.unical.ea.dtos.itinerary.ItineraryDto
 @Composable
 fun CompanyDashboardScreen(
     viewModel: CompanyDashboardViewModel,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onItineraryClick: (ItineraryDto) -> Unit = {}
 ) {
     LaunchedEffect(Unit) {
         viewModel.fetchItineraries()
@@ -81,6 +82,7 @@ fun CompanyDashboardScreen(
                 items(viewModel.itineraries) { itinerary ->
                     ItineraryCard(
                         itinerary = itinerary,
+                        onClick = { onItineraryClick(itinerary) },
                         actions = {
                             IconButton(onClick = { /* TODO */ }) {
                                 Icon(
