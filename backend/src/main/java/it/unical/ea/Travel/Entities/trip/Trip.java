@@ -21,7 +21,10 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 @Entity
-@Table(name = "trips")
+@Table(name = "trips", indexes = {
+    @Index(name = "idx_trip_location", columnList = "location"),
+    @Index(name = "idx_trip_title", columnList = "title")
+})
 @SQLDelete(sql = "UPDATE trips SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?")
 @SQLRestriction("deleted_at IS NULL")
 public class Trip {
