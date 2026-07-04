@@ -17,6 +17,8 @@ public interface ActivityBookingRepository extends JpaRepository<ActivityBooking
     @Query("SELECT COUNT(DISTINCT ab.user.id) FROM ActivityBooking ab WHERE ab.activity.id = :activityId")
     long countDirectParticipants(@Param("activityId") UUID activityId);
 
+    List<ActivityBooking> findByActivityId(UUID activityId);
+
     List<ActivityBooking> findByUserIdAndItineraryId(UUID userId, UUID itineraryId);
 
     List<ActivityBooking> findByUserId(UUID userId);
