@@ -31,6 +31,16 @@ android {
         }
         val backendUrl = localProperties.getProperty("backend.url") ?: "http://10.0.2.2:8080/"
         buildConfigField("String", "BACKEND_URL", "\"$backendUrl\"")
+
+        val keycloakUrl = localProperties.getProperty("keycloak.url") ?: "http://10.0.2.2:8081/"
+        val keycloakRealm = localProperties.getProperty("keycloak.realm") ?: "ae-realm"
+        val keycloakClientId = localProperties.getProperty("keycloak.client.id") ?: "ae-client"
+        val keycloakClientSecret = localProperties.getProperty("keycloak.client.secret") ?: "travel-dev-secret"
+
+        buildConfigField("String", "KEYCLOAK_URL", "\"$keycloakUrl\"")
+        buildConfigField("String", "KEYCLOAK_REALM", "\"$keycloakRealm\"")
+        buildConfigField("String", "KEYCLOAK_CLIENT_ID", "\"$keycloakClientId\"")
+        buildConfigField("String", "KEYCLOAK_CLIENT_SECRET", "\"$keycloakClientSecret\"")
     }
 
     buildTypes {
