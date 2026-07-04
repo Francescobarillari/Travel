@@ -21,6 +21,8 @@ import androidx.compose.ui.unit.dp
 import com.travel.app.presentation.theme.TravelTheme
 import it.unical.ea.dtos.activity.ActivityDto
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.foundation.lazy.items
+import it.unical.ea.enums.TravelTag
 
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalFocusManager
@@ -409,6 +411,46 @@ fun ActivityCard(activity: ActivityDto, onClick: () -> Unit = {}) {
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
                     maxLines = 3
                 )
+            }
+
+            if (!activity.tags.isNullOrEmpty()) {
+                Spacer(modifier = Modifier.height(4.dp))
+                androidx.compose.foundation.lazy.LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    items(activity.tags.toList()) { tag ->
+                        val formattedTag = tag.name.lowercase().replaceFirstChar { 
+                            if (it.isLowerCase()) it.titlecase(java.util.Locale.getDefault()) else it.toString() 
+                        }
+                        val bgColor = try {
+                            Color(android.graphics.Color.parseColor(tag.bgColorHex))
+                        } catch (e: Exception) {
+                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
+                        }
+                        val textColor = try {
+                            Color(android.graphics.Color.parseColor(tag.textColorHex))
+                        } catch (e: Exception) {
+                            MaterialTheme.colorScheme.primary
+                        }
+                        Surface(
+                            color = bgColor,
+                            shape = RoundedCornerShape(8.dp),
+                            border = androidx.compose.foundation.BorderStroke(
+                                1.dp,
+                                textColor.copy(alpha = 0.2f)
+                            )
+                        ) {
+                            Text(
+                                text = formattedTag,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = textColor,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+                }
             }
 
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))

@@ -5,6 +5,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import it.unical.ea.enums.UserType;
+import it.unical.ea.enums.TravelTag;
+import java.util.Set;
+import java.util.HashSet;
 
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.SQLDelete;
@@ -95,6 +98,15 @@ public class User {
 
     @Column(name = "blocked", nullable = false)
     private Boolean blocked = false;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(
+        name = "user_preferences",
+        joinColumns = @JoinColumn(name = "user_id")
+    )
+    @Column(name = "preference")
+    @Enumerated(EnumType.STRING)
+    private Set<TravelTag> preferences = new HashSet<>();
 
     public boolean isDeleted() {
         return deletedAt != null;

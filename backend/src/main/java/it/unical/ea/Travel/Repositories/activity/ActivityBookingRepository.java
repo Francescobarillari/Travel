@@ -18,4 +18,6 @@ public interface ActivityBookingRepository extends JpaRepository<ActivityBooking
     long countDirectParticipants(@Param("activityId") UUID activityId);
 
     List<ActivityBooking> findByUserIdAndItineraryId(UUID userId, UUID itineraryId);
+
+    List<ActivityBooking> findByUserId(UUID userId);
 }

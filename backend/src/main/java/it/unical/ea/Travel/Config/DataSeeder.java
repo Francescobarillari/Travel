@@ -9,6 +9,7 @@ import it.unical.ea.Travel.Repositories.itinerary.ItineraryRepository;
 import it.unical.ea.Travel.Repositories.trip.TripRepository;
 import it.unical.ea.Travel.Repositories.user.UserRepository;
 import it.unical.ea.enums.UserType;
+import it.unical.ea.enums.TravelTag;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
@@ -18,6 +19,8 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
+import java.util.HashSet;
 import java.util.UUID;
 
 @Component
@@ -56,6 +59,18 @@ public class DataSeeder implements CommandLineRunner {
         organizer.setKeycloakId(UUID.randomUUID().toString());
         organizer = userRepository.save(organizer);
 
+        // Create a traveler user with some preferences
+        User traveler = new User();
+        traveler.setEmail("traveler@example.com");
+        traveler.setPasswordHash("hashed_password");
+        traveler.setUserType(UserType.VIAGGIATORE);
+        traveler.setFirstName("Marco");
+        traveler.setLastName("Rossi");
+        traveler.setRoles("ROLE_VIAGGIATORE");
+        traveler.setKeycloakId(UUID.randomUUID().toString());
+        traveler.setPreferences(new HashSet<>(Arrays.asList(TravelTag.AVVENTURA, TravelTag.NATURA)));
+        userRepository.save(traveler);
+
         // --- Trip 1: Weekend a Roma ---
         Trip trip1 = new Trip();
         trip1.setTitle("Weekend a Roma");
@@ -84,6 +99,7 @@ public class DataSeeder implements CommandLineRunner {
         act1.setTrip(trip1);
         act1.setOrganizer("Travel Adventures SRL");
         act1.setImages(List.of("https://images.unsplash.com/photo-1552832230-c0197dd311b5?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"));
+        act1.setTags(new HashSet<>(Arrays.asList(TravelTag.CULTURA, TravelTag.STORIA)));
 
         Activity act2 = new Activity();
         act2.setName("Cena a Trastevere");
@@ -95,6 +111,7 @@ public class DataSeeder implements CommandLineRunner {
         act2.setPrice(new BigDecimal("45.00"));
         act2.setTrip(trip1);
         act2.setOrganizer("Travel Adventures SRL");
+        act2.setTags(new HashSet<>(Arrays.asList(TravelTag.CULTURA, TravelTag.CIBO)));
 
         itinerary1.setActivities(Arrays.asList(act1, act2));
         trip1.setStandardItinerary(itinerary1);
@@ -130,6 +147,7 @@ public class DataSeeder implements CommandLineRunner {
         act3.setTrip(trip2);
         act3.setOrganizer("Travel Adventures SRL");
         act3.setImages(List.of("https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"));
+        act3.setTags(new HashSet<>(Arrays.asList(TravelTag.AVVENTURA, TravelTag.MONTAGNA, TravelTag.NATURA, TravelTag.TREKKING)));
 
         Activity act4 = new Activity();
         act4.setName("Spa in Montagna");
@@ -141,6 +159,7 @@ public class DataSeeder implements CommandLineRunner {
         act4.setPrice(new BigDecimal("60.00"));
         act4.setTrip(trip2);
         act4.setOrganizer("Travel Adventures SRL");
+        act4.setTags(new HashSet<>(Arrays.asList(TravelTag.RELAX, TravelTag.MONTAGNA)));
 
         itinerary2.setActivities(Arrays.asList(act3, act4));
         trip2.setStandardItinerary(itinerary2);
@@ -174,6 +193,7 @@ public class DataSeeder implements CommandLineRunner {
         actSafari.setPrice(new BigDecimal("150.00")); // Prezzo alto per testare i filtri (>100)
         actSafari.setTrip(trip3);
         actSafari.setOrganizer("Travel Adventures SRL");
+        actSafari.setTags(new HashSet<>(Arrays.asList(TravelTag.AVVENTURA, TravelTag.SAFARI, TravelTag.NATURA, TravelTag.ANIMALI)));
 
         itinerary3.setActivities(Arrays.asList(actSafari));
         trip3.setStandardItinerary(itinerary3);
@@ -193,6 +213,7 @@ public class DataSeeder implements CommandLineRunner {
         act5.setPrice(new BigDecimal("80.00"));
         act5.setOrganizer("Chef Mario");
         act5.setImages(List.of("https://images.unsplash.com/photo-1556910103-1c02745aae4d?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"));
+        act5.setTags(new HashSet<>(Arrays.asList(TravelTag.CIBO, TravelTag.CULTURA)));
 
         Activity act6 = new Activity();
         act6.setName("Giro in Gondola");
@@ -203,6 +224,7 @@ public class DataSeeder implements CommandLineRunner {
         act6.setParticipants(2);
         act6.setPrice(new BigDecimal("90.00"));
         act6.setOrganizer("Gondolieri Veneziani");
+        act6.setTags(new HashSet<>(Arrays.asList(TravelTag.ROMANTICISMO, TravelTag.CULTURA)));
         
         Activity act7 = new Activity();
         act7.setName("Free Walking Tour");
@@ -213,6 +235,7 @@ public class DataSeeder implements CommandLineRunner {
         act7.setParticipants(30);
         act7.setPrice(BigDecimal.ZERO);
         act7.setOrganizer("Milan Tours");
+        act7.setTags(new HashSet<>(Arrays.asList(TravelTag.CULTURA, TravelTag.CITTA)));
 
         activityRepository.saveAll(Arrays.asList(act5, act6, act7));
     }
