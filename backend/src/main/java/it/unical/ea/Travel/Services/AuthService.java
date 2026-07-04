@@ -1,6 +1,7 @@
 package it.unical.ea.Travel.Services;
 
 import it.unical.ea.dtos.authDto.LoginRequest;
+import it.unical.ea.dtos.authDto.JwtResponse;
 import it.unical.ea.Travel.Services.keycloak.KeycloakAuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -16,7 +17,7 @@ public class AuthService {
 
     private final KeycloakAuthService keycloakAuthService;
 
-    public String login(LoginRequest request) {
+    public JwtResponse login(LoginRequest request) {
         return keycloakAuthService.login(request);
     }
 }

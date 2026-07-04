@@ -2,6 +2,7 @@ package it.unical.ea.Travel.Controllers.auth;
 
 import it.unical.ea.dtos.authDto.LoginRequest;
 import it.unical.ea.dtos.authDto.SignupRequest;
+import it.unical.ea.dtos.authDto.JwtResponse;
 import it.unical.ea.Travel.Services.AuthService;
 import it.unical.ea.Travel.Services.keycloak.KeycloakUserAlreadyExistsException;
 import it.unical.ea.Travel.Exception.ApiException;
@@ -44,7 +45,7 @@ public class AuthController {
 
     @Operation(summary = "Login utente", description = "Autentica l'utente e restituisce un token JWT")
     @PostMapping("/login")
-    public ResponseEntity<String> login(@Valid @RequestBody LoginRequest request) {
+    public ResponseEntity<JwtResponse> login(@Valid @RequestBody LoginRequest request) {
         String email = request.getEmail();
         
         // Verifica se è necessario il CAPTCHA a causa di troppi tentativi falliti
@@ -55,7 +56,7 @@ public class AuthController {
         }
 
         try {
-            String token = authService.login(request);
+            JwtResponse tokenResponse = authService.login(request);
 
             // Verifica approvazione per profili Società
             try {
@@ -76,7 +77,7 @@ public class AuthController {
 
             // Autenticazione riuscita: azzera i tentativi falliti
             loginAttemptService.loginSucceeded(email);
-            return ResponseEntity.ok(token);
+            return ResponseEntity.ok(tokenResponse);
         } catch (ApiException e) {
             throw e;
         } catch (BadCredentialsException e) {

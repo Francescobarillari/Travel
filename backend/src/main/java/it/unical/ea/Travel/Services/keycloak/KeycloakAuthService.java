@@ -12,6 +12,7 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 
 import it.unical.ea.dtos.authDto.LoginRequest;
+import it.unical.ea.dtos.authDto.JwtResponse;
 
 @Service
 public class KeycloakAuthService {
@@ -33,7 +34,7 @@ public class KeycloakAuthService {
         this.clientSecret = clientSecret;
     }
 
-    public String login(LoginRequest request) {
+    public JwtResponse login(LoginRequest request) {
         MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
         body.add("grant_type", "password");
         body.add("client_id", clientId);
@@ -50,10 +51,11 @@ public class KeycloakAuthService {
                     .body(Map.class);
 
             Object accessToken = response == null ? null : response.get("access_token");
-            if (accessToken instanceof String token) {
-                return token;
+            Object refreshToken = response == null ? null : response.get("refresh_token");
+            if (accessToken instanceof String aToken && refreshToken instanceof String rToken) {
+                return new JwtResponse(aToken, rToken);
             }
-            throw new IllegalStateException("Keycloak non ha restituito access_token");
+            throw new IllegalStateException("Keycloak non ha restituito access_token o refresh_token");
         } catch (HttpClientErrorException.Unauthorized | HttpClientErrorException.BadRequest exception) {
             throw new BadCredentialsException("Credenziali Keycloak non valide", exception);
         }
