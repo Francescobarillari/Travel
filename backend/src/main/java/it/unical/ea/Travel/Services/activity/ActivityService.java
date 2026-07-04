@@ -68,6 +68,26 @@ public class ActivityService {
         return activityMapper.toDTO(savedActivity);
     }
 
+    @Transactional
+    public ActivityDto updateActivity(String stringId, ActivityDto activityDto) {
+        UUID uuid = UUID.fromString(stringId);
+        Activity activity = activityRepository.findById(uuid)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "activity.notFound"));
+
+        activity.setName(activityDto.getName());
+        activity.setDescription(activityDto.getDescription());
+        activity.setLocation(activityDto.getLocation());
+        activity.setStartTime(activityDto.getStartTime());
+        activity.setEndTime(activityDto.getEndTime());
+        activity.setParticipants(activityDto.getParticipants());
+        activity.setPrice(activityDto.getPrice());
+        activity.setOrganizer(activityDto.getOrganizer());
+
+        Activity saved = activityRepository.save(activity);
+        auditLogService.log("UPDATE_ACTIVITY", "Activity", saved.getId().toString(), "Updated activity: " + saved.getName());
+        return activityMapper.toDTO(saved);
+    }
+
     
     public ActivityDto getActivity(String stringId) {
         UUID uuid = UUID.fromString(stringId);

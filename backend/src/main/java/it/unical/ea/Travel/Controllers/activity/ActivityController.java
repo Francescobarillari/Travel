@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -46,6 +47,14 @@ public class ActivityController {
     @PostMapping
     public ActivityDto saveActivity(@Valid @RequestBody ActivityDto request) {
         return enrichImageUrls(activityService.createActivity(request));
+    }
+
+    @Operation(summary = "Modifica un'attività esistente")
+    @PutMapping("/{stringId}")
+    public ActivityDto updateActivity(
+            @Parameter(description = "ID dell'attività", schema = @Schema(format = "uuid"), example = "550e8400-e29b-41d4-a716-446655440000") @PathVariable String stringId,
+            @Valid @RequestBody ActivityDto request) {
+        return enrichImageUrls(activityService.updateActivity(stringId, request));
     }
 
     @Operation(summary = "Ottieni un'attività per ID")
