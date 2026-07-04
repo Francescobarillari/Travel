@@ -36,6 +36,12 @@ interface ApiService {
     @POST("activity")
     suspend fun createActivity(@Body request: ActivityDto): ActivityDto
 
+    @PUT("activity/{id}")
+    suspend fun updateActivity(@Path("id") id: String, @Body request: ActivityDto): ActivityDto
+
+    @GET("activity/{id}/bookings")
+    suspend fun getBookedUsers(@Path("id") id: String): List<UserDTO>
+
     // Chiamata per recuperare tutte le attività
     @GET("activity")
     suspend fun getActivities(): List<ActivityDto>

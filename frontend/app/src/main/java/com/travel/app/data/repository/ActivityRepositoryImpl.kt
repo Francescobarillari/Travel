@@ -48,6 +48,24 @@ class ActivityRepositoryImpl(
         }
     }
 
+    override suspend fun updateActivity(id: String, activity: ActivityDto): Result<ActivityDto> {
+        return try {
+            val result = apiService.updateActivity(id, activity)
+            Result.success(result)
+        } catch (e: Exception) {
+            Result.failure(Exception(handleError(e)))
+        }
+    }
+
+    override suspend fun getBookedUsers(id: String): Result<List<it.unical.ea.dtos.user.UserDTO>> {
+        return try {
+            val result = apiService.getBookedUsers(id)
+            Result.success(result)
+        } catch (e: Exception) {
+            Result.failure(Exception(handleError(e)))
+        }
+    }
+
     private fun handleError(e: Exception): String {
         return when (e) {
             is HttpException -> {
