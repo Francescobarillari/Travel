@@ -5,11 +5,13 @@ import com.travel.app.BuildConfig
 import com.travel.app.data.repository.UserRepositoryImpl
 import com.travel.app.data.repository.ActivityRepositoryImpl
 import com.travel.app.data.repository.ItineraryRepositoryImpl
+import com.travel.app.data.repository.TripRepositoryImpl
 import com.travel.app.data.session.AuthInterceptor
 import com.travel.app.data.session.SessionManager
 import com.travel.app.domain.repository.UserRepository
 import com.travel.app.domain.repository.ActivityRepository
 import com.travel.app.domain.repository.ItineraryRepository
+import com.travel.app.domain.repository.TripRepository
 import com.travel.app.service.ApiService
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -77,4 +79,5 @@ object AppContainer {
     val userRepository: UserRepository = UserRepositoryImpl(apiService, { sessionManager })
     val activityRepository: ActivityRepository = ActivityRepositoryImpl(apiService)
     val itineraryRepository: ItineraryRepository = ItineraryRepositoryImpl(apiService)
+    val tripRepository: TripRepository = TripRepositoryImpl(apiService)
 }

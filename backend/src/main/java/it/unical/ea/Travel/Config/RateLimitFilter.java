@@ -3,8 +3,8 @@ package it.unical.ea.Travel.Config;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
 import io.github.bucket4j.ConsumptionProbe;
-import jakarta.annotation.PostConstruct;
-import jakarta.annotation.PreDestroy;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -17,10 +17,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.time.Duration;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 @Component
 public class RateLimitFilter extends OncePerRequestFilter {
@@ -35,51 +31,18 @@ public class RateLimitFilter extends OncePerRequestFilter {
     @Value("${app.security.trust-proxy:false}")
     private boolean trustProxy;
 
-    private static class CachedBucket {
-        private final Bucket bucket;
-        private long lastAccessTime;
-
-        public CachedBucket(Bucket bucket) {
-            this.bucket = bucket;
-            this.lastAccessTime = System.currentTimeMillis();
-        }
-
-        public Bucket getBucket() {
-            this.lastAccessTime = System.currentTimeMillis();
-            return bucket;
-        }
-
-        public boolean isExpired(long idleTimeoutMs) {
-            return System.currentTimeMillis() - lastAccessTime > idleTimeoutMs;
-        }
-    }
-
     private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger("security-audit");
 
-    private final ConcurrentHashMap<String, CachedBucket> loginBuckets = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<String, CachedBucket> uploadBuckets = new ConcurrentHashMap<>();
+    // Caffeine cache handles automatic expiration, preventing memory leaks
+    private final Cache<String, Bucket> loginBuckets = Caffeine.newBuilder()
+            .expireAfterAccess(Duration.ofMinutes(10))
+            .maximumSize(10000)
+            .build();
 
-    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(runnable -> {
-        Thread thread = new Thread(runnable, "rate-limit-cleaner");
-        thread.setDaemon(true);
-        return thread;
-    });
-
-    @PostConstruct
-    public void init() {
-        scheduler.scheduleWithFixedDelay(this::cleanupBuckets, 10, 10, TimeUnit.MINUTES);
-    }
-
-    @PreDestroy
-    public void destroyScheduler() {
-        scheduler.shutdown();
-    }
-
-    private void cleanupBuckets() {
-        long idleTimeoutMs = 10 * 60 * 1000; // 10 minutes
-        loginBuckets.entrySet().removeIf(entry -> entry.getValue().isExpired(idleTimeoutMs));
-        uploadBuckets.entrySet().removeIf(entry -> entry.getValue().isExpired(idleTimeoutMs));
-    }
+    private final Cache<String, Bucket> uploadBuckets = Caffeine.newBuilder()
+            .expireAfterAccess(Duration.ofMinutes(10))
+            .maximumSize(10000)
+            .build();
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -104,8 +67,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
         String clientIp = resolveClientIp(request);
 
         if (isLogin) {
-            CachedBucket cachedBucket = loginBuckets.computeIfAbsent(clientIp, k -> new CachedBucket(createBucket(MAX_LOGIN_REQUESTS, LOGIN_REFILL_PERIOD)));
-            ConsumptionProbe probe = cachedBucket.getBucket().tryConsumeAndReturnRemaining(1);
+            Bucket bucket = loginBuckets.get(clientIp, k -> createBucket(MAX_LOGIN_REQUESTS, LOGIN_REFILL_PERIOD));
+            ConsumptionProbe probe = bucket.tryConsumeAndReturnRemaining(1);
 
             if (probe.isConsumed()) {
                 response.setHeader("X-Rate-Limit-Remaining", String.valueOf(probe.getRemainingTokens()));
@@ -116,8 +79,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
                 sendErrorResponse(response, retryAfterSeconds, "Troppi tentativi di login. Riprova tra " + retryAfterSeconds + " secondi.");
             }
         } else {
-            CachedBucket cachedBucket = uploadBuckets.computeIfAbsent(clientIp, k -> new CachedBucket(createBucket(MAX_UPLOAD_REQUESTS, UPLOAD_REFILL_PERIOD)));
-            ConsumptionProbe probe = cachedBucket.getBucket().tryConsumeAndReturnRemaining(1);
+            Bucket bucket = uploadBuckets.get(clientIp, k -> createBucket(MAX_UPLOAD_REQUESTS, UPLOAD_REFILL_PERIOD));
+            ConsumptionProbe probe = bucket.tryConsumeAndReturnRemaining(1);
 
             if (probe.isConsumed()) {
                 response.setHeader("X-Rate-Limit-Remaining", String.valueOf(probe.getRemainingTokens()));

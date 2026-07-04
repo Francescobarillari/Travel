@@ -39,6 +39,30 @@ interface ApiService {
     @GET("activity")
     suspend fun getActivities(): List<ActivityDto>
 
+    @GET("activity/search")
+    suspend fun searchActivities(
+        @retrofit2.http.Query("query") query: String,
+        @retrofit2.http.Query("minPrice") minPrice: Double? = null,
+        @retrofit2.http.Query("maxPrice") maxPrice: Double? = null,
+        @retrofit2.http.Query("page") page: Int = 0,
+        @retrofit2.http.Query("size") size: Int = 10
+    ): it.unical.ea.dtos.common.PageDto<ActivityDto>
+
+    @GET("api/trips/search")
+    suspend fun searchTrips(
+        @retrofit2.http.Query("query") query: String,
+        @retrofit2.http.Query("minPrice") minPrice: Double? = null,
+        @retrofit2.http.Query("maxPrice") maxPrice: Double? = null,
+        @retrofit2.http.Query("page") page: Int = 0,
+        @retrofit2.http.Query("size") size: Int = 10
+    ): it.unical.ea.dtos.common.PageDto<it.unical.ea.dtos.trip.TripDto>
+
+    @GET("api/trips/{id}")
+    suspend fun getTripById(@Path("id") id: String): it.unical.ea.dtos.trip.TripDto
+
+    @GET("activity/{id}")
+    suspend fun getActivityById(@Path("id") id: String): ActivityDto
+
     // Chiamata per recuperare tutti gli itinerari
     @GET("itinerary")
     suspend fun getItineraries(): List<ItineraryDto>

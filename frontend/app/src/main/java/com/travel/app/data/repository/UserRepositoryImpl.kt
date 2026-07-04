@@ -52,10 +52,8 @@ class UserRepositoryImpl(
                 this.captchaToken = captchaToken
             })
             
-            // 1. Salva la sessione con un utente provvisorio per abilitare l'AuthInterceptor
-            val detectedType = if (email.contains("societa", ignoreCase = true) || email.contains("company", ignoreCase = true)) "SOCIETA" else "VIAGGIATORE"
-            val tempUser = User(email = email, userType = detectedType)
-            saveSession(tempUser, token)
+            // 1. Salva solo il token in sessione per abilitare l'AuthInterceptor per le chiamate successive
+            sessionManagerProvider().saveToken(token)
 
             // 2. Chiama l'endpoint me per caricare i dettagli completi del profilo dal DB
             val userDto = apiService.getMe()

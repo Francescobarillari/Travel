@@ -2,14 +2,30 @@ package com.travel.app.data.session
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
 import com.travel.app.domain.model.User
 
 class SessionManager(context: Context) {
 
-    private val prefs: SharedPreferences = context.getSharedPreferences(
+    private val masterKey = MasterKey.Builder(context)
+        .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+        .build()
+
+    private val prefs: SharedPreferences = EncryptedSharedPreferences.create(
+        context,
         PREFS_NAME,
-        Context.MODE_PRIVATE // Garantisce che solo questa app possa accedere a questi file (sandbox Android)
+        masterKey,
+        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
     )
+
+    fun saveToken(token: String) {
+        prefs.edit().apply {
+            putString(KEY_TOKEN, token)
+            apply()
+        }
+    }
 
     fun saveSession(user: User, token: String) {
         prefs.edit().apply {
@@ -54,7 +70,7 @@ class SessionManager(context: Context) {
     }
 
     companion object {
-        private const val PREFS_NAME = "travel_app_prefs"
+        private const val PREFS_NAME = "travel_app_prefs_encrypted"
         private const val KEY_TOKEN = "jwt_token"
         private const val KEY_USER_EMAIL = "user_email"
         private const val KEY_USER_TYPE = "user_type"

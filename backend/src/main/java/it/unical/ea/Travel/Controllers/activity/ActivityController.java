@@ -22,6 +22,7 @@ import it.unical.ea.Travel.Services.activity.ActivityService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -60,6 +61,19 @@ public class ActivityController {
         return activityService.getAllActivities().stream()
                 .map(this::enrichImageUrls)
                 .toList();
+    }
+
+    @Operation(summary = "Cerca attività per parola chiave (paginato)")
+    @GetMapping("/search")
+    public ResponseEntity<org.springframework.data.domain.Page<ActivityDto>> searchActivities(
+            @RequestParam(required = false) String query,
+            @RequestParam(required = false) Double minPrice,
+            @RequestParam(required = false) Double maxPrice,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        org.springframework.data.domain.Page<ActivityDto> results = activityService.searchActivities(query, minPrice, maxPrice, page, size);
+        return ResponseEntity.ok(results);
     }
 
     @Operation(summary = "Elimina un'attività (soft delete)")

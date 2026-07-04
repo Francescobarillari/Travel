@@ -2,46 +2,28 @@ package com.travel.app.data.repository
 
 import com.google.gson.Gson
 import com.travel.app.data.dto.ErrorResponseDto
-import com.travel.app.domain.repository.ActivityRepository
+import com.travel.app.domain.repository.TripRepository
 import com.travel.app.service.ApiService
-import it.unical.ea.dtos.activity.ActivityDto
+import it.unical.ea.dtos.trip.TripDto
 import retrofit2.HttpException
 import java.io.IOException
 
-class ActivityRepositoryImpl(
+class TripRepositoryImpl(
     private val apiService: ApiService
-) : ActivityRepository {
+) : TripRepository {
 
-    override suspend fun createActivity(activity: ActivityDto): Result<ActivityDto> {
+    override suspend fun getTripById(id: String): Result<TripDto> {
         return try {
-            val result = apiService.createActivity(activity)
+            val result = apiService.getTripById(id)
             Result.success(result)
         } catch (e: Exception) {
             Result.failure(Exception(handleError(e)))
         }
     }
 
-    override suspend fun getActivities(): Result<List<ActivityDto>> {
+    override suspend fun searchTrips(query: String, minPrice: Double?, maxPrice: Double?, page: Int, size: Int): Result<it.unical.ea.dtos.common.PageDto<TripDto>> {
         return try {
-            val result = apiService.getActivities()
-            Result.success(result)
-        } catch (e: Exception) {
-            Result.failure(Exception(handleError(e)))
-        }
-    }
-
-    override suspend fun getActivityById(id: String): Result<ActivityDto> {
-        return try {
-            val result = apiService.getActivityById(id)
-            Result.success(result)
-        } catch (e: Exception) {
-            Result.failure(Exception(handleError(e)))
-        }
-    }
-
-    override suspend fun searchActivities(query: String, minPrice: Double?, maxPrice: Double?, page: Int, size: Int): Result<it.unical.ea.dtos.common.PageDto<ActivityDto>> {
-        return try {
-            val result = apiService.searchActivities(query, minPrice, maxPrice, page, size)
+            val result = apiService.searchTrips(query, minPrice, maxPrice, page, size)
             Result.success(result)
         } catch (e: Exception) {
             Result.failure(Exception(handleError(e)))

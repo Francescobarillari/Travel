@@ -5,6 +5,7 @@ enum class HomeTab {
     PREFERITI,
     PROFILO,
     MENU,
-    SICUREZZA
+    SICUREZZA,
+    DETTAGLIO
 }
 
