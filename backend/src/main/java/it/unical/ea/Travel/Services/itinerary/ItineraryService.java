@@ -13,6 +13,7 @@ import it.unical.ea.Travel.Repositories.itinerary.ItineraryBookingRepository;
 import it.unical.ea.Travel.Repositories.user.UserRepository;
 import it.unical.ea.Travel.Services.activity.ActivityService;
 import it.unical.ea.Travel.Services.storage.FileStorageService;
+import it.unical.ea.Travel.Services.audit.AuditLogService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
@@ -36,6 +37,7 @@ public class ItineraryService {
     private final ItineraryBookingRepository itineraryBookingRepository;
     private final ActivityBookingRepository activityBookingRepository;
     private final ActivityService activityService;
+    private final AuditLogService auditLogService;
 
     @Autowired
     public ItineraryService(ItineraryRepository itineraryRepository,
@@ -44,7 +46,8 @@ public class ItineraryService {
                             FileStorageService fileStorageService,
                             ItineraryBookingRepository itineraryBookingRepository,
                             ActivityBookingRepository activityBookingRepository,
-                            ActivityService activityService) {
+                            ActivityService activityService,
+                            AuditLogService auditLogService) {
         this.itineraryRepository = itineraryRepository;
         this.userRepository = userRepository;
         this.activityRepository = activityRepository;
@@ -52,6 +55,7 @@ public class ItineraryService {
         this.itineraryBookingRepository = itineraryBookingRepository;
         this.activityBookingRepository = activityBookingRepository;
         this.activityService = activityService;
+        this.auditLogService = auditLogService;
     }
 
     // Riceve tutti gli itinerari dal database
@@ -89,13 +93,16 @@ public class ItineraryService {
             itinerary.setActivities(activities);
         }
 
-        return itineraryRepository.save(itinerary);
+        Itinerary saved = itineraryRepository.save(itinerary);
+        auditLogService.log("CREATE_ITINERARY", "Itinerary", saved.getId().toString(), "Created itinerary: " + saved.getTitle());
+        return saved;
     }
 
     // Rimuove un itinerario (soft delete tramite @SQLDelete)
     public void deleteItinerary(String stringId) {
         UUID uuid = UUID.fromString(stringId);
         itineraryRepository.deleteById(uuid);
+        auditLogService.log("DELETE_ITINERARY", "Itinerary", stringId, "Deleted itinerary with ID: " + stringId);
     }
 
     // Gestione immagine
@@ -187,6 +194,8 @@ public class ItineraryService {
             actBooking.setItinerary(itinerary); // Riferimento all'itinerario
             activityBookingRepository.save(actBooking);
         }
+        
+        auditLogService.log("BOOK_ITINERARY", "ItineraryBooking", booking.getId().toString(), "User " + userEmail + " booked itinerary: " + itinerary.getTitle());
     }
 
     @Transactional
@@ -210,6 +219,7 @@ public class ItineraryService {
 
         // Rimuove la prenotazione dell'itinerario
         itineraryBookingRepository.delete(booking);
+        auditLogService.log("CANCEL_ITINERARY_BOOKING", "ItineraryBooking", booking.getId().toString(), "User " + userEmail + " cancelled booking for itinerary: " + itinerary.getTitle());
     }
 }
 

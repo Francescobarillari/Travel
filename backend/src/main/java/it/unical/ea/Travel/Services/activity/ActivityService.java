@@ -10,6 +10,7 @@ import it.unical.ea.Travel.Repositories.activity.ActivityBookingRepository;
 import it.unical.ea.Travel.Repositories.activity.ActivityRepository;
 import it.unical.ea.Travel.Repositories.user.UserRepository;
 import it.unical.ea.Travel.Services.storage.FileStorageService;
+import it.unical.ea.Travel.Services.audit.AuditLogService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
@@ -32,6 +33,7 @@ public class ActivityService {
     private final UserRepository userRepository;
     private final ActivityMapper activityMapper;
     private final FileStorageService fileStorageService;
+    private final AuditLogService auditLogService;
 
     public List<ActivityDto> getAllActivities() {
         List<Activity> activities = activityRepository.findByApproved(true);
@@ -49,6 +51,7 @@ public class ActivityService {
         Activity activity = activityMapper.toEntity(activityDto);
         activity.setApproved(false);
         Activity savedActivity = activityRepository.save(activity);
+        auditLogService.log("CREATE_ACTIVITY", "Activity", savedActivity.getId().toString(), "Created activity: " + savedActivity.getName());
         return activityMapper.toDTO(savedActivity);
     }
 
@@ -69,6 +72,7 @@ public class ActivityService {
     public void deleteActivity(String stringId) {
         UUID uuid = UUID.fromString(stringId);
         activityRepository.deleteById(uuid);
+        auditLogService.log("DELETE_ACTIVITY", "Activity", stringId, "Deleted activity with ID: " + stringId);
     }
 
     // --- Logica Prenotazione ---
@@ -122,7 +126,8 @@ public class ActivityService {
         ActivityBooking booking = new ActivityBooking();
         booking.setUser(user);
         booking.setActivity(activity);
-        activityBookingRepository.save(booking);
+        ActivityBooking savedBooking = activityBookingRepository.save(booking);
+        auditLogService.log("BOOK_ACTIVITY", "ActivityBooking", savedBooking.getId().toString(), "User " + userEmail + " booked activity " + activity.getName());
     }
 
     @Transactional
@@ -142,6 +147,7 @@ public class ActivityService {
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "activity.booking.notFound"));
 
         activityBookingRepository.delete(booking);
+        auditLogService.log("CANCEL_BOOKING", "ActivityBooking", booking.getId().toString(), "User " + userEmail + " cancelled booking for activity: " + activity.getName());
     }
 
     // Carica una o più immagini per l'attività specificata

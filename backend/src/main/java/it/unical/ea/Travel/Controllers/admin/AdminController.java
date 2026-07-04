@@ -7,6 +7,7 @@ import it.unical.ea.Travel.Mappers.activity.ActivityMapper;
 import it.unical.ea.Travel.Mappers.user.UserMapper;
 import it.unical.ea.Travel.Repositories.activity.ActivityRepository;
 import it.unical.ea.Travel.Repositories.user.UserRepository;
+import it.unical.ea.Travel.Services.audit.AuditLogService;
 import it.unical.ea.Travel.Services.activity.ActivityService;
 import it.unical.ea.Travel.Services.keycloak.KeycloakAdminService;
 import it.unical.ea.dtos.activity.ActivityDto;
@@ -42,6 +43,7 @@ public class AdminController {
     private final FileStorageService fileStorageService;
     private final UserMapper userMapper;
     private final ActivityMapper activityMapper;
+    private final AuditLogService auditLogService;
 
     @Operation(summary = "Ottieni società in attesa di approvazione")
     @GetMapping("/companies/pending")
@@ -57,6 +59,7 @@ public class AdminController {
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "user.notFound"));
         user.setApproved(true);
         userRepository.save(user);
+        auditLogService.log("APPROVE_COMPANY", "User", id, "Approved company user with email: " + user.getEmail());
         return ResponseEntity.ok().build();
     }
 
@@ -71,6 +74,7 @@ public class AdminController {
         
         // Elimina l'utente dal database locale
         userRepository.delete(user);
+        auditLogService.log("REJECT_COMPANY", "User", id, "Rejected and deleted company user with email: " + user.getEmail());
         return ResponseEntity.ok().build();
     }
 
@@ -92,6 +96,7 @@ public class AdminController {
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "activity.notFound"));
         activity.setApproved(true);
         activityRepository.save(activity);
+        auditLogService.log("APPROVE_ACTIVITY", "Activity", id, "Approved activity: " + activity.getName());
         return ResponseEntity.ok().build();
     }
 
@@ -101,6 +106,7 @@ public class AdminController {
         Activity activity = activityRepository.findById(UUID.fromString(id))
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "activity.notFound"));
         activityRepository.delete(activity);
+        auditLogService.log("REJECT_ACTIVITY", "Activity", id, "Rejected and deleted activity: " + activity.getName());
         return ResponseEntity.ok().build();
     }
 
@@ -134,6 +140,7 @@ public class AdminController {
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "user.notFound"));
         user.setBlocked(true);
         userRepository.save(user);
+        auditLogService.log("BLOCK_COMPANY", "User", id, "Blocked company user: " + user.getEmail());
         return ResponseEntity.ok().build();
     }
 
@@ -144,6 +151,7 @@ public class AdminController {
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "user.notFound"));
         user.setBlocked(false);
         userRepository.save(user);
+        auditLogService.log("UNBLOCK_COMPANY", "User", id, "Unblocked company user: " + user.getEmail());
         return ResponseEntity.ok().build();
     }
 }

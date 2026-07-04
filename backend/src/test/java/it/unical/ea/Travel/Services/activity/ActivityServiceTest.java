@@ -10,6 +10,7 @@ import it.unical.ea.Travel.Repositories.activity.ActivityBookingRepository;
 import it.unical.ea.Travel.Repositories.activity.ActivityRepository;
 import it.unical.ea.Travel.Repositories.user.UserRepository;
 import it.unical.ea.Travel.Services.storage.FileStorageService;
+import it.unical.ea.Travel.Services.audit.AuditLogService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -45,6 +46,9 @@ class ActivityServiceTest {
 
     @Mock
     private FileStorageService fileStorageService;
+
+    @Mock
+    private AuditLogService auditLogService;
 
     @InjectMocks
     private ActivityService activityService;
@@ -91,6 +95,11 @@ class ActivityServiceTest {
             when(userRepository.getUserByEmail(userEmail)).thenReturn(Optional.of(testUser));
             when(activityBookingRepository.countDirectParticipants(activityId)).thenReturn(5L);
             when(activityBookingRepository.findByUserIdAndActivityId(userId, activityId)).thenReturn(Optional.empty());
+            when(activityBookingRepository.save(any(ActivityBooking.class))).thenAnswer(invocation -> {
+                ActivityBooking b = invocation.getArgument(0);
+                b.setId(UUID.randomUUID());
+                return b;
+            });
 
             assertDoesNotThrow(() -> activityService.bookActivity(activityId.toString(), userEmail));
 

@@ -54,6 +54,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
         }
     }
 
+    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger("security-audit");
+
     private final ConcurrentHashMap<String, CachedBucket> loginBuckets = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, CachedBucket> uploadBuckets = new ConcurrentHashMap<>();
 
@@ -110,6 +112,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
                 filterChain.doFilter(request, response);
             } else {
                 long retryAfterSeconds = Duration.ofNanos(probe.getNanosToWaitForRefill()).toSeconds() + 1;
+                logger.warn("RATE_LIMIT_BLOCKED - Login rate limit reached for IP: {}. URI: {}", clientIp, request.getRequestURI());
                 sendErrorResponse(response, retryAfterSeconds, "Troppi tentativi di login. Riprova tra " + retryAfterSeconds + " secondi.");
             }
         } else {
@@ -121,6 +124,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
                 filterChain.doFilter(request, response);
             } else {
                 long retryAfterSeconds = Duration.ofNanos(probe.getNanosToWaitForRefill()).toSeconds() + 1;
+                logger.warn("RATE_LIMIT_BLOCKED - Upload rate limit reached for IP: {}. URI: {}", clientIp, request.getRequestURI());
                 sendErrorResponse(response, retryAfterSeconds, "Troppi tentativi di upload. Riprova tra " + retryAfterSeconds + " secondi.");
             }
         }

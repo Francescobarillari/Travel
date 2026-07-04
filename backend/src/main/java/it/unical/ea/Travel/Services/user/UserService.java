@@ -18,6 +18,7 @@ import it.unical.ea.enums.UserType;
 import lombok.RequiredArgsConstructor;
 
 import it.unical.ea.Travel.Services.storage.FileStorageService;
+import it.unical.ea.Travel.Services.audit.AuditLogService;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.core.io.Resource;
 
@@ -29,6 +30,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final KeycloakAdminService keycloakAdminService;
     private final FileStorageService fileStorageService;
+    private final AuditLogService auditLogService;
 
     @Transactional
     public User saveUser(SignupRequest request) {
@@ -79,7 +81,9 @@ public class UserService {
         }
 
         try {
-            return userRepository.save(user);
+            User savedUser = userRepository.save(user);
+            auditLogService.log("USER_REGISTER", "User", savedUser.getId().toString(), "Registered user with email: " + savedUser.getEmail() + " of type " + savedUser.getUserType());
+            return savedUser;
         } catch (RuntimeException exception) {
             keycloakAdminService.deleteUser(keycloakUserId);
             throw exception;
@@ -140,7 +144,9 @@ public class UserService {
             keycloakAdminService.updateUserPassword(email, pwd);
         }
 
-        return userRepository.save(user);
+        User savedUser = userRepository.save(user);
+        auditLogService.log("USER_UPDATE", "User", savedUser.getId().toString(), "Updated profile for user: " + savedUser.getEmail());
+        return savedUser;
     }
 
     @Transactional
@@ -158,6 +164,7 @@ public class UserService {
 
         // Soft delete sul DB (imposta deleted_at) grazie a @SQLDelete
         userRepository.delete(user);
+        auditLogService.log("USER_DELETE", "User", stringId, "Soft deleted user with email: " + user.getEmail());
     }
 
     // Carica l'avatar dell'utente

@@ -32,11 +32,13 @@ public class LoginAttemptService {
         }
     }
 
+    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger("security-audit");
     private final ConcurrentHashMap<String, Attempt> attemptsCache = new ConcurrentHashMap<>();
 
     public void loginFailed(String email) {
         if (email == null) return;
-        attemptsCache.compute(email.trim().toLowerCase(), (key, val) -> {
+        String lowercaseEmail = email.trim().toLowerCase();
+        attemptsCache.compute(lowercaseEmail, (key, val) -> {
             if (val == null || val.isExpired()) {
                 return new Attempt(1);
             } else {
@@ -44,23 +46,31 @@ public class LoginAttemptService {
                 return val;
             }
         });
+        logger.warn("LOGIN_FAILED: User email={}", lowercaseEmail);
     }
 
     public void loginSucceeded(String email) {
         if (email == null) return;
-        attemptsCache.remove(email.trim().toLowerCase());
+        String lowercaseEmail = email.trim().toLowerCase();
+        attemptsCache.remove(lowercaseEmail);
+        logger.info("LOGIN_SUCCESS: User email={}", lowercaseEmail);
     }
 
     public boolean isCaptchaRequired(String email) {
         if (email == null) return false;
-        Attempt val = attemptsCache.get(email.trim().toLowerCase());
+        String lowercaseEmail = email.trim().toLowerCase();
+        Attempt val = attemptsCache.get(lowercaseEmail);
         if (val == null) {
             return false;
         }
         if (val.isExpired()) {
-            attemptsCache.remove(email.trim().toLowerCase());
+            attemptsCache.remove(lowercaseEmail);
             return false;
         }
-        return val.count >= MAX_ATTEMPTS;
+        boolean required = val.count >= MAX_ATTEMPTS;
+        if (required) {
+            logger.warn("CAPTCHA_REQUIRED: User email={} has exceeded max login attempts", lowercaseEmail);
+        }
+        return required;
     }
 }
