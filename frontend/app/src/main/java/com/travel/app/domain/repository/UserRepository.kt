@@ -24,6 +24,9 @@ interface UserRepository {
 
     fun getSessionUser(): User?
     fun saveSession(user: User, token: String)
+    fun saveSession(user: User, accessToken: String, refreshToken: String) {
+        saveSession(user, accessToken)
+    }
     fun logout()
 
     suspend fun getMe(): Result<User>

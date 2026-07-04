@@ -46,21 +46,24 @@ class UserRepositoryImpl(
         }
 
         return try {
-            val token = apiService.login(LoginRequest().apply {
+            val jwtResponse = apiService.login(LoginRequest().apply {
                 this.email = email
                 this.password = password
                 this.captchaToken = captchaToken
             })
             
-            // 1. Salva solo il token in sessione per abilitare l'AuthInterceptor per le chiamate successive
-            sessionManagerProvider().saveToken(token)
+            val token = jwtResponse.accessToken
+            val refreshToken = jwtResponse.refreshToken
+            
+            // 1. Salva i token in sessione per abilitare l'AuthInterceptor per le chiamate successive
+            sessionManagerProvider().saveTokens(token, refreshToken)
 
             // 2. Chiama l'endpoint me per caricare i dettagli completi del profilo dal DB
             val userDto = apiService.getMe()
             val user = userDto.toDomain().copy(password = password)
             
             // 3. Salva la sessione aggiornata con i dati definitivi
-            saveSession(user, token)
+            saveSession(user, token, refreshToken)
             
             Result.success(user)
         } catch (e: Exception) {
@@ -149,6 +152,10 @@ class UserRepositoryImpl(
 
     override fun saveSession(user: User, token: String) {
         sessionManagerProvider().saveSession(user, token)
+    }
+
+    override fun saveSession(user: User, accessToken: String, refreshToken: String) {
+        sessionManagerProvider().saveSession(user, accessToken, refreshToken)
     }
 
     override fun logout() {

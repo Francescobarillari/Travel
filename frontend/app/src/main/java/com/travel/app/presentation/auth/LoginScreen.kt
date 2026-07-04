@@ -131,7 +131,7 @@ fun LoginScreen(
 @Composable
 fun LoginScreenPreview() {
     val mockApiService = object : ApiService {
-        override suspend fun login(request: it.unical.ea.dtos.authDto.LoginRequest) = "mock_token"
+        override suspend fun login(request: it.unical.ea.dtos.authDto.LoginRequest) = it.unical.ea.dtos.authDto.JwtResponse("mock_token", "mock_refresh")
         override suspend fun register(request: it.unical.ea.dtos.authDto.SignupRequest) = "mock_user_id"
         override suspend fun getMe() = it.unical.ea.dtos.user.UserDTO().apply { email = "test@travel.com" }
         override suspend fun updateMe(request: it.unical.ea.dtos.user.UserDTO) = request

@@ -8,6 +8,7 @@ import com.travel.app.data.repository.ItineraryRepositoryImpl
 import com.travel.app.data.repository.TripRepositoryImpl
 import com.travel.app.data.session.AuthInterceptor
 import com.travel.app.data.session.SessionManager
+import com.travel.app.data.session.TokenAuthenticator
 import com.travel.app.domain.repository.UserRepository
 import com.travel.app.domain.repository.ActivityRepository
 import com.travel.app.domain.repository.ItineraryRepository
@@ -60,6 +61,7 @@ object AppContainer {
 
     private val client = OkHttpClient.Builder()
         .addInterceptor(AuthInterceptor { sessionManager })
+        .authenticator(TokenAuthenticator { sessionManager })
         .addInterceptor(logging)
         .build()
 

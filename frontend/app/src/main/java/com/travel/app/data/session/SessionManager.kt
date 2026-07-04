@@ -27,6 +27,14 @@ class SessionManager(context: Context) {
         }
     }
 
+    fun saveTokens(accessToken: String, refreshToken: String) {
+        prefs.edit().apply {
+            putString(KEY_TOKEN, accessToken)
+            putString(KEY_REFRESH_TOKEN, refreshToken)
+            apply()
+        }
+    }
+
     fun saveSession(user: User, token: String) {
         prefs.edit().apply {
             putString(KEY_TOKEN, token)
@@ -38,8 +46,24 @@ class SessionManager(context: Context) {
         }
     }
 
+    fun saveSession(user: User, accessToken: String, refreshToken: String) {
+        prefs.edit().apply {
+            putString(KEY_TOKEN, accessToken)
+            putString(KEY_REFRESH_TOKEN, refreshToken)
+            putString(KEY_USER_EMAIL, user.email)
+            putString(KEY_USER_TYPE, user.userType)
+            putString(KEY_USER_NAME, user.name)
+            putString(KEY_USER_PHONE, user.phone)
+            apply()
+        }
+    }
+
     fun getSessionToken(): String? {
         return prefs.getString(KEY_TOKEN, null)
+    }
+
+    fun getSessionRefreshToken(): String? {
+        return prefs.getString(KEY_REFRESH_TOKEN, null)
     }
 
     fun getSessionUser(): User? {
@@ -72,6 +96,7 @@ class SessionManager(context: Context) {
     companion object {
         private const val PREFS_NAME = "travel_app_prefs_encrypted"
         private const val KEY_TOKEN = "jwt_token"
+        private const val KEY_REFRESH_TOKEN = "refresh_token"
         private const val KEY_USER_EMAIL = "user_email"
         private const val KEY_USER_TYPE = "user_type"
         private const val KEY_USER_NAME = "user_name"
