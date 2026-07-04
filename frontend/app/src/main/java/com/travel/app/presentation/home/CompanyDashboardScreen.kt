@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -76,38 +78,19 @@ fun CompanyDashboardScreen(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(bottom = 100.dp)
             ) {
-                val chunks = viewModel.itineraries.chunked(2)
-                items(chunks.size) { chunkIndex ->
-                    val chunk = chunks[chunkIndex]
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 4.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        ItineraryCard(
-                            itinerary = chunk[0],
-                            modifier = Modifier.weight(1f),
-                            actions = {
-                                TextButton(onClick = { /* TODO */ }) {
-                                    Text("Modifica")
-                                }
+                items(viewModel.itineraries) { itinerary ->
+                    ItineraryCard(
+                        itinerary = itinerary,
+                        actions = {
+                            IconButton(onClick = { /* TODO */ }) {
+                                Icon(
+                                    imageVector = Icons.Default.Edit,
+                                    contentDescription = "Modifica",
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
                             }
-                        )
-                        if (chunk.size > 1) {
-                            ItineraryCard(
-                                itinerary = chunk[1],
-                                modifier = Modifier.weight(1f),
-                                actions = {
-                                    TextButton(onClick = { /* TODO */ }) {
-                                        Text("Modifica")
-                                    }
-                                }
-                            )
-                        } else {
-                            Spacer(modifier = Modifier.weight(1f))
                         }
-                    }
+                    )
                 }
             }
         }

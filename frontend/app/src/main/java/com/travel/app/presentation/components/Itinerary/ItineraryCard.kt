@@ -38,17 +38,17 @@ fun ItineraryCard(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
+            .padding(horizontal = 20.dp, vertical = 8.dp),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column {
-            // Header Image (reduced height for 2-column grid)
+            // Header Image
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(120.dp)
+                    .height(180.dp)
             ) {
                 AsyncImage(
                     model = itinerary.imageUrl ?: "https://via.placeholder.com/600x400?text=No+Image",
