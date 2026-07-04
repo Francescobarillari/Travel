@@ -29,6 +29,9 @@ fun HomeScreen(
     onLogout: () -> Unit = {}
 ) {
     var selectedTab by remember { mutableStateOf(HomeTab.ESPLORA) }
+    var selectedItemId by remember { mutableStateOf<String?>(null) }
+    var selectedItemIsTrip by remember { mutableStateOf(true) }
+
     var currentUser by remember(user) { 
         mutableStateOf(user ?: User(
             email = "johnkinggraphics@gmail.com", 
@@ -56,7 +59,8 @@ fun HomeScreen(
 
     val esploraViewModel = remember {
         EsploraViewModel(
-            activityRepository = AppContainer.activityRepository
+            activityRepository = AppContainer.activityRepository,
+            tripRepository = AppContainer.tripRepository
         )
     }
 
@@ -83,7 +87,30 @@ fun HomeScreen(
                 if (isSocieta) {
                     CompanyDashboardScreen(viewModel = companyDashboardViewModel)
                 } else {
-                    EsploraScreen(viewModel = esploraViewModel)
+                    EsploraScreen(
+                        viewModel = esploraViewModel,
+                        onItemClick = { id, isTrip ->
+                            selectedItemId = id
+                            selectedItemIsTrip = isTrip
+                            selectedTab = HomeTab.DETTAGLIO
+                        }
+                    )
+                }
+            }
+            HomeTab.DETTAGLIO -> {
+                if (selectedItemId != null) {
+                    val itemDetailViewModel = remember(selectedItemId) {
+                        com.travel.app.presentation.detail.ItemDetailViewModel(
+                            tripRepository = AppContainer.tripRepository,
+                            activityRepository = AppContainer.activityRepository,
+                            itemId = selectedItemId!!,
+                            isTrip = selectedItemIsTrip
+                        )
+                    }
+                    com.travel.app.presentation.detail.ItemDetailScreen(
+                        viewModel = itemDetailViewModel,
+                        onNavigateBack = { selectedTab = HomeTab.ESPLORA }
+                    )
                 }
             }
             HomeTab.PREFERITI -> {
