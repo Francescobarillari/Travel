@@ -28,6 +28,10 @@ class CompanyAddOfferViewModel(
         }
     }
 
+    var activityId by mutableStateOf<String?>(null)
+    val isEditMode: Boolean
+        get() = activityId != null
+
     // Form fields state
     var description by mutableStateOf("")
     var location by mutableStateOf("")
@@ -56,6 +60,7 @@ class CompanyAddOfferViewModel(
     var showSuccessDialog by mutableStateOf(false)
 
     fun resetForm() {
+        activityId = null
         description = ""
         location = ""
         startYear = 0
@@ -134,12 +139,76 @@ class CompanyAddOfferViewModel(
                 activityDto.setPrice(BigDecimal.valueOf(priceVal))
                 activityDto.setOrganizer(defaultOrganizer)
 
-                val result = activityRepository.createActivity(activityDto)
+                val result = if (isEditMode) {
+                    activityRepository.updateActivity(activityId!!, activityDto)
+                } else {
+                    activityRepository.createActivity(activityDto)
+                }
                 result.onSuccess {
                     showSuccessDialog = true
                     resetForm()
                 }.onFailure { e ->
                     errorMessage = e.message ?: "Si è verificato un errore durante la pubblicazione"
+                }
+            } catch (e: Exception) {
+                errorMessage = e.message ?: "Errore imprevisto"
+            } finally {
+                isLoading = false
+            }
+        }
+    }
+
+    fun loadActivity(id: String) {
+        activityId = id
+        isLoading = true
+        errorMessage = null
+        viewModelScope.launch {
+            try {
+                val result = activityRepository.getActivityById(id)
+                result.onSuccess { activity ->
+                    description = activity.description ?: ""
+                    location = activity.location ?: ""
+                    
+                    // Parse dates
+                    activity.startTime?.let { startTime ->
+                        startYear = startTime.year
+                        startMonth = startTime.monthValue
+                        startDay = startTime.dayOfMonth
+                        startHour = startTime.hour
+                        startMinute = startTime.minute
+                    }
+                    activity.endTime?.let { endTime ->
+                        endYear = endTime.year
+                        endMonth = endTime.monthValue
+                        endDay = endTime.dayOfMonth
+                        endHour = endTime.hour
+                        endMinute = endTime.minute
+                    }
+                    maxParticipantsText = activity.participants?.toString() ?: ""
+                    priceText = activity.price?.toString() ?: ""
+                }.onFailure { e ->
+                    errorMessage = e.message ?: "Impossibile caricare i dati dell'attività"
+                }
+            } catch (e: Exception) {
+                errorMessage = e.message ?: "Errore nel caricamento"
+            } finally {
+                isLoading = false
+            }
+        }
+    }
+
+    fun deleteActivity(onSuccess: () -> Unit) {
+        val currentId = activityId ?: return
+        isLoading = true
+        errorMessage = null
+        viewModelScope.launch {
+            try {
+                val result = activityRepository.deleteActivity(currentId)
+                result.onSuccess {
+                    resetForm()
+                    onSuccess()
+                }.onFailure { e ->
+                    errorMessage = e.message ?: "Si è verificato un errore durante l'eliminazione"
                 }
             } catch (e: Exception) {
                 errorMessage = e.message ?: "Errore imprevisto"

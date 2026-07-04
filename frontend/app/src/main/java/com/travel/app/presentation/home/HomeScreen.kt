@@ -31,6 +31,7 @@ fun HomeScreen(
     var selectedTab by remember { mutableStateOf(HomeTab.ESPLORA) }
     var selectedItemId by remember { mutableStateOf<String?>(null) }
     var selectedItemIsTrip by remember { mutableStateOf(true) }
+    var selectedActivityIdForBookings by remember { mutableStateOf<String?>(null) }
 
     var currentUser by remember(user) { 
         mutableStateOf(user ?: User(
@@ -53,7 +54,9 @@ fun HomeScreen(
 
     val companyDashboardViewModel = remember {
         CompanyDashboardViewModel(
-            itineraryRepository = AppContainer.itineraryRepository
+            itineraryRepository = AppContainer.itineraryRepository,
+            activityRepository = AppContainer.activityRepository,
+            userRepository = AppContainer.userRepository
         )
     }
 
@@ -85,7 +88,28 @@ fun HomeScreen(
         when (selectedTab) {
             HomeTab.ESPLORA -> {
                 if (isSocieta) {
-                    CompanyDashboardScreen(viewModel = companyDashboardViewModel)
+                    if (selectedActivityIdForBookings != null) {
+                        CompanyActivityBookingsScreen(
+                            viewModel = remember(selectedActivityIdForBookings) {
+                                CompanyActivityBookingsViewModel(
+                                    activityRepository = AppContainer.activityRepository,
+                                    activityId = selectedActivityIdForBookings!!
+                                )
+                            },
+                            onBackClick = { selectedActivityIdForBookings = null }
+                        )
+                    } else {
+                        CompanyDashboardScreen(
+                            viewModel = companyDashboardViewModel,
+                            onEditActivityClick = { activityId ->
+                                companyAddOfferViewModel.loadActivity(activityId)
+                                selectedTab = HomeTab.PREFERITI
+                            },
+                            onViewBookingsClick = { activityId ->
+                                selectedActivityIdForBookings = activityId
+                            }
+                        )
+                    }
                 } else {
                     EsploraScreen(
                         viewModel = esploraViewModel,
@@ -115,9 +139,16 @@ fun HomeScreen(
             }
             HomeTab.PREFERITI -> {
                 if (isSocieta) {
-                    CompanyAddOfferScreen(viewModel = companyAddOfferViewModel)
+                    CompanyAddOfferScreen(
+                        viewModel = companyAddOfferViewModel,
+                        onNavigateBack = { selectedTab = HomeTab.ESPLORA }
+                    )
                 } else {
-                    CompanyDashboardScreen(viewModel = companyDashboardViewModel)
+                    CompanyDashboardScreen(
+                        viewModel = companyDashboardViewModel,
+                        onEditActivityClick = {},
+                        onViewBookingsClick = {}
+                    )
                 }
             }
             HomeTab.PROFILO -> {
@@ -161,7 +192,12 @@ fun HomeScreen(
             FloatingBottomNavBar(
                 selectedTab = selectedTab,
                 isSocieta = isSocieta,
-                onTabSelected = { selectedTab = it }
+                onTabSelected = { 
+                    if (it == HomeTab.PREFERITI && isSocieta) {
+                        companyAddOfferViewModel.resetForm()
+                    }
+                    selectedTab = it 
+                }
             )
         }
     }

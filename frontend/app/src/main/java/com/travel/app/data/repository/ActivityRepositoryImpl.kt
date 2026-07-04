@@ -66,6 +66,15 @@ class ActivityRepositoryImpl(
         }
     }
 
+    override suspend fun deleteActivity(id: String): Result<Unit> {
+        return try {
+            apiService.deleteActivity(id)
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(Exception(handleError(e)))
+        }
+    }
+
     private fun handleError(e: Exception): String {
         return when (e) {
             is HttpException -> {

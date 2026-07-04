@@ -34,7 +34,8 @@ import java.util.Calendar
 @Composable
 fun CompanyAddOfferScreen(
     viewModel: CompanyAddOfferViewModel,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onNavigateBack: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val scrollState = rememberScrollState()
@@ -119,7 +120,7 @@ fun CompanyAddOfferScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Nuova Attività",
+                    text = if (viewModel.isEditMode) "Modifica Attività" else "Nuova Attività",
                     fontSize = 24.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = Color(0xFF0F172A)
@@ -127,7 +128,7 @@ fun CompanyAddOfferScreen(
             }
             
             Text(
-                text = "Crea e pubblica una nuova attività.",
+                text = if (viewModel.isEditMode) "Modifica i dettagli dell'attività selezionata." else "Crea e pubblica una nuova attività.",
                 fontSize = 14.sp,
                 color = Color(0xFF64748B), // Slate 500
                 modifier = Modifier.padding(bottom = 20.dp)
@@ -449,28 +450,104 @@ fun CompanyAddOfferScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            Button(
-                onClick = { viewModel.submitActivity() },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                enabled = !viewModel.isLoading
-            ) {
-                if (viewModel.isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
-                        color = Color.White,
-                        strokeWidth = 2.dp
-                    )
-                } else {
-                    Text(
-                        text = "Pubblica Offerta",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
+            if (viewModel.isEditMode) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Button(
+                        onClick = { viewModel.submitActivity() },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(52.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                        enabled = !viewModel.isLoading
+                    ) {
+                        if (viewModel.isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                color = Color.White,
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Text(
+                                text = "Salva Modifiche",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                        }
+                    }
+
+                    var showDeleteConfirm by remember { mutableStateOf(false) }
+                    Button(
+                        onClick = { showDeleteConfirm = true },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(52.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                        enabled = !viewModel.isLoading
+                    ) {
+                        Text(
+                            text = "Elimina",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
+
+                    if (showDeleteConfirm) {
+                        AlertDialog(
+                            onDismissRequest = { showDeleteConfirm = false },
+                            title = { Text("Elimina Attività") },
+                            text = { Text("Sei sicuro di voler eliminare questa attività? Questa azione non può essere annullata.") },
+                            confirmButton = {
+                                Button(
+                                    onClick = {
+                                        showDeleteConfirm = false
+                                        viewModel.deleteActivity(onSuccess = {
+                                            onNavigateBack()
+                                        })
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                                ) {
+                                    Text("Elimina", color = Color.White)
+                                }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = { showDeleteConfirm = false }) {
+                                    Text("Annulla")
+                                }
+                            }
+                        )
+                    }
+                }
+            } else {
+                Button(
+                    onClick = { viewModel.submitActivity() },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                    enabled = !viewModel.isLoading
+                ) {
+                    if (viewModel.isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = Color.White,
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text(
+                            text = "Pubblica Offerta",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
                 }
             }
         }
@@ -478,12 +555,18 @@ fun CompanyAddOfferScreen(
 
     if (viewModel.showSuccessDialog) {
         AlertDialog(
-            onDismissRequest = { viewModel.showSuccessDialog = false },
-            title = { Text("Offerta Pubblicata") },
-            text = { Text("La tua attività è stata pubblicata con successo ed è ora visibile ai viaggiatori.") },
+            onDismissRequest = { 
+                viewModel.showSuccessDialog = false
+                onNavigateBack()
+            },
+            title = { Text(if (viewModel.isEditMode) "Offerta Modificata" else "Offerta Pubblicata") },
+            text = { Text(if (viewModel.isEditMode) "La tua attività è stata modificata con successo." else "La tua attività è stata pubblicata con successo ed è ora visibile ai viaggiatori.") },
             confirmButton = {
                 Button(
-                    onClick = { viewModel.showSuccessDialog = false },
+                    onClick = { 
+                        viewModel.showSuccessDialog = false
+                        onNavigateBack()
+                    },
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                 ) {
                     Text("OK", color = Color.White)

@@ -37,10 +37,10 @@ interface ApiService {
     suspend fun createActivity(@Body request: ActivityDto): ActivityDto
 
     @PUT("activity/{id}")
-    suspend fun updateActivity(@Path("id") id: String, @Body request: ActivityDto): ActivityDto
+    suspend fun updateActivity(@Path("id") id: String, @Body request: ActivityDto): ActivityDto = throw NotImplementedError()
 
     @GET("activity/{id}/bookings")
-    suspend fun getBookedUsers(@Path("id") id: String): List<UserDTO>
+    suspend fun getBookedUsers(@Path("id") id: String): List<UserDTO> = throw NotImplementedError()
 
     // Chiamata per recuperare tutte le attività
     @GET("activity")
@@ -84,6 +84,9 @@ interface ApiService {
     // Chiamata per eliminare un itinerario
     @DELETE("itinerary/{id}")
     suspend fun deleteItinerary(@Path("id") id: String)
+
+    @DELETE("activity/{id}")
+    suspend fun deleteActivity(@Path("id") id: String) { throw NotImplementedError() }
 
     // Caricamento documenti
     @retrofit2.http.Multipart
