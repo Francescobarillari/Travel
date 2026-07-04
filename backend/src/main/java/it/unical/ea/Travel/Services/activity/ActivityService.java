@@ -11,6 +11,8 @@ import it.unical.ea.Travel.Repositories.activity.ActivityRepository;
 import it.unical.ea.Travel.Repositories.user.UserRepository;
 import it.unical.ea.Travel.Services.storage.FileStorageService;
 import it.unical.ea.Travel.Services.audit.AuditLogService;
+import it.unical.ea.dtos.user.UserDTO;
+import it.unical.ea.Travel.Mappers.user.UserMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
@@ -34,6 +36,7 @@ public class ActivityService {
     private final ActivityMapper activityMapper;
     private final FileStorageService fileStorageService;
     private final AuditLogService auditLogService;
+    private final UserMapper userMapper;
 
     public List<ActivityDto> getAllActivities() {
         List<Activity> activities = activityRepository.findByApproved(true);
@@ -231,5 +234,14 @@ public class ActivityService {
         } else {
             throw new ApiException(HttpStatus.NOT_FOUND, "activity.imageNotFound");
         }
+    }
+
+    public List<UserDTO> getBookedUsers(String activityId) {
+        UUID uuid = UUID.fromString(activityId);
+        List<ActivityBooking> bookings = activityBookingRepository.findByActivityId(uuid);
+        return bookings.stream()
+                .map(ActivityBooking::getUser)
+                .map(userMapper::toDTO)
+                .toList();
     }
 }

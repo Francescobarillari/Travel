@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import it.unical.ea.dtos.activity.ActivityDto;
+import it.unical.ea.dtos.user.UserDTO;
 import it.unical.ea.Travel.Services.activity.ActivityService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -148,6 +149,14 @@ public class ActivityController {
         String email = jwt.getClaimAsString("email");
         activityService.cancelActivityBooking(stringId, email);
         return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "Ottieni gli iscritti ad un'attività", description = "Restituisce la lista degli utenti iscritti ad una specifica attività")
+    @GetMapping("/{stringId}/bookings")
+    public ResponseEntity<List<UserDTO>> getBookedUsers(
+            @Parameter(description = "ID dell'attività", schema = @Schema(format = "uuid"), example = "550e8400-e29b-41d4-a716-446655440000") @PathVariable String stringId) {
+        List<UserDTO> users = activityService.getBookedUsers(stringId);
+        return ResponseEntity.ok(users);
     }
 
     // --- Helpers per arricchire URL ---
