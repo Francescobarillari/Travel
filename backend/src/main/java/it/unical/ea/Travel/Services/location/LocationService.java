@@ -33,8 +33,6 @@ public class LocationService {
     private final LocationRepository locationRepository;
     private final LocationMapper locationMapper;
 
-
-
     @Transactional(readOnly = true)
     public Page<LocationDto> searchLocation(String keyword, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
@@ -55,12 +53,14 @@ public class LocationService {
         }
 
         String trimmedName = locationName.trim();
-        
+
         // 1. Cerca nel database (case-insensitive)
         Optional<Location> existing = locationRepository.findByNameIgnoreCase(trimmedName);
         if (existing.isPresent()) {
             Location loc = existing.get();
-            if (loc.getImageUrl() == null || loc.getImageUrl().contains("wikimedia.org") || loc.getImageUrl().contains("photo-1488646953014-85cb44e25828") || loc.getImageUrl().contains("loremflickr.com")) {
+            if (loc.getImageUrl() == null || loc.getImageUrl().contains("wikimedia.org")
+                    || loc.getImageUrl().contains("photo-1488646953014-85cb44e25828")
+                    || loc.getImageUrl().contains("loremflickr.com")) {
                 loc.setImageUrl(fetchUnsplashImageUrl(trimmedName));
                 loc = locationRepository.save(loc);
             }
@@ -88,20 +88,19 @@ public class LocationService {
             HttpHeaders headers = new HttpHeaders();
             headers.set("User-Agent", "TravelApp/1.0 (contact: admin@travelapp.com)");
             HttpEntity<String> entity = new HttpEntity<>(headers);
-            
+
             String url = UriComponentsBuilder.fromUriString("https://nominatim.openstreetmap.org/search")
                     .queryParam("q", name)
                     .queryParam("format", "json")
                     .queryParam("limit", 1)
                     .build()
                     .toUriString();
-            
+
             ResponseEntity<List> response = restTemplate.exchange(
-                    url, 
-                    HttpMethod.GET, 
-                    entity, 
-                    List.class
-            );
+                    url,
+                    HttpMethod.GET,
+                    entity,
+                    List.class);
             List<?> body = response.getBody();
             return body != null && !body.isEmpty();
         } catch (Exception e) {
@@ -116,27 +115,48 @@ public class LocationService {
 
     public String getCuratedImageUrl(String cityName) {
         String lower = cityName.toLowerCase();
-        if (lower.contains("napoli")) return "https://images.unsplash.com/photo-1599839575945-a9e5af0c3fa5?auto=format&fit=crop&w=800&q=80";
-        if (lower.contains("roma")) return "https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&w=800&q=80";
-        if (lower.contains("parigi")) return "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=800&q=80";
-        if (lower.contains("londra")) return "https://images.unsplash.com/photo-1513635269975-59663e0ca1ad?auto=format&fit=crop&w=800&q=80";
-        if (lower.contains("new york")) return "https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?auto=format&fit=crop&w=800&q=80";
-        if (lower.contains("tokyo")) return "https://images.unsplash.com/photo-1540959733332-eab4deceeaf7?auto=format&fit=crop&w=800&q=80";
-        if (lower.contains("barcellona")) return "https://images.unsplash.com/photo-1583422409516-2895a77efedd?auto=format&fit=crop&w=800&q=80";
-        if (lower.contains("venezia")) return "https://images.unsplash.com/photo-1527631746610-bca00a040d60?auto=format&fit=crop&w=800&q=80";
-        if (lower.contains("firenze")) return "https://images.unsplash.com/photo-1528114039593-4366cc08227d?auto=format&fit=crop&w=800&q=80";
-        if (lower.contains("sydney")) return "https://images.unsplash.com/photo-1506973035872-a4ec16b8e8d9?auto=format&fit=crop&w=800&q=80";
-        if (lower.contains("rio de janeiro")) return "https://images.unsplash.com/photo-1483728642387-6c3bdd6c93e5?auto=format&fit=crop&w=800&q=80";
-        if (lower.contains("cairo")) return "https://images.unsplash.com/photo-1572252017417-20815197f809?auto=format&fit=crop&w=800&q=80";
-        if (lower.contains("atene")) return "https://images.unsplash.com/photo-1506477331477-33d5d8b3dc85?auto=format&fit=crop&w=800&q=80";
-        if (lower.contains("amsterdam")) return "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80";
-        if (lower.contains("dubai")) return "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=800&q=80";
-        if (lower.contains("istanbul")) return "https://images.unsplash.com/photo-1524231757912-21f4fe3a7200?auto=format&fit=crop&w=800&q=80";
-        if (lower.contains("nairobi")) return "https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&w=800&q=80";
-        if (lower.contains("trentino")) return "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80";
-        if (lower.contains("capo") || lower.contains("cape town")) return "https://images.unsplash.com/photo-1580060839134-75a5edca2e99?auto=format&fit=crop&w=800&q=80";
-        if (lower.contains("praga")) return "https://images.unsplash.com/photo-154134307207b-2bc11763eeac?auto=format&fit=crop&w=800&q=80";
-        if (lower.contains("san francisco")) return "https://images.unsplash.com/photo-1506012787146-f92b2d7d6d96?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("napoli"))
+            return "https://images.unsplash.com/photo-1599839575945-a9e5af0c3fa5?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("roma"))
+            return "https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("parigi"))
+            return "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("londra"))
+            return "https://images.unsplash.com/photo-1513635269975-59663e0ca1ad?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("new york"))
+            return "https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("tokyo"))
+            return "https://images.unsplash.com/photo-1540959733332-eab4deceeaf7?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("barcellona"))
+            return "https://images.unsplash.com/photo-1583422409516-2895a77efedd?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("venezia"))
+            return "https://images.unsplash.com/photo-1527631746610-bca00a040d60?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("firenze"))
+            return "https://images.unsplash.com/photo-1528114039593-4366cc08227d?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("sydney"))
+            return "https://images.unsplash.com/photo-1506973035872-a4ec16b8e8d9?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("rio de janeiro"))
+            return "https://images.unsplash.com/photo-1483728642387-6c3bdd6c93e5?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("cairo"))
+            return "https://images.unsplash.com/photo-1572252017417-20815197f809?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("atene"))
+            return "https://images.unsplash.com/photo-1506477331477-33d5d8b3dc85?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("amsterdam"))
+            return "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("dubai"))
+            return "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("istanbul"))
+            return "https://images.unsplash.com/photo-1524231757912-21f4fe3a7200?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("nairobi"))
+            return "https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("trentino"))
+            return "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("capo") || lower.contains("cape town"))
+            return "https://images.unsplash.com/photo-1580060839134-75a5edca2e99?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("praga"))
+            return "https://images.unsplash.com/photo-154134307207b-2bc11763eeac?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("san francisco"))
+            return "https://images.unsplash.com/photo-1506012787146-f92b2d7d6d96?auto=format&fit=crop&w=800&q=80";
         return null;
     }
 }
