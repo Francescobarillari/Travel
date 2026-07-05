@@ -10,7 +10,7 @@ import org.mapstruct.Mapping;
 
 import java.util.List;
 
-@Mapper(componentModel = "spring", uses = {ActivityMapper.class})
+@Mapper(componentModel = "spring", uses = {ActivityMapper.class}, unmappedTargetPolicy = org.mapstruct.ReportingPolicy.IGNORE)
 public interface ItineraryMapper {
 
     @Mapping(target = "creatorId", source = "creator.id")

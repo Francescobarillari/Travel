@@ -53,22 +53,22 @@ public class Activity {
     @Column(name = "price", precision = 10, scale = 2)
     private BigDecimal price;
 
-    @Column(name = "organizer")
-    private String organizer;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "organizer_id", nullable = false)
+    private it.unical.ea.Travel.Entities.user.User organizer;
 
     @ElementCollection
     @CollectionTable(name = "activity_images", joinColumns = @JoinColumn(name = "activity_id"))
     @Column(name = "image_url")
     private List<String> images;
 
-
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "trip_id")
-    private it.unical.ea.Travel.Entities.trip.Trip trip;
+    @JoinColumn(name = "localita_id")
+    private it.unical.ea.Travel.Entities.localita.Localita localita;
 
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
