@@ -20,6 +20,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import it.unical.ea.Travel.Config.SecurityUtils;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -72,6 +74,12 @@ public class ActivityService {
         // Resolve/Create location automatically
         it.unical.ea.Travel.Entities.location.Location locationEntity = locationService.getOrCreateLocation(activityDto.getLocation());
         activity.setLocationEntity(locationEntity);
+
+        // Imposta l'organizzatore corrente basato sull'utente loggato
+        String email = SecurityUtils.getCurrentUserEmail();
+        User organizer = userRepository.getUserByEmail(email)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "user.notFound"));
+        activity.setOrganizer(organizer);
 
         Activity savedActivity = activityRepository.save(activity);
         auditLogService.log("CREATE_ACTIVITY", "Activity", savedActivity.getId().toString(), "Created activity: " + savedActivity.getName());

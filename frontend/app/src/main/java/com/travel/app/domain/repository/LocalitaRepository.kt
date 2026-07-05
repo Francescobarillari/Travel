@@ -1,6 +1,6 @@
 package com.travel.app.domain.repository
 
-import it.unical.ea.dtos.localita.LocalitaDto
+import it.unical.ea.dtos.location.LocationDto as LocalitaDto
 
 interface LocalitaRepository {
     suspend fun getLocalitaById(id: String): Result<LocalitaDto>

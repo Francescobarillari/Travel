@@ -8,7 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.travel.app.domain.repository.ActivityRepository
 import com.travel.app.domain.repository.LocalitaRepository
 import it.unical.ea.dtos.activity.ActivityDto
-import it.unical.ea.dtos.localita.LocalitaDto
+import it.unical.ea.dtos.location.LocationDto as LocalitaDto
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch

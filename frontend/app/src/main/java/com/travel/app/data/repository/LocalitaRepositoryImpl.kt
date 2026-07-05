@@ -4,7 +4,7 @@ import com.google.gson.Gson
 import com.travel.app.data.dto.ErrorResponseDto
 import com.travel.app.domain.repository.LocalitaRepository
 import com.travel.app.service.ApiService
-import it.unical.ea.dtos.localita.LocalitaDto
+import it.unical.ea.dtos.location.LocationDto as LocalitaDto
 import retrofit2.HttpException
 import java.io.IOException
 

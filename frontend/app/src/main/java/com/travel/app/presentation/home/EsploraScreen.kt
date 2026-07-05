@@ -20,7 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.travel.app.presentation.theme.TravelTheme
 import it.unical.ea.dtos.activity.ActivityDto
-import it.unical.ea.dtos.localita.LocalitaDto
+import it.unical.ea.dtos.location.LocationDto as LocalitaDto
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.foundation.lazy.items
 import it.unical.ea.enums.TravelTag

@@ -40,7 +40,7 @@ public class Location {
     @Column(name = "image_url", length = 500)
     private String imageUrl;
 
-    @OneToMany(mappedBy = "location", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "locationEntity", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Activity> activities = new ArrayList<>();
 
     @CreationTimestamp
