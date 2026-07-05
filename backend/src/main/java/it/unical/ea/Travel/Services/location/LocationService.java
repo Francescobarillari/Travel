@@ -116,13 +116,13 @@ public class LocationService {
     public String getCuratedImageUrl(String cityName) {
         String lower = cityName.toLowerCase();
         if (lower.contains("napoli"))
-            return "https://images.unsplash.com/photo-1599839575945-a9e5af0c3fa5?auto=format&fit=crop&w=800&q=80";
+            return "https://images.unsplash.com/photo-1599682715474-361182378581?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D";
         if (lower.contains("roma"))
             return "https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&w=800&q=80";
         if (lower.contains("parigi"))
             return "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=800&q=80";
         if (lower.contains("londra"))
-            return "https://images.unsplash.com/photo-1513635269975-59663e0ca1ad?auto=format&fit=crop&w=800&q=80";
+            return "https://images.unsplash.com/photo-1486299267070-83823f5448dd?q=80&w=1471&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D";
         if (lower.contains("new york"))
             return "https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?auto=format&fit=crop&w=800&q=80";
         if (lower.contains("tokyo"))
@@ -142,7 +142,7 @@ public class LocationService {
         if (lower.contains("atene"))
             return "https://images.unsplash.com/photo-1506477331477-33d5d8b3dc85?auto=format&fit=crop&w=800&q=80";
         if (lower.contains("amsterdam"))
-            return "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80";
+            return "https://images.unsplash.com/photo-1512470876302-972faa2aa9a4?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D";
         if (lower.contains("dubai"))
             return "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=800&q=80";
         if (lower.contains("istanbul"))
@@ -154,7 +154,7 @@ public class LocationService {
         if (lower.contains("capo") || lower.contains("cape town"))
             return "https://images.unsplash.com/photo-1580060839134-75a5edca2e99?auto=format&fit=crop&w=800&q=80";
         if (lower.contains("praga"))
-            return "https://images.unsplash.com/photo-154134307207b-2bc11763eeac?auto=format&fit=crop&w=800&q=80";
+            return "https://images.unsplash.com/photo-1564511287568-54483b52a35e?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D";
         if (lower.contains("san francisco"))
             return "https://images.unsplash.com/photo-1506012787146-f92b2d7d6d96?auto=format&fit=crop&w=800&q=80";
         return null;
