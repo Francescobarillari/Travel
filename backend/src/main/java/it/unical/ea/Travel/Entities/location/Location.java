@@ -1,4 +1,4 @@
-package it.unical.ea.Travel.Entities.localita;
+package it.unical.ea.Travel.Entities.location;
 
 import it.unical.ea.Travel.Entities.activity.Activity;
 import jakarta.persistence.*;
@@ -19,12 +19,12 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 @Entity
-@Table(name = "localita", indexes = {
-    @Index(name = "idx_localita_name", columnList = "name")
+@Table(name = "location", indexes = {
+    @Index(name = "idx_location_name", columnList = "name")
 })
-@SQLDelete(sql = "UPDATE localita SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?")
+@SQLDelete(sql = "UPDATE location SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?")
 @SQLRestriction("deleted_at IS NULL")
-public class Localita {
+public class Location {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -37,7 +37,10 @@ public class Localita {
     @Column(name = "description", length = 1000)
     private String description;
 
-    @OneToMany(mappedBy = "localita", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Column(name = "image_url", length = 500)
+    private String imageUrl;
+
+    @OneToMany(mappedBy = "location", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Activity> activities = new ArrayList<>();
 
     @CreationTimestamp

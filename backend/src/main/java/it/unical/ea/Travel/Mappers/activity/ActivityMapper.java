@@ -20,7 +20,7 @@ public interface ActivityMapper {
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "deletedAt", ignore = true)
     @Mapping(target = "organizer", ignore = true)
-    @Mapping(target = "localita", ignore = true)
+    @Mapping(target = "locationEntity", ignore = true)
     Activity toEntity(ActivityDto dto);
 
     List<Activity> toEntityList(List<ActivityDto> dtos);

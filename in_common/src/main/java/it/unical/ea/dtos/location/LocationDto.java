@@ -1,4 +1,4 @@
-package it.unical.ea.dtos.localita;
+package it.unical.ea.dtos.location;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
@@ -11,7 +11,7 @@ import java.util.UUID;
 @Getter
 @Setter
 @NoArgsConstructor
-public class LocalitaDto {
+public class LocationDto {
     @Schema(format = "uuid", example = "550e8400-e29b-41d4-a716-446655440000")
     private UUID id;
 
@@ -21,4 +21,7 @@ public class LocalitaDto {
 
     @Schema(example = "Visita alla città eterna in 3 giorni.")
     private String description;
+
+    @Schema(example = "https://images.unsplash.com/photo-1552832230-c0197dd311b5?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80")
+    private String imageUrl;
 }

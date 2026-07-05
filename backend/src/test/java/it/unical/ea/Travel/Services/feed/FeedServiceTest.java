@@ -2,13 +2,13 @@ package it.unical.ea.Travel.Services.feed;
 
 import it.unical.ea.Travel.Entities.activity.Activity;
 import it.unical.ea.Travel.Entities.activity.ActivityBooking;
-import it.unical.ea.Travel.Entities.trip.Trip;
+import it.unical.ea.Travel.Entities.location.Location;
 import it.unical.ea.Travel.Entities.user.User;
-import it.unical.ea.Travel.Mappers.trip.TripMapper;
+import it.unical.ea.Travel.Mappers.location.LocationMapper;
 import it.unical.ea.Travel.Repositories.activity.ActivityBookingRepository;
-import it.unical.ea.Travel.Repositories.trip.TripRepository;
+import it.unical.ea.Travel.Repositories.location.LocationRepository;
 import it.unical.ea.Travel.Repositories.user.UserRepository;
-import it.unical.ea.dtos.trip.TripDto;
+import it.unical.ea.dtos.location.LocationDto;
 import it.unical.ea.enums.TravelTag;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,13 +31,13 @@ class FeedServiceTest {
     private UserRepository userRepository;
 
     @Mock
-    private TripRepository tripRepository;
+    private LocationRepository locationRepository;
 
     @Mock
     private ActivityBookingRepository activityBookingRepository;
 
     @Mock
-    private TripMapper tripMapper;
+    private LocationMapper locationMapper;
 
     @InjectMocks
     private FeedService feedService;
@@ -54,28 +54,28 @@ class FeedServiceTest {
     }
 
     @Test
-    void shouldReturnAllTripsIfNoPreferencesAndNoBookings() {
+    void shouldReturnAllLocationsIfNoPreferencesAndNoBookings() {
         when(userRepository.getUserByEmail(userEmail)).thenReturn(Optional.of(testUser));
         when(activityBookingRepository.findByUserId(testUser.getId())).thenReturn(Collections.emptyList());
 
-        Trip trip = new Trip();
-        trip.setId(UUID.randomUUID());
-        trip.setTitle("Test Trip");
+        Location location = new Location();
+        location.setId(UUID.randomUUID());
+        location.setName("Roma, Italia");
 
-        TripDto dto = new TripDto();
-        dto.setId(trip.getId());
-        dto.setTitle(trip.getTitle());
+        LocationDto dto = new LocationDto();
+        dto.setId(location.getId());
+        dto.setName(location.getName());
 
-        when(tripRepository.findAll()).thenReturn(Collections.singletonList(trip));
-        when(tripMapper.toDto(trip)).thenReturn(dto);
+        when(locationRepository.findAll()).thenReturn(Collections.singletonList(location));
+        when(locationMapper.toDto(location)).thenReturn(dto);
 
-        List<TripDto> result = feedService.getPersonalizedFeed(userEmail);
+        List<LocationDto> result = feedService.getPersonalizedFeed(userEmail);
 
         assertNotNull(result);
         assertEquals(1, result.size());
-        assertEquals("Test Trip", result.get(0).getTitle());
-        verify(tripRepository, times(1)).findAll();
-        verify(tripRepository, never()).findAll(any(Specification.class));
+        assertEquals("Roma, Italia", result.get(0).getName());
+        verify(locationRepository, times(1)).findAll();
+        verify(locationRepository, never()).findAll(any(Specification.class));
     }
 
     @Test
@@ -85,23 +85,23 @@ class FeedServiceTest {
         when(userRepository.getUserByEmail(userEmail)).thenReturn(Optional.of(testUser));
         when(activityBookingRepository.findByUserId(testUser.getId())).thenReturn(Collections.emptyList());
 
-        Trip trip = new Trip();
-        trip.setId(UUID.randomUUID());
-        trip.setTitle("Adventure Trip");
+        Location location = new Location();
+        location.setId(UUID.randomUUID());
+        location.setName("Trentino-Alto Adige");
 
-        TripDto dto = new TripDto();
-        dto.setId(trip.getId());
-        dto.setTitle(trip.getTitle());
+        LocationDto dto = new LocationDto();
+        dto.setId(location.getId());
+        dto.setName(location.getName());
 
-        when(tripRepository.findAll(any(Specification.class))).thenReturn(Collections.singletonList(trip));
-        when(tripMapper.toDto(trip)).thenReturn(dto);
+        when(locationRepository.findAll(any(Specification.class))).thenReturn(Collections.singletonList(location));
+        when(locationMapper.toDto(location)).thenReturn(dto);
 
-        List<TripDto> result = feedService.getPersonalizedFeed(userEmail);
+        List<LocationDto> result = feedService.getPersonalizedFeed(userEmail);
 
         assertNotNull(result);
         assertEquals(1, result.size());
-        assertEquals("Adventure Trip", result.get(0).getTitle());
-        verify(tripRepository, times(1)).findAll(any(Specification.class));
+        assertEquals("Trentino-Alto Adige", result.get(0).getName());
+        verify(locationRepository, times(1)).findAll(any(Specification.class));
     }
 
     @Test
@@ -113,58 +113,62 @@ class FeedServiceTest {
         activity.setLocation("Roma, Italia");
         activity.setTags(new HashSet<>(Collections.singletonList(TravelTag.STORIA)));
 
+        Location actLoc = new Location();
+        actLoc.setName("Roma, Italia");
+        activity.setLocationEntity(actLoc);
+
         ActivityBooking booking = new ActivityBooking();
         booking.setActivity(activity);
 
         when(activityBookingRepository.findByUserId(testUser.getId())).thenReturn(Collections.singletonList(booking));
 
-        Trip trip = new Trip();
-        trip.setId(UUID.randomUUID());
-        trip.setTitle("Rome Historic Trip");
+        Location recommendation = new Location();
+        recommendation.setId(UUID.randomUUID());
+        recommendation.setName("Roma, Italia");
 
-        TripDto dto = new TripDto();
-        dto.setId(trip.getId());
-        dto.setTitle(trip.getTitle());
+        LocationDto dto = new LocationDto();
+        dto.setId(recommendation.getId());
+        dto.setName(recommendation.getName());
 
-        when(tripRepository.findAll(any(Specification.class))).thenReturn(Collections.singletonList(trip));
-        when(tripMapper.toDto(trip)).thenReturn(dto);
+        when(locationRepository.findAll(any(Specification.class))).thenReturn(Collections.singletonList(recommendation));
+        when(locationMapper.toDto(recommendation)).thenReturn(dto);
 
-        List<TripDto> result = feedService.getPersonalizedFeed(userEmail);
+        List<LocationDto> result = feedService.getPersonalizedFeed(userEmail);
 
         assertNotNull(result);
         assertEquals(1, result.size());
-        assertEquals("Rome Historic Trip", result.get(0).getTitle());
-        verify(tripRepository, times(1)).findAll(any(Specification.class));
+        assertEquals("Roma, Italia", result.get(0).getName());
+        verify(locationRepository, times(1)).findAll(any(Specification.class));
     }
 
     @Test
     @SuppressWarnings("unchecked")
-    void shouldFallbackToAllTripsIfSpecificationReturnsNoResults() {
+    void shouldFallbackToAllLocationsIfSpecificationReturnsNoResults() {
         testUser.getPreferences().add(TravelTag.RELAX);
         when(userRepository.getUserByEmail(userEmail)).thenReturn(Optional.of(testUser));
         when(activityBookingRepository.findByUserId(testUser.getId())).thenReturn(Collections.emptyList());
 
         // Spec query returns empty
-        when(tripRepository.findAll(any(Specification.class))).thenReturn(Collections.emptyList());
+        when(locationRepository.findAll(any(Specification.class))).thenReturn(Collections.emptyList());
 
-        // Fallback: findAll returns trips
-        Trip trip = new Trip();
-        trip.setId(UUID.randomUUID());
-        trip.setTitle("Relaxing Trip");
+        // Fallback: findAll returns locations
+        Location location = new Location();
+        location.setId(UUID.randomUUID());
+        location.setName("Dolomiti");
 
-        TripDto dto = new TripDto();
-        dto.setId(trip.getId());
-        dto.setTitle(trip.getTitle());
+        LocationDto dto = new LocationDto();
+        dto.setId(location.getId());
+        dto.setName(location.getName());
 
-        when(tripRepository.findAll()).thenReturn(Collections.singletonList(trip));
-        when(tripMapper.toDto(trip)).thenReturn(dto);
+        when(locationRepository.findAll()).thenReturn(Collections.singletonList(location));
+        when(locationMapper.toDto(location)).thenReturn(dto);
 
-        List<TripDto> result = feedService.getPersonalizedFeed(userEmail);
+        List<LocationDto> result = feedService.getPersonalizedFeed(userEmail);
 
         assertNotNull(result);
         assertEquals(1, result.size());
-        assertEquals("Relaxing Trip", result.get(0).getTitle());
-        verify(tripRepository, times(1)).findAll(any(Specification.class));
-        verify(tripRepository, times(1)).findAll();
+        assertEquals("Dolomiti", result.get(0).getName());
+        verify(locationRepository, times(1)).findAll(any(Specification.class));
+        verify(locationRepository, times(1)).findAll();
     }
 }

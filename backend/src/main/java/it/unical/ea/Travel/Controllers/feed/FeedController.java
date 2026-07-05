@@ -3,7 +3,7 @@ package it.unical.ea.Travel.Controllers.feed;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import it.unical.ea.Travel.Services.feed.FeedService;
-import it.unical.ea.dtos.trip.TripDto;
+import it.unical.ea.dtos.location.LocationDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -25,7 +25,7 @@ public class FeedController {
 
     @Operation(summary = "Ottieni il feed personalizzato per il viaggiatore autenticato")
     @GetMapping("/personalized")
-    public List<TripDto> getPersonalizedFeed(@AuthenticationPrincipal Jwt jwt) {
+    public List<LocationDto> getPersonalizedFeed(@AuthenticationPrincipal Jwt jwt) {
         if (jwt == null) {
             throw new ApiException(HttpStatus.UNAUTHORIZED, "auth.login.invalidCredentials");
         }

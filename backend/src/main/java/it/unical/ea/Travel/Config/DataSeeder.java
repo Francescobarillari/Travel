@@ -2,16 +2,17 @@ package it.unical.ea.Travel.Config;
 
 import it.unical.ea.Travel.Entities.activity.Activity;
 import it.unical.ea.Travel.Entities.itinerary.Itinerary;
-import it.unical.ea.Travel.Entities.localita.Localita;
+import it.unical.ea.Travel.Entities.location.Location;
 import it.unical.ea.Travel.Entities.user.User;
 import it.unical.ea.Travel.Repositories.activity.ActivityRepository;
 import it.unical.ea.Travel.Repositories.itinerary.ItineraryRepository;
-import it.unical.ea.Travel.Repositories.localita.LocalitaRepository;
+import it.unical.ea.Travel.Repositories.location.LocationRepository;
 import it.unical.ea.Travel.Repositories.user.UserRepository;
 import it.unical.ea.enums.UserType;
 import it.unical.ea.enums.TravelTag;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,24 +26,25 @@ import java.util.UUID;
 
 @Component
 @Profile("!test")
+@Order(2)
 public class DataSeeder implements CommandLineRunner {
 
     private final UserRepository userRepository;
     private final ActivityRepository activityRepository;
     private final ItineraryRepository itineraryRepository;
-    private final LocalitaRepository localitaRepository;
+    private final LocationRepository locationRepository;
 
-    public DataSeeder(UserRepository userRepository, ActivityRepository activityRepository, ItineraryRepository itineraryRepository, LocalitaRepository localitaRepository) {
+    public DataSeeder(UserRepository userRepository, ActivityRepository activityRepository, ItineraryRepository itineraryRepository, LocationRepository locationRepository) {
         this.userRepository = userRepository;
         this.activityRepository = activityRepository;
         this.itineraryRepository = itineraryRepository;
-        this.localitaRepository = localitaRepository;
+        this.locationRepository = locationRepository;
     }
 
     @Override
     @Transactional
     public void run(String... args) throws Exception {
-        if (localitaRepository.count() == 0 && activityRepository.count() == 0) {
+        if (activityRepository.count() == 0) {
             seedData();
         }
     }
@@ -72,22 +74,34 @@ public class DataSeeder implements CommandLineRunner {
         userRepository.save(traveler);
 
         // --- Località 1: Roma ---
-        Localita loc1 = new Localita();
-        loc1.setName("Roma, Italia");
-        loc1.setDescription("La capitale italiana, famosa per la sua storia, cultura e il Colosseo.");
-        localitaRepository.save(loc1);
+        Location loc1 = locationRepository.findByNameIgnoreCase("Roma, Italia")
+                .orElseGet(() -> {
+                    Location loc = new Location();
+                    loc.setName("Roma, Italia");
+                    loc.setDescription("La capitale italiana, famosa per la sua storia, cultura e il Colosseo.");
+                    loc.setImageUrl("https://img.icons8.com/color/500/colosseum.png");
+                    return locationRepository.save(loc);
+                });
 
         // --- Località 2: Alpi ---
-        Localita loc2 = new Localita();
-        loc2.setName("Trentino-Alto Adige");
-        loc2.setDescription("Trekking, natura e relax in montagna. Per ricaricare le batterie lontano dalla città.");
-        localitaRepository.save(loc2);
+        Location loc2 = locationRepository.findByNameIgnoreCase("Trentino-Alto Adige")
+                .orElseGet(() -> {
+                    Location loc = new Location();
+                    loc.setName("Trentino-Alto Adige");
+                    loc.setDescription("Trekking, natura e relax in montagna. Per ricaricare le batterie lontano dalla città.");
+                    loc.setImageUrl("https://img.icons8.com/color/500/mountain.png");
+                    return locationRepository.save(loc);
+                });
 
         // --- Località 3: Kenya ---
-        Localita loc3 = new Localita();
-        loc3.setName("Nairobi, Kenya");
-        loc3.setDescription("Un'avventura indimenticabile nella savana africana.");
-        localitaRepository.save(loc3);
+        Location loc3 = locationRepository.findByNameIgnoreCase("Nairobi, Kenya")
+                .orElseGet(() -> {
+                    Location loc = new Location();
+                    loc.setName("Nairobi, Kenya");
+                    loc.setDescription("Un'avventura indimenticabile nella savana africana.");
+                    loc.setImageUrl("https://img.icons8.com/color/500/giraffe.png");
+                    return locationRepository.save(loc);
+                });
 
         // --- Itineraries ---
         Itinerary itinerary1 = new Itinerary();
@@ -122,7 +136,7 @@ public class DataSeeder implements CommandLineRunner {
         act1.setEndTime(LocalDateTime.now().plusDays(10).plusHours(12));
         act1.setParticipants(20);
         act1.setPrice(new BigDecimal("35.00"));
-        act1.setLocalita(loc1);
+        act1.setLocationEntity(loc1);
         act1.setOrganizer(organizer);
         act1.setImages(List.of("https://images.unsplash.com/photo-1552832230-c0197dd311b5?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"));
         act1.setTags(new HashSet<>(Arrays.asList(TravelTag.CULTURA, TravelTag.STORIA)));
@@ -135,7 +149,7 @@ public class DataSeeder implements CommandLineRunner {
         act2.setEndTime(LocalDateTime.now().plusDays(10).plusHours(23));
         act2.setParticipants(15);
         act2.setPrice(new BigDecimal("45.00"));
-        act2.setLocalita(loc1);
+        act2.setLocationEntity(loc1);
         act2.setOrganizer(organizer);
         act2.setTags(new HashSet<>(Arrays.asList(TravelTag.CULTURA, TravelTag.CIBO)));
 
@@ -147,7 +161,7 @@ public class DataSeeder implements CommandLineRunner {
         act3.setEndTime(LocalDateTime.now().plusDays(21).plusHours(16));
         act3.setParticipants(10);
         act3.setPrice(new BigDecimal("25.00"));
-        act3.setLocalita(loc2);
+        act3.setLocationEntity(loc2);
         act3.setOrganizer(organizer);
         act3.setImages(List.of("https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"));
         act3.setTags(new HashSet<>(Arrays.asList(TravelTag.AVVENTURA, TravelTag.MONTAGNA, TravelTag.NATURA, TravelTag.TREKKING)));
@@ -160,7 +174,7 @@ public class DataSeeder implements CommandLineRunner {
         act4.setEndTime(LocalDateTime.now().plusDays(22).plusHours(18));
         act4.setParticipants(10);
         act4.setPrice(new BigDecimal("60.00"));
-        act4.setLocalita(loc2);
+        act4.setLocationEntity(loc2);
         act4.setOrganizer(organizer);
         act4.setTags(new HashSet<>(Arrays.asList(TravelTag.RELAX, TravelTag.MONTAGNA)));
 
@@ -172,7 +186,7 @@ public class DataSeeder implements CommandLineRunner {
         actSafari.setEndTime(LocalDateTime.now().plusDays(41).plusHours(12));
         actSafari.setParticipants(6);
         actSafari.setPrice(new BigDecimal("150.00"));
-        actSafari.setLocalita(loc3);
+        actSafari.setLocationEntity(loc3);
         actSafari.setOrganizer(organizer);
         actSafari.setTags(new HashSet<>(Arrays.asList(TravelTag.AVVENTURA, TravelTag.SAFARI, TravelTag.NATURA, TravelTag.ANIMALI)));
 
@@ -185,7 +199,7 @@ public class DataSeeder implements CommandLineRunner {
         act5.setEndTime(LocalDateTime.now().plusDays(5).plusHours(20));
         act5.setParticipants(8);
         act5.setPrice(new BigDecimal("80.00"));
-        act5.setLocalita(null);
+        act5.setLocationEntity(null);
         act5.setOrganizer(organizer);
         act5.setImages(List.of("https://images.unsplash.com/photo-1556910103-1c02745aae4d?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"));
         act5.setTags(new HashSet<>(Arrays.asList(TravelTag.CIBO, TravelTag.CULTURA)));
@@ -198,7 +212,7 @@ public class DataSeeder implements CommandLineRunner {
         act6.setEndTime(LocalDateTime.now().plusDays(2).plusHours(19));
         act6.setParticipants(2);
         act6.setPrice(new BigDecimal("90.00"));
-        act6.setLocalita(null);
+        act6.setLocationEntity(null);
         act6.setOrganizer(organizer);
         act6.setTags(new HashSet<>(Arrays.asList(TravelTag.ROMANTICISMO, TravelTag.CULTURA)));
 
@@ -210,7 +224,7 @@ public class DataSeeder implements CommandLineRunner {
         act7.setEndTime(LocalDateTime.now().plusDays(1).plusHours(12));
         act7.setParticipants(30);
         act7.setPrice(BigDecimal.ZERO);
-        act7.setLocalita(null);
+        act7.setLocationEntity(null);
         act7.setOrganizer(organizer);
         act7.setTags(new HashSet<>(Arrays.asList(TravelTag.CULTURA, TravelTag.CITTA)));
 

@@ -37,6 +37,7 @@ public class ActivityService {
     private final FileStorageService fileStorageService;
     private final AuditLogService auditLogService;
     private final UserMapper userMapper;
+    private final it.unical.ea.Travel.Services.location.LocationService locationService;
 
     public List<ActivityDto> getAllActivities() {
         List<Activity> activities = activityRepository.findByApproved(true);
@@ -63,9 +64,15 @@ public class ActivityService {
         });
     }
 
+    @Transactional
     public ActivityDto createActivity(ActivityDto activityDto) {
         Activity activity = activityMapper.toEntity(activityDto);
         activity.setApproved(false);
+        
+        // Resolve/Create location automatically
+        it.unical.ea.Travel.Entities.location.Location locationEntity = locationService.getOrCreateLocation(activityDto.getLocation());
+        activity.setLocationEntity(locationEntity);
+
         Activity savedActivity = activityRepository.save(activity);
         auditLogService.log("CREATE_ACTIVITY", "Activity", savedActivity.getId().toString(), "Created activity: " + savedActivity.getName());
         return activityMapper.toDTO(savedActivity);
@@ -84,7 +91,10 @@ public class ActivityService {
         activity.setEndTime(activityDto.getEndTime());
         activity.setParticipants(activityDto.getParticipants());
         activity.setPrice(activityDto.getPrice());
-        activity.setOrganizer(activityDto.getOrganizer());
+
+        // Resolve/Create location automatically
+        it.unical.ea.Travel.Entities.location.Location locationEntity = locationService.getOrCreateLocation(activityDto.getLocation());
+        activity.setLocationEntity(locationEntity);
 
         Activity saved = activityRepository.save(activity);
         auditLogService.log("UPDATE_ACTIVITY", "Activity", saved.getId().toString(), "Updated activity: " + saved.getName());

@@ -7,6 +7,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 import it.unical.ea.enums.TravelTag;
 
 import java.math.BigDecimal;
@@ -64,17 +66,10 @@ public class Activity extends AuditBaseEntity {
     @Column(name = "image_url")
     private List<String> images;
 
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "localita_id")
-    private it.unical.ea.Travel.Entities.localita.Localita localita;
+    @JoinColumn(name = "location_id")
+    private it.unical.ea.Travel.Entities.location.Location locationEntity;
 
-    @UpdateTimestamp
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
