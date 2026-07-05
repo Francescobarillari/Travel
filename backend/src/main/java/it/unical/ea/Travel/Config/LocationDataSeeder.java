@@ -26,7 +26,22 @@ public class LocationDataSeeder implements CommandLineRunner {
     public void run(String... args) throws Exception {
         if (locationRepository.count() == 0) {
             seedLocations();
+        } else {
+            healExistingLocations();
         }
+    }
+
+    private void healExistingLocations() {
+        locationRepository.findAll().forEach(loc -> {
+            String curated = locationService.getCuratedImageUrl(loc.getName());
+            if (curated != null) {
+                loc.setImageUrl(curated);
+                locationRepository.save(loc);
+            } else if (loc.getImageUrl() == null || loc.getImageUrl().contains("wikimedia.org") || loc.getImageUrl().contains("photo-1488646953014-85cb44e25828") || loc.getImageUrl().contains("loremflickr.com")) {
+                loc.setImageUrl(null);
+                locationRepository.save(loc);
+            }
+        });
     }
 
     private void seedLocations() {

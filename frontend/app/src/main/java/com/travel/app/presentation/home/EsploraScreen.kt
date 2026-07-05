@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import com.travel.app.presentation.theme.TravelTheme
 import it.unical.ea.dtos.activity.ActivityDto
 import it.unical.ea.dtos.location.LocationDto as LocalitaDto
+import com.travel.app.presentation.components.localita.LocalitaCard
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.foundation.lazy.items
 import it.unical.ea.enums.TravelTag
@@ -299,7 +300,13 @@ fun EsploraScreen(
                             }
                             items(viewModel.localitaList.size) { index ->
                                 val localita = viewModel.localitaList[index]
-                                LocalitaCard(localita = localita, onClick = { onItemClick(localita.id.toString(), true) })
+                                LocalitaCard(
+                                    localita = localita,
+                                    onClick = {
+                                        viewModel.onSearchQueryChanged(localita.name ?: "")
+                                        viewModel.performSearch()
+                                    }
+                                )
                             }
                         }
                     }
@@ -488,65 +495,6 @@ fun ActivityCard(activity: ActivityDto, onClick: () -> Unit = {}) {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun LocalitaCard(localita: LocalitaDto, onClick: () -> Unit = {}) {
-    Card(
-        onClick = onClick,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 8.dp),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = localita.name ?: "",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer
-                    )
-                }
-                
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primary
-                    ),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text(
-                        text = "LOCALITÀ",
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onPrimary
-                    )
-                }
-            }
-
-            if (!localita.description.isNullOrBlank()) {
-                Text(
-                    text = localita.description ?: "",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f),
-                    maxLines = 3
-                )
-            }
-        }
-    }
-}
 
 fun formatDateTime(dateTime: java.time.LocalDateTime?): String {
     if (dateTime == null) return ""

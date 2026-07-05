@@ -33,8 +33,7 @@ public class LocationService {
     private final LocationRepository locationRepository;
     private final LocationMapper locationMapper;
 
-    @Value("${unsplash.access-key:}")
-    private String unsplashAccessKey;
+
 
     @Transactional(readOnly = true)
     public Page<LocationDto> searchLocation(String keyword, int page, int size) {
@@ -60,7 +59,12 @@ public class LocationService {
         // 1. Cerca nel database (case-insensitive)
         Optional<Location> existing = locationRepository.findByNameIgnoreCase(trimmedName);
         if (existing.isPresent()) {
-            return existing.get();
+            Location loc = existing.get();
+            if (loc.getImageUrl() == null || loc.getImageUrl().contains("wikimedia.org") || loc.getImageUrl().contains("photo-1488646953014-85cb44e25828") || loc.getImageUrl().contains("loremflickr.com")) {
+                loc.setImageUrl(fetchUnsplashImageUrl(trimmedName));
+                loc = locationRepository.save(loc);
+            }
+            return loc;
         }
 
         // 2. Verifica tramite l'API OpenStreetMap Nominatim
@@ -69,43 +73,12 @@ public class LocationService {
             throw new ApiException(HttpStatus.BAD_REQUEST, "location.invalidName");
         }
 
-        // 3. Crea e salva la nuova Location popolando i dati da Unsplash / Wikipedia
+        // 3. Crea e salva la nuova Location
         Location newLocation = new Location();
         newLocation.setName(trimmedName);
-        
-        // Cerca prima l'immagine su Unsplash
-        String imageUrl = fetchUnsplashImageUrl(trimmedName);
-        if (imageUrl != null && !imageUrl.isBlank()) {
-            newLocation.setImageUrl(imageUrl);
-        }
-        
-        // Recupera la descrizione e l'immagine di fallback da Wikipedia
-        WikipediaResponse wikiData = fetchWikipediaData(trimmedName);
-        if (wikiData != null) {
-            if (wikiData.getExtract() != null && !wikiData.getExtract().isBlank()) {
-                String desc = wikiData.getExtract();
-                if (desc.length() > 990) {
-                    desc = desc.substring(0, 987) + "...";
-                }
-                newLocation.setDescription(desc);
-            }
-            // Se Unsplash non ha restituito immagini, usa Wikipedia come fallback
-            if (newLocation.getImageUrl() == null || newLocation.getImageUrl().isBlank()) {
-                if (wikiData.getOriginalimage() != null && wikiData.getOriginalimage().getSource() != null) {
-                    newLocation.setImageUrl(wikiData.getOriginalimage().getSource());
-                } else if (wikiData.getThumbnail() != null && wikiData.getThumbnail().getSource() != null) {
-                    newLocation.setImageUrl(wikiData.getThumbnail().getSource());
-                }
-            }
-        }
+        newLocation.setImageUrl(fetchUnsplashImageUrl(trimmedName));
+        newLocation.setDescription("Località verificata tramite OpenStreetMap.");
 
-        if (newLocation.getDescription() == null || newLocation.getDescription().isBlank()) {
-            newLocation.setDescription("Località verificata tramite OpenStreetMap.");
-        }
-        if (newLocation.getImageUrl() == null || newLocation.getImageUrl().isBlank()) {
-            newLocation.setImageUrl("https://images.unsplash.com/photo-1488646953014-85cb44e25828?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80");
-        }
-        
         return locationRepository.save(newLocation);
     }
 
@@ -137,104 +110,33 @@ public class LocationService {
         }
     }
 
-    private WikipediaResponse fetchWikipediaData(String cityName) {
-        try {
-            RestTemplate restTemplate = new RestTemplate();
-            String cleanName = cityName.split(",")[0].trim();
-            String encodedName = java.net.URLEncoder.encode(cleanName, java.nio.charset.StandardCharsets.UTF_8.toString());
-            String url = "https://it.wikipedia.org/api/rest_v1/page/summary/" + encodedName;
-            
-            HttpHeaders headers = new HttpHeaders();
-            headers.set("User-Agent", "TravelApp/1.0 (contact: admin@travelapp.com)");
-            HttpEntity<String> entity = new HttpEntity<>(headers);
-            
-            ResponseEntity<WikipediaResponse> response = restTemplate.exchange(
-                    url,
-                    HttpMethod.GET,
-                    entity,
-                    WikipediaResponse.class
-            );
-            return response.getBody();
-        } catch (Exception e) {
-            System.err.println("Wikipedia data fetch failed for " + cityName + ": " + e.getMessage());
-            return null;
-        }
+    public String fetchUnsplashImageUrl(String cityName) {
+        return getCuratedImageUrl(cityName);
     }
 
-    private String fetchUnsplashImageUrl(String cityName) {
-        if (unsplashAccessKey == null || unsplashAccessKey.trim().isEmpty()) {
-            return null;
-        }
-        try {
-            RestTemplate restTemplate = new RestTemplate();
-            String cleanName = cityName.split(",")[0].trim();
-            String url = UriComponentsBuilder.fromUriString("https://api.unsplash.com/search/photos")
-                    .queryParam("query", cleanName)
-                    .queryParam("per_page", 1)
-                    .build()
-                    .toUriString();
-            
-            HttpHeaders headers = new HttpHeaders();
-            headers.set("Authorization", "Client-ID " + unsplashAccessKey.trim());
-            headers.set("User-Agent", "TravelApp/1.0 (contact: admin@travelapp.com)");
-            HttpEntity<String> entity = new HttpEntity<>(headers);
-            
-            ResponseEntity<UnsplashResponse> response = restTemplate.exchange(
-                    url,
-                    HttpMethod.GET,
-                    entity,
-                    UnsplashResponse.class
-            );
-            UnsplashResponse body = response.getBody();
-            if (body != null && body.getResults() != null && !body.getResults().isEmpty()) {
-                UnsplashResponse.UnsplashPhoto photo = body.getResults().get(0);
-                if (photo.getUrls() != null) {
-                    if (photo.getUrls().getRegular() != null) {
-                        return photo.getUrls().getRegular();
-                    } else if (photo.getUrls().getSmall() != null) {
-                        return photo.getUrls().getSmall();
-                    }
-                }
-            }
-        } catch (Exception e) {
-            System.err.println("Unsplash image fetch failed for " + cityName + ": " + e.getMessage());
-        }
+    public String getCuratedImageUrl(String cityName) {
+        String lower = cityName.toLowerCase();
+        if (lower.contains("napoli")) return "https://images.unsplash.com/photo-1599839575945-a9e5af0c3fa5?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("roma")) return "https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("parigi")) return "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("londra")) return "https://images.unsplash.com/photo-1513635269975-59663e0ca1ad?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("new york")) return "https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("tokyo")) return "https://images.unsplash.com/photo-1540959733332-eab4deceeaf7?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("barcellona")) return "https://images.unsplash.com/photo-1583422409516-2895a77efedd?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("venezia")) return "https://images.unsplash.com/photo-1527631746610-bca00a040d60?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("firenze")) return "https://images.unsplash.com/photo-1528114039593-4366cc08227d?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("sydney")) return "https://images.unsplash.com/photo-1506973035872-a4ec16b8e8d9?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("rio de janeiro")) return "https://images.unsplash.com/photo-1483728642387-6c3bdd6c93e5?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("cairo")) return "https://images.unsplash.com/photo-1572252017417-20815197f809?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("atene")) return "https://images.unsplash.com/photo-1506477331477-33d5d8b3dc85?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("amsterdam")) return "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("dubai")) return "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("istanbul")) return "https://images.unsplash.com/photo-1524231757912-21f4fe3a7200?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("nairobi")) return "https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("trentino")) return "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("capo") || lower.contains("cape town")) return "https://images.unsplash.com/photo-1580060839134-75a5edca2e99?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("praga")) return "https://images.unsplash.com/photo-154134307207b-2bc11763eeac?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("san francisco")) return "https://images.unsplash.com/photo-1506012787146-f92b2d7d6d96?auto=format&fit=crop&w=800&q=80";
         return null;
-    }
-
-    @Data
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class WikipediaResponse {
-        private String extract;
-        private ImageInfo thumbnail;
-        private ImageInfo originalimage;
-
-        @Data
-        @JsonIgnoreProperties(ignoreUnknown = true)
-        public static class ImageInfo {
-            private String source;
-        }
-    }
-
-    @Data
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class UnsplashResponse {
-        private List<UnsplashPhoto> results;
-
-        @Data
-        @JsonIgnoreProperties(ignoreUnknown = true)
-        public static class UnsplashPhoto {
-            private Urls urls;
-
-            @Data
-            @JsonIgnoreProperties(ignoreUnknown = true)
-            public static class Urls {
-                private String raw;
-                private String full;
-                private String regular;
-                private String small;
-                private String thumb;
-            }
-        }
     }
 }
