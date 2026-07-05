@@ -502,6 +502,8 @@ fun CompanyAddOfferScreenPreview() {
                 activityRepository = object : com.travel.app.domain.repository.ActivityRepository {
                     override suspend fun createActivity(activity: it.unical.ea.dtos.activity.ActivityDto) = Result.success(activity)
                     override suspend fun getActivities() = Result.success(emptyList<it.unical.ea.dtos.activity.ActivityDto>())
+                    override suspend fun getActivityById(id: String) = Result.success(it.unical.ea.dtos.activity.ActivityDto())
+                    override suspend fun searchActivities(query: String, minPrice: Double?, maxPrice: Double?, page: Int, size: Int) = Result.success(it.unical.ea.dtos.common.PageDto<it.unical.ea.dtos.activity.ActivityDto>())
                 },
                 userRepository = object : com.travel.app.domain.repository.UserRepository {
                     override fun getSessionUser(): com.travel.app.domain.model.User? = null

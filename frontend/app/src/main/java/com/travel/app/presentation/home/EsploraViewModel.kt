@@ -6,22 +6,22 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.travel.app.domain.repository.ActivityRepository
-import com.travel.app.domain.repository.TripRepository
+import com.travel.app.domain.repository.LocalitaRepository
 import it.unical.ea.dtos.activity.ActivityDto
-import it.unical.ea.dtos.trip.TripDto
+import it.unical.ea.dtos.localita.LocalitaDto
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 enum class EsploraTab {
     TUTTI,
-    VIAGGI,
+    LOCALITA,
     ATTIVITA
 }
 
 class EsploraViewModel(
     private val activityRepository: ActivityRepository,
-    private val tripRepository: TripRepository
+    private val localitaRepository: LocalitaRepository
 ) : ViewModel() {
 
     var selectedTab by mutableStateOf(EsploraTab.TUTTI)
@@ -45,16 +45,15 @@ class EsploraViewModel(
         performSearch()
     }
     
-    // Non usiamo più emptyList() statico ma usiamo liste mutabili per l'append (scroll infinito)
     var activities by mutableStateOf<List<ActivityDto>>(emptyList())
-    var trips by mutableStateOf<List<TripDto>>(emptyList())
+    var localitaList by mutableStateOf<List<LocalitaDto>>(emptyList())
 
     var isLoading by mutableStateOf(false)
     var isLoadingMore by mutableStateOf(false)
     var errorMessage by mutableStateOf<String?>(null)
 
-    private var currentTripPage = 0
-    private var isLastTripPage = false
+    private var currentLocalitaPage = 0
+    private var isLastLocalitaPage = false
 
     private var currentActivityPage = 0
     private var isLastActivityPage = false
@@ -82,9 +81,9 @@ class EsploraViewModel(
     fun performSearch() {
         isLoading = true
         errorMessage = null
-        currentTripPage = 0
+        currentLocalitaPage = 0
         currentActivityPage = 0
-        isLastTripPage = false
+        isLastLocalitaPage = false
         isLastActivityPage = false
         
         viewModelScope.launch {
@@ -100,19 +99,19 @@ class EsploraViewModel(
                     )
                 }
                 
-                val tripDeferred = viewModelScope.launch {
-                    val result = tripRepository.searchTrips(searchQuery, minPrice, maxPrice, currentTripPage, PAGE_SIZE)
+                val localitaDeferred = viewModelScope.launch {
+                    val result = localitaRepository.searchLocalita(searchQuery, currentLocalitaPage, PAGE_SIZE)
                     result.fold(
                         onSuccess = { page -> 
-                            trips = page.content ?: emptyList()
-                            isLastTripPage = (page.number ?: 0) >= (page.totalPages ?: 1) - 1
+                            localitaList = page.content ?: emptyList()
+                            isLastLocalitaPage = (page.number ?: 0) >= (page.totalPages ?: 1) - 1
                         },
                         onFailure = { errorMessage = it.message }
                     )
                 }
                 
                 activityDeferred.join()
-                tripDeferred.join()
+                localitaDeferred.join()
                 
             } catch (e: Exception) {
                 errorMessage = e.message ?: "Errore imprevisto durante la ricerca"
@@ -125,9 +124,8 @@ class EsploraViewModel(
     fun loadMore() {
         if (isLoading || isLoadingMore) return
         
-        // Seleziona cosa caricare in base alla tab attiva
-        if (selectedTab == EsploraTab.TUTTI || selectedTab == EsploraTab.VIAGGI) {
-            if (!isLastTripPage) loadMoreTrips()
+        if (selectedTab == EsploraTab.TUTTI || selectedTab == EsploraTab.LOCALITA) {
+            if (!isLastLocalitaPage) loadMoreLocalita()
         }
         
         if (selectedTab == EsploraTab.TUTTI || selectedTab == EsploraTab.ATTIVITA) {
@@ -135,15 +133,15 @@ class EsploraViewModel(
         }
     }
 
-    private fun loadMoreTrips() {
+    private fun loadMoreLocalita() {
         isLoadingMore = true
-        currentTripPage++
+        currentLocalitaPage++
         viewModelScope.launch {
-            val result = tripRepository.searchTrips(searchQuery, minPrice, maxPrice, currentTripPage, PAGE_SIZE)
+            val result = localitaRepository.searchLocalita(searchQuery, currentLocalitaPage, PAGE_SIZE)
             result.fold(
                 onSuccess = { page -> 
-                    trips = trips + (page.content ?: emptyList())
-                    isLastTripPage = (page.number ?: 0) >= (page.totalPages ?: 1) - 1
+                    localitaList = localitaList + (page.content ?: emptyList())
+                    isLastLocalitaPage = (page.number ?: 0) >= (page.totalPages ?: 1) - 1
                 },
                 onFailure = { errorMessage = it.message }
             )
