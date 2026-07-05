@@ -20,6 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.travel.app.presentation.theme.TravelTheme
 import it.unical.ea.dtos.activity.ActivityDto
+import it.unical.ea.dtos.localita.LocalitaDto
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.foundation.lazy.items
 import it.unical.ea.enums.TravelTag
@@ -39,14 +40,12 @@ fun EsploraScreen(
     val focusManager = LocalFocusManager.current
     var isSearchFocused by remember { mutableStateOf(false) }
 
-    // Hoisted state for RangeSlider
     var sliderPosition by remember(viewModel.minPrice, viewModel.maxPrice) {
         val min = viewModel.minPrice?.toFloat() ?: 0f
         val max = viewModel.maxPrice?.toFloat() ?: 500f
         mutableStateOf(min..max)
     }
 
-    // Fetch activities from backend
     LaunchedEffect(Unit) {
         viewModel.performSearch()
     }
@@ -77,7 +76,6 @@ fun EsploraScreen(
 
         var isFilterPanelVisible by remember { mutableStateOf(false) }
 
-        // Modern, premium SearchBar
         OutlinedTextField(
             value = viewModel.searchQuery,
             onValueChange = { viewModel.onSearchQueryChanged(it) },
@@ -121,7 +119,6 @@ fun EsploraScreen(
             )
         )
 
-        // Pannello filtri
         androidx.compose.animation.AnimatedVisibility(visible = isFilterPanelVisible && (isSearchFocused || viewModel.searchQuery.isNotEmpty())) {
             Card(
                 modifier = Modifier
@@ -133,7 +130,7 @@ fun EsploraScreen(
                 Column(modifier = Modifier.padding(16.dp)) {
                     val maxDisplay = if (sliderPosition.endInclusive >= 500f) "500+€" else "${sliderPosition.endInclusive.toInt()}€"
                     Text(
-                        text = "Fascia di prezzo: ${sliderPosition.start.toInt()}€ - $maxDisplay",
+                        text = "Fascia di prezzo (solo per attività): ${sliderPosition.start.toInt()}€ - $maxDisplay",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold
                     )
@@ -142,7 +139,7 @@ fun EsploraScreen(
                         value = sliderPosition,
                         onValueChange = { sliderPosition = it },
                         valueRange = 0f..500f,
-                        steps = 49, // Intervalli di 10€ per maggiore controllo e fluidità
+                        steps = 49,
                         onValueChangeFinished = {
                             val maxP = if (sliderPosition.endInclusive >= 500f) null else sliderPosition.endInclusive.toDouble()
                             viewModel.onPriceRangeChanged(sliderPosition.start.toDouble(), maxP)
@@ -154,7 +151,6 @@ fun EsploraScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // MOSTRA I TAB SOLO SE LA SEARCH BAR È ATTIVA
         androidx.compose.animation.AnimatedVisibility(visible = isSearchFocused || viewModel.searchQuery.isNotEmpty()) {
             TabRow(
                 selectedTabIndex = viewModel.selectedTab.ordinal,
@@ -168,9 +164,9 @@ fun EsploraScreen(
                     text = { Text("Tutti") }
                 )
                 Tab(
-                    selected = viewModel.selectedTab == EsploraTab.VIAGGI,
-                    onClick = { viewModel.onTabSelected(EsploraTab.VIAGGI) },
-                    text = { Text("Viaggi") }
+                    selected = viewModel.selectedTab == EsploraTab.LOCALITA,
+                    onClick = { viewModel.onTabSelected(EsploraTab.LOCALITA) },
+                    text = { Text("Località") }
                 )
                 Tab(
                     selected = viewModel.selectedTab == EsploraTab.ATTIVITA,
@@ -184,7 +180,6 @@ fun EsploraScreen(
 
         val listState = androidx.compose.foundation.lazy.rememberLazyListState()
 
-        // Implementazione dello scroll infinito (Lazy Loading)
         LaunchedEffect(listState) {
             snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index }
                 .collect { lastIndex ->
@@ -203,7 +198,6 @@ fun EsploraScreen(
             contentPadding = PaddingValues(bottom = 110.dp)
         ) {
             
-            // MOSTRA LA VETRINA SE NON IN RICERCA
             item {
                 androidx.compose.animation.AnimatedVisibility(visible = !isSearchFocused && viewModel.searchQuery.isEmpty()) {
                     Column(modifier = Modifier.padding(20.dp)) {
@@ -248,10 +242,8 @@ fun EsploraScreen(
                 }
             }
             
-            // MOSTRA I RISULTATI SE IN RICERCA
             if (isSearchFocused || viewModel.searchQuery.isNotEmpty()) {
                 
-                // Stato di errore o vuoto
                 if (viewModel.errorMessage != null) {
                     item {
                         Card(
@@ -279,7 +271,7 @@ fun EsploraScreen(
                             }
                         }
                     }
-                } else if (!viewModel.isLoading && viewModel.activities.isEmpty() && viewModel.trips.isEmpty()) {
+                } else if (!viewModel.isLoading && viewModel.activities.isEmpty() && viewModel.localitaList.isEmpty()) {
                     item {
                         Box(
                             modifier = Modifier
@@ -295,20 +287,19 @@ fun EsploraScreen(
                         }
                     }
                 } else {
-                    // Render results based on tab
-                    if (viewModel.selectedTab == EsploraTab.TUTTI || viewModel.selectedTab == EsploraTab.VIAGGI) {
-                        if (viewModel.trips.isNotEmpty()) {
+                    if (viewModel.selectedTab == EsploraTab.TUTTI || viewModel.selectedTab == EsploraTab.LOCALITA) {
+                        if (viewModel.localitaList.isNotEmpty()) {
                             item {
                                 Text(
-                                    text = "Viaggi e Località",
+                                    text = "Località",
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
                                     modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
                                 )
                             }
-                            items(viewModel.trips.size) { index ->
-                                val trip = viewModel.trips[index]
-                                TripCard(trip = trip, onClick = { onItemClick(trip.id.toString(), true) })
+                            items(viewModel.localitaList.size) { index ->
+                                val localita = viewModel.localitaList[index]
+                                LocalitaCard(localita = localita, onClick = { onItemClick(localita.id.toString(), true) })
                             }
                         }
                     }
@@ -345,8 +336,8 @@ fun EsploraScreen(
                 }
             }
         }
-} // Chiude main Column
-} // Chiude EsploraScreen
+    } 
+} 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -385,7 +376,6 @@ fun ActivityCard(activity: ActivityDto, onClick: () -> Unit = {}) {
                     )
                 }
                 
-                // Price Badge
                 val priceDouble = activity.price?.toDouble() ?: 0.0
                 val priceText = if (priceDouble <= 0.0) "Gratuito" else "€${String.format("%.2f", priceDouble)}"
                 Card(
@@ -460,7 +450,6 @@ fun ActivityCard(activity: ActivityDto, onClick: () -> Unit = {}) {
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Location
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
@@ -472,13 +461,12 @@ fun ActivityCard(activity: ActivityDto, onClick: () -> Unit = {}) {
                         modifier = Modifier.size(16.dp)
                     )
                     Text(
-                        text = activity.location,
+                        text = activity.location ?: "N/D",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                     )
                 }
 
-                // Date
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
@@ -502,7 +490,7 @@ fun ActivityCard(activity: ActivityDto, onClick: () -> Unit = {}) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TripCard(trip: it.unical.ea.dtos.trip.TripDto, onClick: () -> Unit = {}) {
+fun LocalitaCard(localita: LocalitaDto, onClick: () -> Unit = {}) {
     Card(
         onClick = onClick,
         modifier = Modifier
@@ -525,15 +513,10 @@ fun TripCard(trip: it.unical.ea.dtos.trip.TripDto, onClick: () -> Unit = {}) {
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = trip.title,
+                        text = localita.name ?: "",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSecondaryContainer
-                    )
-                    Text(
-                        text = "Organizzato da: ${trip.organizer ?: "N/D"}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.6f)
                     )
                 }
                 
@@ -544,7 +527,7 @@ fun TripCard(trip: it.unical.ea.dtos.trip.TripDto, onClick: () -> Unit = {}) {
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Text(
-                        text = "VIAGGIO",
+                        text = "LOCALITÀ",
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold,
@@ -553,40 +536,13 @@ fun TripCard(trip: it.unical.ea.dtos.trip.TripDto, onClick: () -> Unit = {}) {
                 }
             }
 
-            if (!trip.description.isNullOrBlank()) {
+            if (!localita.description.isNullOrBlank()) {
                 Text(
-                    text = trip.description ?: "",
+                    text = localita.description ?: "",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f),
                     maxLines = 3
                 )
-            }
-
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Location
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.LocationOn,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Text(
-                        text = trip.location,
-                        style = MaterialTheme.typography.bodySmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.9f)
-                    )
-                }
             }
         }
     }
@@ -614,9 +570,9 @@ fun EsploraScreenPreview() {
                     override suspend fun getActivityById(id: String) = Result.failure<ActivityDto>(Exception("Not implemented"))
                     override suspend fun searchActivities(query: String, minPrice: Double?, maxPrice: Double?, page: Int, size: Int) = Result.success(it.unical.ea.dtos.common.PageDto<ActivityDto>(emptyList<ActivityDto>(), 0L, 0, 10, 0))
                 },
-                tripRepository = object : com.travel.app.domain.repository.TripRepository {
-                    override suspend fun getTripById(id: String) = Result.failure<it.unical.ea.dtos.trip.TripDto>(Exception("Not implemented"))
-                    override suspend fun searchTrips(query: String, minPrice: Double?, maxPrice: Double?, page: Int, size: Int) = Result.success(it.unical.ea.dtos.common.PageDto<it.unical.ea.dtos.trip.TripDto>(emptyList<it.unical.ea.dtos.trip.TripDto>(), 0L, 0, 10, 0))
+                localitaRepository = object : com.travel.app.domain.repository.LocalitaRepository {
+                    override suspend fun getLocalitaById(id: String) = Result.failure<LocalitaDto>(Exception("Not implemented"))
+                    override suspend fun searchLocalita(query: String, page: Int, size: Int) = Result.success(it.unical.ea.dtos.common.PageDto<LocalitaDto>(emptyList<LocalitaDto>(), 0L, 0, 10, 0))
                 }
             )
         }

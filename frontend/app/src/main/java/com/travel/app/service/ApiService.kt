@@ -55,23 +55,21 @@ interface ApiService {
         @retrofit2.http.Query("size") size: Int = 10
     ): it.unical.ea.dtos.common.PageDto<ActivityDto> = throw NotImplementedError()
 
-    @GET("api/trips/search")
-    suspend fun searchTrips(
+    @GET("api/localita/search")
+    suspend fun searchLocalita(
         @retrofit2.http.Query("query") query: String,
-        @retrofit2.http.Query("minPrice") minPrice: Double? = null,
-        @retrofit2.http.Query("maxPrice") maxPrice: Double? = null,
         @retrofit2.http.Query("page") page: Int = 0,
         @retrofit2.http.Query("size") size: Int = 10
-    ): it.unical.ea.dtos.common.PageDto<it.unical.ea.dtos.trip.TripDto> = throw NotImplementedError()
+    ): it.unical.ea.dtos.common.PageDto<it.unical.ea.dtos.localita.LocalitaDto>
 
-    @GET("api/trips/{id}")
-    suspend fun getTripById(@Path("id") id: String): it.unical.ea.dtos.trip.TripDto = throw NotImplementedError()
+    @GET("api/localita/{id}")
+    suspend fun getLocalitaById(@Path("id") id: String): it.unical.ea.dtos.localita.LocalitaDto
 
     @GET("activity/{id}")
     suspend fun getActivityById(@Path("id") id: String): ActivityDto = throw NotImplementedError()
 
     @GET("api/feed/personalized")
-    suspend fun getPersonalizedFeed(): List<it.unical.ea.dtos.trip.TripDto> = throw NotImplementedError()
+    suspend fun getPersonalizedFeed(): List<it.unical.ea.dtos.localita.LocalitaDto> = throw NotImplementedError()
 
     // Chiamata per recuperare tutti gli itinerari
     @GET("itinerary")

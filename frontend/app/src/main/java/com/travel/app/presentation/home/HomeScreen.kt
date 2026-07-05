@@ -66,7 +66,7 @@ fun HomeScreen(
     val esploraViewModel = remember {
         EsploraViewModel(
             activityRepository = AppContainer.activityRepository,
-            tripRepository = AppContainer.tripRepository
+            localitaRepository = AppContainer.localitaRepository
         )
     }
 
@@ -124,29 +124,14 @@ fun HomeScreen(
                     EsploraScreen(
                         viewModel = esploraViewModel,
                         onItemClick = { id, isTrip ->
+                            // TODO: In attesa della pagina di dettaglio realizzata dall'altro collega
                             selectedItemId = id
                             selectedItemIsTrip = isTrip
-                            selectedTab = HomeTab.DETTAGLIO
                         }
                     )
                 }
             }
-            HomeTab.DETTAGLIO -> {
-                if (selectedItemId != null) {
-                    val itemDetailViewModel = remember(selectedItemId) {
-                        com.travel.app.presentation.detail.ItemDetailViewModel(
-                            tripRepository = AppContainer.tripRepository,
-                            activityRepository = AppContainer.activityRepository,
-                            itemId = selectedItemId!!,
-                            isTrip = selectedItemIsTrip
-                        )
-                    }
-                    com.travel.app.presentation.detail.ItemDetailScreen(
-                        viewModel = itemDetailViewModel,
-                        onNavigateBack = { selectedTab = HomeTab.ESPLORA }
-                    )
-                }
-            }
+
             HomeTab.PREFERITI -> {
                 if (isSocieta) {
                     CompanyAddOfferScreen(

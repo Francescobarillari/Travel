@@ -1,8 +1,6 @@
-package it.unical.ea.Travel.Entities.trip;
+package it.unical.ea.Travel.Entities.localita;
 
 import it.unical.ea.Travel.Entities.activity.Activity;
-import it.unical.ea.Travel.Entities.itinerary.Itinerary;
-import it.unical.ea.Travel.Entities.user.User;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -21,48 +19,26 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 @Entity
-@Table(name = "trips", indexes = {
-    @Index(name = "idx_trip_location", columnList = "location"),
-    @Index(name = "idx_trip_title", columnList = "title")
+@Table(name = "localita", indexes = {
+    @Index(name = "idx_localita_name", columnList = "name")
 })
-@SQLDelete(sql = "UPDATE trips SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?")
+@SQLDelete(sql = "UPDATE localita SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?")
 @SQLRestriction("deleted_at IS NULL")
-public class Trip {
+public class Localita {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "id", updatable = false, nullable = false)
     private UUID id;
 
-    @Column(name = "title", nullable = false, length = 150)
-    private String title;
-
-    @Column(name = "location", nullable = false)
-    private String location;
+    @Column(name = "name", nullable = false, length = 150)
+    private String name;
 
     @Column(name = "description", length = 1000)
     private String description;
 
-    @Column(name = "price")
-    private Double price;
-
-    @Column(name = "duration")
-    private Integer duration; // espresso in giorni
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "organizer_id", nullable = false)
-    private User organizer;
-
-    // Itinerario standard opzionale associato a questo Viaggio
-    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    @JoinColumn(name = "standard_itinerary_id")
-    private Itinerary standardItinerary;
-
-    @OneToMany(mappedBy = "trip", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "localita", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Activity> activities = new ArrayList<>();
-
-    @Column(name = "image_url")
-    private String imageUrl;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
