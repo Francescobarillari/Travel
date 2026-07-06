@@ -41,6 +41,7 @@ import com.travel.app.presentation.admin.components.CompanyCard
 import com.travel.app.presentation.admin.components.ActivityModerationCard
 import com.travel.app.presentation.admin.components.KpiCard
 import com.travel.app.presentation.admin.components.CompanyStatusDonutChart
+import com.travel.app.presentation.admin.components.ActivityStatusDonutChart
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 
@@ -82,10 +83,26 @@ fun AdminDashboardScreen(
                             )
                         }
                         Text(
-                            text = "Admin Dashboard",
+                            text = when(selectedTab) {
+                                0 -> "Admin Dashboard"
+                                1 -> "Società da approvare"
+                                2 -> "Attività da moderare"
+                                else -> "Admin Dashboard"
+                            },
                             fontWeight = FontWeight.Bold,
                             style = MaterialTheme.typography.titleMedium
                         )
+                    }
+                },
+                navigationIcon = {
+                    if (selectedTab != 0) {
+                        IconButton(onClick = { selectedTab = 0 }) {
+                            Icon(
+                                imageVector = Icons.Default.ArrowBack,
+                                contentDescription = "Indietro",
+                                tint = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
                     }
                 },
                 actions = {
@@ -110,53 +127,6 @@ fun AdminDashboardScreen(
                 .padding(innerPadding)
                 .background(MaterialTheme.colorScheme.background)
         ) {
-            // Tabs
-            TabRow(
-                selectedTabIndex = selectedTab,
-                containerColor = MaterialTheme.colorScheme.surface,
-                contentColor = MaterialTheme.colorScheme.primary
-            ) {
-                Tab(
-                    selected = selectedTab == 0,
-                    onClick = { selectedTab = 0 },
-                    text = {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Icon(Icons.Default.Dashboard, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Text("Panoramica", fontWeight = FontWeight.SemiBold)
-                        }
-                    }
-                )
-                Tab(
-                    selected = selectedTab == 1,
-                    onClick = { selectedTab = 1 },
-                    text = {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Icon(Icons.Default.Business, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Text("Società (${viewModel.pendingCompanies.size})", fontWeight = FontWeight.SemiBold)
-                        }
-                    }
-                )
-                Tab(
-                    selected = selectedTab == 2,
-                    onClick = { selectedTab = 2 },
-                    text = {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Icon(Icons.Default.Explore, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Text("Attività (${viewModel.pendingActivities.size})", fontWeight = FontWeight.SemiBold)
-                        }
-                    }
-                )
-            }
-
             // Error Banner
             viewModel.errorMessage?.let { msg ->
                 Card(
@@ -224,6 +194,9 @@ fun OverviewTabContent(
     val pendingCompanies = viewModel.allCompanies.count { !it.approved && !it.blocked }
     val blockedCompanies = viewModel.allCompanies.count { it.blocked }
 
+    val approvedActivities = viewModel.approvedActivitiesCount
+    val pendingActivities = viewModel.pendingActivities.size
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -248,18 +221,20 @@ fun OverviewTabContent(
                 value = "${viewModel.pendingCompanies.size}",
                 icon = Icons.Default.PendingActions,
                 iconColor = Color(0xFFE65100),
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                onClick = onNavigateToCompaniesTab
             )
             KpiCard(
                 title = "Attività Pending",
-                value = "${viewModel.pendingActivities.size}",
+                value = "$pendingActivities",
                 icon = Icons.Default.Explore,
                 iconColor = Color(0xFFC62828),
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                onClick = onNavigateToActivitiesTab
             )
         }
 
-        // Donut Chart Card
+        // Donut Chart Card - Società
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
@@ -285,7 +260,7 @@ fun OverviewTabContent(
             }
         }
 
-        // Quick Actions Card
+        // Donut Chart Card - Attività
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
@@ -297,40 +272,16 @@ fun OverviewTabContent(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
-                    text = "Attività di Moderazione Rapida",
+                    text = "Stato di approvazione Attività",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                Text(
-                    text = "Ci sono attualmente ${viewModel.pendingCompanies.size} società in attesa di essere verificate e ${viewModel.pendingActivities.size} attività che richiedono approvazione prima di essere pubblicate.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                ActivityStatusDonutChart(
+                    approvedCount = approvedActivities,
+                    pendingCount = pendingActivities
                 )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    if (viewModel.pendingCompanies.isNotEmpty()) {
-                        Button(
-                            onClick = onNavigateToCompaniesTab,
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Text("Modera Società", style = MaterialTheme.typography.labelMedium)
-                        }
-                    }
-                    if (viewModel.pendingActivities.isNotEmpty()) {
-                        Button(
-                            onClick = onNavigateToActivitiesTab,
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Text("Modera Attività", style = MaterialTheme.typography.labelMedium)
-                        }
-                    }
-                }
             }
         }
     }

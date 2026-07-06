@@ -27,6 +27,9 @@ class AdminViewModel(
     var allCompanies by mutableStateOf<List<User>>(emptyList())
         private set
 
+    var approvedActivitiesCount by mutableStateOf(0)
+        private set
+
     var isLoading by mutableStateOf(false)
         private set
 
@@ -39,6 +42,7 @@ class AdminViewModel(
             try {
                 pendingCompanies = apiService.getPendingCompanies()
                 pendingActivities = apiService.getPendingActivities()
+                approvedActivitiesCount = apiService.getActivities().size
                 
                 userRepository.getAllCompanies().fold(
                     onSuccess = { allCompanies = it },
