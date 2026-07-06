@@ -28,6 +28,7 @@ import com.travel.app.data.AppContainer
 import com.travel.app.domain.model.User
 import com.travel.app.presentation.admin.components.EmptyPlaceholder
 import com.travel.app.presentation.admin.components.CompanyManagementCard
+import com.travel.app.presentation.admin.components.ZoomableImageDialog
 
 @Composable
 fun AdminCompaniesScreen(
@@ -149,42 +150,9 @@ fun AdminCompaniesScreen(
 
     // Zoom Dialog per visualizzare i documenti a schermo intero
     activeImageForZoom?.let { path ->
-        val token = if (AppContainer.isInitialized) AppContainer.sessionManager.getSessionToken().orEmpty() else ""
-        val imgUrl = "${BuildConfig.BACKEND_URL}api/admin/documents/${path.substringAfterLast("/")}"
-        val request = ImageRequest.Builder(LocalContext.current)
-            .data(imgUrl)
-            .addHeader("Authorization", "Bearer $token")
-            .crossfade(true)
-            .build()
-
-        Dialog(onDismissRequest = { activeImageForZoom = null }) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(1f)
-                    .background(Color.Black, RoundedCornerShape(16.dp))
-                    .padding(8.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                AsyncImage(
-                    model = request,
-                    contentDescription = "Zoom Documento",
-                    modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(8.dp)),
-                    contentScale = ContentScale.Fit
-                )
-                IconButton(
-                    onClick = { activeImageForZoom = null },
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .background(Color.Black.copy(alpha = 0.5f), CircleShape)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = "Chiudi",
-                        tint = Color.White
-                    )
-                }
-            }
-        }
+        ZoomableImageDialog(
+            imagePath = path,
+            onDismiss = { activeImageForZoom = null }
+        )
     }
 }
