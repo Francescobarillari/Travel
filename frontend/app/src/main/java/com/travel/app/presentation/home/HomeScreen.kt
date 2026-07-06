@@ -36,6 +36,7 @@ fun HomeScreen(
     var selectedItemIsTrip by remember { mutableStateOf(true) }
     var selectedActivityIdForBookings by remember { mutableStateOf<String?>(null) }
     var selectedItinerary by remember { mutableStateOf<ItineraryDto?>(null) }
+    var favoritesTrigger by remember { mutableStateOf(0) }
 
     var currentUser by remember(user) { 
         mutableStateOf(user ?: User(
@@ -88,7 +89,125 @@ fun HomeScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
+        // Always compose the main content to preserve state (like scroll position)
+        Box(modifier = Modifier.fillMaxSize()) {
+            when (selectedTab) {
+                HomeTab.ESPLORA -> {
+                    if (isSocieta) {
+                        if (selectedActivityIdForBookings != null) {
+                            CompanyActivityBookingsScreen(
+                                viewModel = remember(selectedActivityIdForBookings) {
+                                    CompanyActivityBookingsViewModel(
+                                        activityRepository = AppContainer.activityRepository,
+                                        activityId = selectedActivityIdForBookings!!
+                                    )
+                                },
+                                onBackClick = { selectedActivityIdForBookings = null }
+                            )
+                        } else {
+                            CompanyDashboardScreen(
+                                viewModel = companyDashboardViewModel,
+                                onEditActivityClick = { activityId ->
+                                    companyAddOfferViewModel.loadActivity(activityId)
+                                    selectedTab = HomeTab.PREFERITI
+                                },
+                                onViewBookingsClick = { activityId ->
+                                    selectedActivityIdForBookings = activityId
+                                }
+                            )
+                        }
+                    } else {
+                        EsploraScreen(
+                            viewModel = esploraViewModel,
+                            favoritesTrigger = favoritesTrigger,
+                            onItemClick = { id, isTrip ->
+                                selectedItemId = id
+                                selectedItemIsTrip = isTrip
+                                if (isTrip) {
+                                    val found = esploraViewModel.filteredItineraries.find { it.id?.toString() == id }
+                                    if (found != null) {
+                                        selectedItinerary = found
+                                    }
+                                }
+                            }
+                        )
+                    }
+                }
+
+                HomeTab.PREFERITI -> {
+                    if (isSocieta) {
+                        CompanyAddOfferScreen(
+                            viewModel = companyAddOfferViewModel,
+                            onNavigateBack = { selectedTab = HomeTab.ESPLORA }
+                        )
+                    } else {
+                        PreferitiScreen(
+                            onActivityClick = { activityId -> 
+                                selectedItemId = activityId
+                                selectedItemIsTrip = false
+                            },
+                            onItineraryClick = { selectedItinerary = it }
+                        )
+                    }
+                }
+                HomeTab.PROFILO -> {
+                    EditProfileScreen(
+                        user = currentUser,
+                        viewModel = editProfileViewModel,
+                        onBack = { selectedTab = HomeTab.MENU },
+                        onSaveSuccess = { savedUser ->
+                            currentUser = savedUser
+                            selectedTab = HomeTab.MENU
+                        }
+                    )
+                }
+                HomeTab.MENU -> MenuScreen(
+                    user = currentUser,
+                    isDarkMode = isDarkMode,
+                    onDarkModeChange = onDarkModeChange,
+                    onBack = { selectedTab = HomeTab.ESPLORA },
+                    onNavigateToProfile = { selectedTab = HomeTab.PROFILO },
+                    onNavigateToSecurity = { selectedTab = HomeTab.SICUREZZA },
+                    onLogout = onLogout,
+                    onNavigateToFavorites = { selectedTab = HomeTab.PREFERITI }
+                )
+                HomeTab.SICUREZZA -> {
+                    SecurityScreen(
+                        user = currentUser,
+                        viewModel = securityViewModel,
+                        onBack = { selectedTab = HomeTab.MENU },
+                        onSaveSuccess = { savedUser ->
+                            currentUser = savedUser
+                            selectedTab = HomeTab.MENU
+                        }
+                    )
+                }
+            }
+
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+            ) {
+                FloatingBottomNavBar(
+                    selectedTab = selectedTab,
+                    isSocieta = isSocieta,
+                    onTabSelected = { 
+                        if (it == HomeTab.PREFERITI && isSocieta) {
+                            companyAddOfferViewModel.resetForm()
+                        }
+                        selectedTab = it 
+                    }
+                )
+            }
+        }
+
+        // Overlay detail screens on top of the main content
         if (selectedItinerary != null) {
+            val itineraryId = selectedItinerary!!.id?.toString() ?: ""
+            var isFav by remember(itineraryId, favoritesTrigger) { 
+                mutableStateOf(AppContainer.sessionManager.isFavoriteItinerary(itineraryId)) 
+            }
             ItineraryDetailScreen(
                 itinerary = selectedItinerary!!,
                 onNavigateBack = { selectedItinerary = null },
@@ -96,124 +215,29 @@ fun HomeScreen(
                     selectedItinerary = null
                     selectedItemId = activityId
                     selectedItemIsTrip = false
+                },
+                isFavorite = isFav,
+                onFavoriteClick = {
+                    AppContainer.sessionManager.toggleFavoriteItinerary(itineraryId)
+                    isFav = !isFav
+                    favoritesTrigger++
                 }
             )
         } else if (selectedItemId != null && !selectedItemIsTrip) {
+            val activityId = selectedItemId!!
+            var isFav by remember(activityId, favoritesTrigger) { 
+                mutableStateOf(AppContainer.sessionManager.isFavoriteActivity(activityId)) 
+            }
             ActivityDetailScreen(
-                activityId = selectedItemId!!,
-                onNavigateBack = { selectedItemId = null }
+                activityId = activityId,
+                onNavigateBack = { selectedItemId = null },
+                isFavorite = isFav,
+                onFavoriteClick = {
+                    AppContainer.sessionManager.toggleFavoriteActivity(activityId)
+                    isFav = !isFav
+                    favoritesTrigger++
+                }
             )
-        } else {
-            Box(modifier = Modifier.fillMaxSize()) {
-                when (selectedTab) {
-            HomeTab.ESPLORA -> {
-                if (isSocieta) {
-                    if (selectedActivityIdForBookings != null) {
-                        CompanyActivityBookingsScreen(
-                            viewModel = remember(selectedActivityIdForBookings) {
-                                CompanyActivityBookingsViewModel(
-                                    activityRepository = AppContainer.activityRepository,
-                                    activityId = selectedActivityIdForBookings!!
-                                )
-                            },
-                            onBackClick = { selectedActivityIdForBookings = null }
-                        )
-                    } else {
-                        CompanyDashboardScreen(
-                            viewModel = companyDashboardViewModel,
-                            onEditActivityClick = { activityId ->
-                                companyAddOfferViewModel.loadActivity(activityId)
-                                selectedTab = HomeTab.PREFERITI
-                            },
-                            onViewBookingsClick = { activityId ->
-                                selectedActivityIdForBookings = activityId
-                            }
-                        )
-                    }
-                } else {
-                    EsploraScreen(
-                        viewModel = esploraViewModel,
-                        onItemClick = { id, isTrip ->
-                            selectedItemId = id
-                            selectedItemIsTrip = isTrip
-                            if (isTrip) {
-                                val found = esploraViewModel.filteredItineraries.find { it.id?.toString() == id }
-                                if (found != null) {
-                                    selectedItinerary = found
-                                }
-                            }
-                        }
-                    )
-                }
-            }
-
-            HomeTab.PREFERITI -> {
-                if (isSocieta) {
-                    CompanyAddOfferScreen(
-                        viewModel = companyAddOfferViewModel,
-                        onNavigateBack = { selectedTab = HomeTab.ESPLORA }
-                    )
-                } else {
-                    PreferitiScreen(
-                        onActivityClick = { activityId -> 
-                            selectedItemId = activityId
-                            selectedItemIsTrip = false
-                        },
-                        onItineraryClick = { selectedItinerary = it }
-                    )
-                }
-            }
-            HomeTab.PROFILO -> {
-                EditProfileScreen(
-                    user = currentUser,
-                    viewModel = editProfileViewModel,
-                    onBack = { selectedTab = HomeTab.MENU },
-                    onSaveSuccess = { savedUser ->
-                        currentUser = savedUser
-                        selectedTab = HomeTab.MENU
-                    }
-                )
-            }
-            HomeTab.MENU -> MenuScreen(
-                user = currentUser,
-                isDarkMode = isDarkMode,
-                onDarkModeChange = onDarkModeChange,
-                onBack = { selectedTab = HomeTab.ESPLORA },
-                onNavigateToProfile = { selectedTab = HomeTab.PROFILO },
-                onNavigateToSecurity = { selectedTab = HomeTab.SICUREZZA },
-                onLogout = onLogout,
-                onNavigateToFavorites = { selectedTab = HomeTab.PREFERITI }
-            )
-            HomeTab.SICUREZZA -> {
-                SecurityScreen(
-                    user = currentUser,
-                    viewModel = securityViewModel,
-                    onBack = { selectedTab = HomeTab.MENU },
-                    onSaveSuccess = { savedUser ->
-                        currentUser = savedUser
-                        selectedTab = HomeTab.MENU
-                    }
-                )
-            }
-        }
-
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .fillMaxWidth()
-                ) {
-                    FloatingBottomNavBar(
-                        selectedTab = selectedTab,
-                        isSocieta = isSocieta,
-                        onTabSelected = { 
-                            if (it == HomeTab.PREFERITI && isSocieta) {
-                                companyAddOfferViewModel.resetForm()
-                            }
-                            selectedTab = it 
-                        }
-                    )
-                }
-            }
         }
     }
 }

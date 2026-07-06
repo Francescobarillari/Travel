@@ -12,6 +12,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.*
@@ -30,6 +32,18 @@ import it.unical.ea.dtos.itinerary.ItineraryDto
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import com.travel.app.data.AppContainer
+import com.travel.app.domain.model.review.ReviewDto
+import com.travel.app.domain.model.review.CreateReviewDto
+import com.travel.app.presentation.components.review.ReviewCard
+import com.travel.app.presentation.components.review.AddReviewInline
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -38,6 +52,8 @@ fun ItineraryDetailScreen(
     itinerary: ItineraryDto,
     onNavigateBack: () -> Unit,
     onActivityClick: (String) -> Unit = {},
+    isFavorite: Boolean = false,
+    onFavoriteClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val scrollState = rememberScrollState()
@@ -45,6 +61,19 @@ fun ItineraryDetailScreen(
     val uniqueTags = itinerary.getActivities()?.flatMap { it.getTags() ?: emptySet() }?.toSet() ?: emptySet()
     val uniqueLocations = itinerary.getActivities()?.map { it.getLocation() }?.filter { !it.isNullOrBlank() }?.distinct() ?: emptyList()
     val context = androidx.compose.ui.platform.LocalContext.current
+
+    var reviews by remember { mutableStateOf<List<ReviewDto>>(emptyList()) }
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(itinerary.id) {
+        val id = itinerary.id?.toString()
+        if (id != null) {
+            val reviewsResult = AppContainer.reviewRepository.getReviewsForItinerary(id)
+            if (reviewsResult.isSuccess) {
+                reviews = reviewsResult.getOrNull() ?: emptyList()
+            }
+        }
+    }
 
     Scaffold(
         bottomBar = {
@@ -138,8 +167,25 @@ fun ItineraryDetailScreen(
                 ) {
                     Icon(
                         imageVector = Icons.Default.ArrowBack,
-                        contentDescription = "PRENOTA",
+                        contentDescription = "Indietro",
                         tint = Color.White
+                    )
+                }
+
+                // Floating Circular Favorite Button
+                IconButton(
+                    onClick = onFavoriteClick,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(top = 16.dp, end = 16.dp)
+                        .statusBarsPadding()
+                        .size(44.dp)
+                        .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                ) {
+                    Icon(
+                        imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                        contentDescription = "Preferito",
+                        tint = if (isFavorite) Color.Red else Color.White
                     )
                 }
 
@@ -345,6 +391,104 @@ fun ItineraryDetailScreen(
                             isLast = index == activitiesList.lastIndex,
                             onClick = { activity.id?.toString()?.let(onActivityClick) }
                         )
+                    }
+                }
+
+                // REVIEWS SECTION
+                HorizontalDivider(
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                    modifier = Modifier.padding(vertical = 16.dp)
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Recensioni",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                }
+
+                // Form inline per aggiungere una nuova recensione
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        AddReviewInline(
+                            onSubmit = { rating, comment ->
+                                scope.launch {
+                                    val id = itinerary.id?.toString()
+                                    if (id != null) {
+                                        val newReview = CreateReviewDto(
+                                            itineraryId = id,
+                                            rating = rating,
+                                            comment = comment
+                                        )
+                                        AppContainer.reviewRepository.createReview(newReview)
+                                        val reviewsResult = AppContainer.reviewRepository.getReviewsForItinerary(id)
+                                        if (reviewsResult.isSuccess) {
+                                            reviews = reviewsResult.getOrNull() ?: emptyList()
+                                        }
+                                    }
+                                }
+                            }
+                        )
+                    }
+                }
+                
+                if (reviews.isEmpty()) {
+                    Text(
+                        text = "Ancora nessuna recensione. Sii il primo!",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
+                } else {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        reviews.forEach { review ->
+                            // Here showActivityName is true to distinguish which activity the review is for
+                            ReviewCard(
+                                review = review, 
+                                showActivityName = true,
+                                onUpdate = { updatedRating, updatedComment ->
+                                    scope.launch {
+                                        val id = itinerary.id?.toString()
+                                        if (id != null) {
+                                            val updateDto = CreateReviewDto(
+                                                itineraryId = id,
+                                                rating = updatedRating,
+                                                comment = updatedComment
+                                            )
+                                            review.id?.let { reviewId ->
+                                                AppContainer.reviewRepository.updateReview(reviewId, updateDto)
+                                                val reviewsResult = AppContainer.reviewRepository.getReviewsForItinerary(id)
+                                                if (reviewsResult.isSuccess) {
+                                                    reviews = reviewsResult.getOrNull() ?: emptyList()
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                onDelete = {
+                                    scope.launch {
+                                        val id = itinerary.id?.toString()
+                                        if (id != null) {
+                                            review.id?.let { reviewId ->
+                                                AppContainer.reviewRepository.deleteReview(reviewId)
+                                                val reviewsResult = AppContainer.reviewRepository.getReviewsForItinerary(id)
+                                                if (reviewsResult.isSuccess) {
+                                                    reviews = reviewsResult.getOrNull() ?: emptyList()
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            )
+                        }
                     }
                 }
             }

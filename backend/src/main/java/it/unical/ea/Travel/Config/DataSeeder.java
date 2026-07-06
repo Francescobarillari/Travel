@@ -8,6 +8,8 @@ import it.unical.ea.Travel.Repositories.activity.ActivityRepository;
 import it.unical.ea.Travel.Repositories.itinerary.ItineraryRepository;
 import it.unical.ea.Travel.Repositories.location.LocationRepository;
 import it.unical.ea.Travel.Repositories.user.UserRepository;
+import it.unical.ea.Travel.Entities.review.Review;
+import it.unical.ea.Travel.Repositories.review.ReviewRepository;
 import it.unical.ea.enums.UserType;
 import it.unical.ea.enums.TravelTag;
 import org.springframework.boot.CommandLineRunner;
@@ -33,12 +35,14 @@ public class DataSeeder implements CommandLineRunner {
     private final ActivityRepository activityRepository;
     private final ItineraryRepository itineraryRepository;
     private final LocationRepository locationRepository;
+    private final ReviewRepository reviewRepository;
 
-    public DataSeeder(UserRepository userRepository, ActivityRepository activityRepository, ItineraryRepository itineraryRepository, LocationRepository locationRepository) {
+    public DataSeeder(UserRepository userRepository, ActivityRepository activityRepository, ItineraryRepository itineraryRepository, LocationRepository locationRepository, ReviewRepository reviewRepository) {
         this.userRepository = userRepository;
         this.activityRepository = activityRepository;
         this.itineraryRepository = itineraryRepository;
         this.locationRepository = locationRepository;
+        this.reviewRepository = reviewRepository;
     }
 
     @Override
@@ -46,6 +50,9 @@ public class DataSeeder implements CommandLineRunner {
     public void run(String... args) throws Exception {
         if (activityRepository.count() == 0) {
             seedData();
+        }
+        if (reviewRepository.count() == 0) {
+            seedReviews();
         }
     }
 
@@ -238,5 +245,44 @@ public class DataSeeder implements CommandLineRunner {
 
         // Save all itineraries
         itineraryRepository.saveAll(Arrays.asList(itinerary1, itinerary2, itinerary3));
+    }
+
+    private void seedReviews() {
+        // Find users
+        List<User> travelers = userRepository.findByUserType(UserType.VIAGGIATORE);
+        if (travelers.isEmpty()) return;
+        User reviewer = travelers.get(0);
+        
+        List<Activity> activities = activityRepository.findAll();
+        if (!activities.isEmpty()) {
+            Activity act1 = activities.get(0);
+            Review rev1 = new Review();
+            rev1.setAuthor(reviewer);
+            rev1.setActivity(act1);
+            rev1.setRating(5);
+            rev1.setComment("Attività fantastica, guida super preparata!");
+            reviewRepository.save(rev1);
+
+            if (activities.size() > 1) {
+                Activity act2 = activities.get(1);
+                Review rev2 = new Review();
+                rev2.setAuthor(reviewer);
+                rev2.setActivity(act2);
+                rev2.setRating(4);
+                rev2.setComment("Molto bello, ma faceva un po' freddo.");
+                reviewRepository.save(rev2);
+            }
+        }
+
+        List<Itinerary> itineraries = itineraryRepository.findAll();
+        if (!itineraries.isEmpty()) {
+            Itinerary iti1 = itineraries.get(0);
+            Review revIti = new Review();
+            revIti.setAuthor(reviewer);
+            revIti.setItinerary(iti1);
+            revIti.setRating(5);
+            revIti.setComment("L'itinerario nel complesso è stato indimenticabile. Consigliatissimo!");
+            reviewRepository.save(revIti);
+        }
     }
 }

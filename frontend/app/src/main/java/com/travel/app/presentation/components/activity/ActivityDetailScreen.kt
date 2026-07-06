@@ -12,6 +12,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Schedule
@@ -31,6 +33,11 @@ import it.unical.ea.dtos.activity.ActivityDto
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import com.travel.app.domain.model.review.ReviewDto
+import com.travel.app.domain.model.review.CreateReviewDto
+import com.travel.app.presentation.components.review.ReviewCard
+import com.travel.app.presentation.components.review.AddReviewInline
+import kotlinx.coroutines.launch
 
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -38,11 +45,16 @@ import java.util.Locale
 fun ActivityDetailScreen(
     activityId: String,
     onNavigateBack: () -> Unit,
+    isFavorite: Boolean = false,
+    onFavoriteClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var activity by remember { mutableStateOf<ActivityDto?>(null) }
     var isLoading by remember { mutableStateOf(true) }
     var errorMsg by remember { mutableStateOf<String?>(null) }
+    
+    var reviews by remember { mutableStateOf<List<ReviewDto>>(emptyList()) }
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(activityId) {
         isLoading = true
@@ -58,6 +70,10 @@ fun ActivityDetailScreen(
                 isLoading = false
             }
         )
+        val reviewsResult = AppContainer.reviewRepository.getReviewsForActivity(activityId)
+        if (reviewsResult.isSuccess) {
+            reviews = reviewsResult.getOrNull() ?: emptyList()
+        }
     }
 
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -184,6 +200,23 @@ fun ActivityDetailScreen(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = "Indietro",
                                 tint = Color.White
+                            )
+                        }
+
+                        // Floating Circular Favorite Button
+                        IconButton(
+                            onClick = onFavoriteClick,
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(top = 16.dp, end = 16.dp)
+                                .statusBarsPadding()
+                                .size(44.dp)
+                                .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                        ) {
+                            Icon(
+                                imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                contentDescription = "Preferito",
+                                tint = if (isFavorite) Color.Red else Color.White
                             )
                         }
 
@@ -419,6 +452,94 @@ fun ActivityDetailScreen(
                                             fontWeight = FontWeight.Medium
                                         )
                                     }
+                                }
+                            }
+                        }
+
+                        // REVIEWS SECTION
+                        HorizontalDivider(
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                            modifier = Modifier.padding(vertical = 16.dp)
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Recensioni",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+                        }
+
+                        // Form inline per aggiungere una nuova recensione
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                AddReviewInline(
+                                    onSubmit = { rating, comment ->
+                                        scope.launch {
+                                            val newReview = CreateReviewDto(
+                                                activityId = activityId,
+                                                rating = rating,
+                                                comment = comment
+                                            )
+                                            AppContainer.reviewRepository.createReview(newReview)
+                                            val reviewsResult = AppContainer.reviewRepository.getReviewsForActivity(activityId)
+                                            if (reviewsResult.isSuccess) {
+                                                reviews = reviewsResult.getOrNull() ?: emptyList()
+                                            }
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                        
+                        if (reviews.isEmpty()) {
+                            Text(
+                                text = "Ancora nessuna recensione. Sii il primo!",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(vertical = 8.dp)
+                            )
+                        } else {
+                            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                reviews.forEach { review ->
+                                    ReviewCard(
+                                        review = review, 
+                                        showActivityName = false,
+                                        onUpdate = { updatedRating, updatedComment ->
+                                            scope.launch {
+                                                val updateDto = CreateReviewDto(
+                                                    activityId = activityId,
+                                                    rating = updatedRating,
+                                                    comment = updatedComment
+                                                )
+                                                review.id?.let {
+                                                    AppContainer.reviewRepository.updateReview(it, updateDto)
+                                                    val reviewsResult = AppContainer.reviewRepository.getReviewsForActivity(activityId)
+                                                    if (reviewsResult.isSuccess) {
+                                                        reviews = reviewsResult.getOrNull() ?: emptyList()
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        onDelete = {
+                                            scope.launch {
+                                                review.id?.let {
+                                                    AppContainer.reviewRepository.deleteReview(it)
+                                                    val reviewsResult = AppContainer.reviewRepository.getReviewsForActivity(activityId)
+                                                    if (reviewsResult.isSuccess) {
+                                                        reviews = reviewsResult.getOrNull() ?: emptyList()
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    )
                                 }
                             }
                         }

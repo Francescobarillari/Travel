@@ -40,6 +40,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 fun EsploraScreen(
     viewModel: EsploraViewModel,
     onItemClick: (String, Boolean) -> Unit = { _, _ -> },
+    favoritesTrigger: Int = 0,
     modifier: Modifier = Modifier
 ) {
     val scrollState = rememberScrollState()
@@ -49,7 +50,7 @@ fun EsploraScreen(
     val favoriteActivities = remember { mutableStateMapOf<String, Boolean>() }
     val favoriteItineraries = remember { mutableStateMapOf<String, Boolean>() }
 
-    LaunchedEffect(viewModel.activities, viewModel.filteredItineraries) {
+    LaunchedEffect(viewModel.activities, viewModel.filteredItineraries, favoritesTrigger) {
         val favActIds = com.travel.app.data.AppContainer.sessionManager.getFavoriteActivityIds()
         viewModel.activities.forEach { act ->
             val idStr = act.id?.toString() ?: ""
