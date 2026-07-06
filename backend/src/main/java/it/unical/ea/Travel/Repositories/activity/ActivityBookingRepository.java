@@ -22,4 +22,6 @@ public interface ActivityBookingRepository extends JpaRepository<ActivityBooking
     List<ActivityBooking> findByUserIdAndItineraryId(UUID userId, UUID itineraryId);
 
     List<ActivityBooking> findByUserId(UUID userId);
+
+    List<ActivityBooking> findByPaymentIntentId(String paymentIntentId);
 }

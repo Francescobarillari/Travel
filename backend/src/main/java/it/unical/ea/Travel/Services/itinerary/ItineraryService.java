@@ -14,6 +14,10 @@ import it.unical.ea.Travel.Repositories.user.UserRepository;
 import it.unical.ea.Travel.Services.activity.ActivityService;
 import it.unical.ea.Travel.Services.storage.FileStorageService;
 import it.unical.ea.Travel.Services.audit.AuditLogService;
+import it.unical.ea.Travel.Services.payment.PaymentGateway;
+import it.unical.ea.dtos.payment.PaymentIntentResponseDto;
+import it.unical.ea.Travel.Entities.payment.BookingStatus;
+import java.math.BigDecimal;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
@@ -38,6 +42,7 @@ public class ItineraryService {
     private final ActivityBookingRepository activityBookingRepository;
     private final ActivityService activityService;
     private final AuditLogService auditLogService;
+    private final PaymentGateway paymentGateway;
 
     @Autowired
     public ItineraryService(ItineraryRepository itineraryRepository,
@@ -47,7 +52,8 @@ public class ItineraryService {
                             ItineraryBookingRepository itineraryBookingRepository,
                             ActivityBookingRepository activityBookingRepository,
                             ActivityService activityService,
-                            AuditLogService auditLogService) {
+                            AuditLogService auditLogService,
+                            PaymentGateway paymentGateway) {
         this.itineraryRepository = itineraryRepository;
         this.userRepository = userRepository;
         this.activityRepository = activityRepository;
@@ -56,6 +62,7 @@ public class ItineraryService {
         this.activityBookingRepository = activityBookingRepository;
         this.activityService = activityService;
         this.auditLogService = auditLogService;
+        this.paymentGateway = paymentGateway;
     }
 
     // Riceve tutti gli itinerari dal database
@@ -152,7 +159,7 @@ public class ItineraryService {
     }
 
     @Transactional
-    public void bookItinerary(String itineraryId, String userEmail) {
+    public PaymentIntentResponseDto bookItinerary(String itineraryId, String userEmail) {
         // 1. Lock sull'Itinerario
         Itinerary itinerary = itineraryRepository.findByIdForUpdate(UUID.fromString(itineraryId))
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "itinerary.notFound"));
@@ -165,6 +172,8 @@ public class ItineraryService {
         User user = userRepository.getUserByEmail(userEmail)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "user.notFound"));
                 
+        BigDecimal totalPrice = BigDecimal.ZERO;
+        
         // 3. Lock sulle attività collegate (Optimistic Lock)
         for (Activity activity : itinerary.getActivities()) {
             Activity lockedActivity = activityRepository.findByIdForUpdate(activity.getId())
@@ -174,16 +183,35 @@ public class ItineraryService {
             if (lockedActivity.getParticipants() != null && current >= lockedActivity.getParticipants()) {
                 throw new ApiException(HttpStatus.BAD_REQUEST, "itinerary.booking.activityFull");
             }
+            
+            if (activity.getPrice() != null) {
+                totalPrice = totalPrice.add(activity.getPrice());
+            }
         }
 
         if (itineraryBookingRepository.findByUserIdAndItineraryId(user.getId(), itinerary.getId()).isPresent()) {
             throw new ApiException(HttpStatus.CONFLICT, "itinerary.booking.alreadyBooked");
         }
 
+        String clientSecret = null;
+        String paymentIntentId = null;
+        BookingStatus status = BookingStatus.PENDING;
+
+        if (totalPrice.compareTo(BigDecimal.ZERO) > 0) {
+            clientSecret = paymentGateway.createPaymentIntent(totalPrice, "eur", "Booking for Itinerary: " + itinerary.getTitle());
+            if (clientSecret != null && clientSecret.contains("_secret_")) {
+                paymentIntentId = clientSecret.substring(0, clientSecret.indexOf("_secret_"));
+            }
+        } else {
+            status = BookingStatus.CONFIRMED;
+        }
+
         // 4. Salva la prenotazione dell'itinerario
         ItineraryBooking booking = new ItineraryBooking();
         booking.setUser(user);
         booking.setItinerary(itinerary);
+        booking.setStatus(status);
+        booking.setPaymentIntentId(paymentIntentId);
         itineraryBookingRepository.save(booking);
 
         // 5. Iscrizione automatica a cascata in tutte le attività
@@ -192,10 +220,14 @@ public class ItineraryService {
             actBooking.setUser(user);
             actBooking.setActivity(activity);
             actBooking.setItinerary(itinerary); // Riferimento all'itinerario
+            actBooking.setStatus(status);
+            actBooking.setPaymentIntentId(paymentIntentId);
             activityBookingRepository.save(actBooking);
         }
         
-        auditLogService.log("BOOK_ITINERARY", "ItineraryBooking", booking.getId().toString(), "User " + userEmail + " booked itinerary: " + itinerary.getTitle());
+        auditLogService.log("BOOK_ITINERARY", "ItineraryBooking", booking.getId().toString(), "User " + userEmail + " booked itinerary: " + itinerary.getTitle() + " status: " + status);
+        
+        return new PaymentIntentResponseDto(clientSecret, booking.getId().toString());
     }
 
     @Transactional

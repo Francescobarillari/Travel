@@ -13,6 +13,7 @@ import retrofit2.http.Path
 import it.unical.ea.dtos.activity.ActivityDto
 import it.unical.ea.dtos.itinerary.ItineraryDto
 import it.unical.ea.dtos.itinerary.CreateItineraryRequest
+import it.unical.ea.dtos.payment.PaymentIntentResponseDto
 
 interface ApiService {
 
@@ -38,6 +39,9 @@ interface ApiService {
 
     @PUT("activity/{id}")
     suspend fun updateActivity(@Path("id") id: String, @Body request: ActivityDto): ActivityDto = throw NotImplementedError()
+
+    @POST("activity/{id}/book")
+    suspend fun bookActivity(@Path("id") id: String): PaymentIntentResponseDto
 
     @GET("activity/{id}/bookings")
     suspend fun getBookedUsers(@Path("id") id: String): List<UserDTO> = throw NotImplementedError()
@@ -82,6 +86,9 @@ interface ApiService {
     // Chiamata per eliminare un itinerario
     @DELETE("itinerary/{id}")
     suspend fun deleteItinerary(@Path("id") id: String)
+
+    @POST("itinerary/{id}/book")
+    suspend fun bookItinerary(@Path("id") id: String): PaymentIntentResponseDto
 
     @DELETE("activity/{id}")
     suspend fun deleteActivity(@Path("id") id: String) { throw NotImplementedError() }

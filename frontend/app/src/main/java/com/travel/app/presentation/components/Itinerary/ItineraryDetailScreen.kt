@@ -24,12 +24,20 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.stripe.android.paymentsheet.PaymentSheet
+import com.stripe.android.paymentsheet.PaymentSheetResult
+import com.stripe.android.paymentsheet.rememberPaymentSheet
 import it.unical.ea.dtos.activity.ActivityDto
 import it.unical.ea.dtos.itinerary.ItineraryDto
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import android.widget.Toast
+import androidx.compose.runtime.*
+import androidx.compose.ui.platform.LocalContext
+import com.travel.app.BuildConfig
 
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -37,12 +45,54 @@ import java.util.Locale
 fun ItineraryDetailScreen(
     itinerary: ItineraryDto,
     onNavigateBack: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    viewModel: ItineraryDetailViewModel = viewModel()
 ) {
     val scrollState = rememberScrollState()
+    val context = LocalContext.current
     val totalPrice = itinerary.getActivities()?.sumOf { it.getPrice()?.toDouble() ?: 0.0 } ?: 0.0
     val uniqueTags = itinerary.getActivities()?.flatMap { it.getTags() ?: emptySet() }?.toSet() ?: emptySet()
     val uniqueLocations = itinerary.getActivities()?.map { it.getLocation() }?.filter { !it.isNullOrBlank() }?.distinct() ?: emptyList()
+
+    val clientSecret by viewModel.paymentClientSecret.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val error by viewModel.error.collectAsState()
+
+    val paymentSheet = rememberPaymentSheet { paymentResult ->
+        when (paymentResult) {
+            is PaymentSheetResult.Completed -> {
+                Toast.makeText(context, "Pagamento completato!", Toast.LENGTH_SHORT).show()
+                viewModel.clearClientSecret()
+            }
+            is PaymentSheetResult.Canceled -> {
+                Toast.makeText(context, "Pagamento annullato", Toast.LENGTH_SHORT).show()
+                viewModel.clearClientSecret()
+            }
+            is PaymentSheetResult.Failed -> {
+                Toast.makeText(context, "Errore nel pagamento: ${paymentResult.error.message}", Toast.LENGTH_LONG).show()
+                viewModel.clearClientSecret()
+            }
+        }
+    }
+
+    LaunchedEffect(clientSecret) {
+        clientSecret?.let { secret ->
+            com.stripe.android.PaymentConfiguration.init(context, BuildConfig.STRIPE_PUBLISHABLE_KEY)
+            paymentSheet.presentWithPaymentIntent(
+                secret,
+                PaymentSheet.Configuration(
+                    merchantDisplayName = "Travel App",
+                    allowsDelayedPaymentMethods = true
+                )
+            )
+        }
+    }
+
+    LaunchedEffect(error) {
+        error?.let {
+            Toast.makeText(context, it, Toast.LENGTH_LONG).show()
+        }
+    }
 
     Scaffold(
         bottomBar = {
@@ -73,12 +123,31 @@ fun ItineraryDetailScreen(
                             color = MaterialTheme.colorScheme.primary
                         )
                     }
-                    Button(
-                        onClick = onNavigateBack,
-                        modifier = Modifier.height(48.dp),
-                        shape = RoundedCornerShape(24.dp)
-                    ) {
-                        Text("Torna Indietro", fontWeight = FontWeight.Bold)
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(
+                            onClick = onNavigateBack,
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
+                            modifier = Modifier.height(48.dp),
+                            shape = RoundedCornerShape(24.dp)
+                        ) {
+                            Text("Indietro", fontWeight = FontWeight.Bold)
+                        }
+                        Button(
+                            onClick = { 
+                                itinerary.getId()?.toString()?.let {
+                                    viewModel.bookItinerary(it)
+                                }
+                            },
+                            enabled = !isLoading,
+                            modifier = Modifier.height(48.dp),
+                            shape = RoundedCornerShape(24.dp)
+                        ) {
+                            if (isLoading) {
+                                CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
+                            } else {
+                                Text("Prenota", fontWeight = FontWeight.Bold)
+                            }
+                        }
                     }
                 }
             }

@@ -25,6 +25,10 @@ import it.unical.ea.Travel.Config.SecurityUtils;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import java.math.BigDecimal;
+import it.unical.ea.Travel.Services.payment.PaymentGateway;
+import it.unical.ea.dtos.payment.PaymentIntentResponseDto;
+import it.unical.ea.Travel.Entities.payment.BookingStatus;
 
 @Service
 @RequiredArgsConstructor
@@ -40,6 +44,7 @@ public class ActivityService {
     private final AuditLogService auditLogService;
     private final UserMapper userMapper;
     private final it.unical.ea.Travel.Services.location.LocationService locationService;
+    private final PaymentGateway paymentGateway;
 
     public List<ActivityDto> getAllActivities() {
         List<Activity> activities = activityRepository.findByApproved(true);
@@ -155,7 +160,7 @@ public class ActivityService {
     }
 
     @Transactional
-    public void bookActivity(String activityId, String userEmail) {
+    public PaymentIntentResponseDto bookActivity(String activityId, String userEmail) {
         Activity activity = activityRepository.findByIdForUpdate(UUID.fromString(activityId))
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "activity.notFound"));
 
@@ -177,11 +182,28 @@ public class ActivityService {
             throw new ApiException(HttpStatus.CONFLICT, "activity.booking.alreadyBooked");
         }
 
+        String clientSecret = null;
+        String paymentIntentId = null;
+        BookingStatus status = BookingStatus.PENDING;
+
+        if (activity.getPrice() != null && activity.getPrice().compareTo(BigDecimal.ZERO) > 0) {
+            clientSecret = paymentGateway.createPaymentIntent(activity.getPrice(), "eur", "Booking for Activity: " + activity.getName());
+            if (clientSecret != null && clientSecret.contains("_secret_")) {
+                paymentIntentId = clientSecret.substring(0, clientSecret.indexOf("_secret_"));
+            }
+        } else {
+            status = BookingStatus.CONFIRMED;
+        }
+
         ActivityBooking booking = new ActivityBooking();
         booking.setUser(user);
         booking.setActivity(activity);
+        booking.setStatus(status);
+        booking.setPaymentIntentId(paymentIntentId);
         ActivityBooking savedBooking = activityBookingRepository.save(booking);
-        auditLogService.log("BOOK_ACTIVITY", "ActivityBooking", savedBooking.getId().toString(), "User " + userEmail + " booked activity " + activity.getName());
+        auditLogService.log("BOOK_ACTIVITY", "ActivityBooking", savedBooking.getId().toString(), "User " + userEmail + " booked activity " + activity.getName() + " status: " + status);
+        
+        return new PaymentIntentResponseDto(clientSecret, savedBooking.getId().toString());
     }
 
     @Transactional

@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import it.unical.ea.dtos.activity.ActivityDto;
 import it.unical.ea.dtos.user.UserDTO;
+import it.unical.ea.dtos.payment.PaymentIntentResponseDto;
 import it.unical.ea.Travel.Services.activity.ActivityService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -133,12 +134,12 @@ public class ActivityController {
 
     @Operation(summary = "Prenota un'attività", description = "Prenota l'attività per l'utente autenticato")
     @PostMapping("/{stringId}/book")
-    public ResponseEntity<Void> bookActivity(
+    public ResponseEntity<PaymentIntentResponseDto> bookActivity(
             @Parameter(description = "ID dell'attività", schema = @Schema(format = "uuid"), example = "550e8400-e29b-41d4-a716-446655440000") @PathVariable String stringId,
             @AuthenticationPrincipal Jwt jwt) {
         String email = jwt.getClaimAsString("email");
-        activityService.bookActivity(stringId, email);
-        return ResponseEntity.status(HttpStatus.CREATED).build();
+        PaymentIntentResponseDto response = activityService.bookActivity(stringId, email);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @Operation(summary = "Cancella prenotazione attività", description = "Cancella la prenotazione dell'attività per l'utente autenticato")

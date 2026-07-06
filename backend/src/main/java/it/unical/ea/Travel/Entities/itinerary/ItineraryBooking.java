@@ -30,4 +30,11 @@ public class ItineraryBooking {
 
     @Column(name = "booked_at", nullable = false)
     private LocalDateTime bookedAt = LocalDateTime.now();
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    private it.unical.ea.Travel.Entities.payment.BookingStatus status = it.unical.ea.Travel.Entities.payment.BookingStatus.PENDING;
+
+    @Column(name = "payment_intent_id")
+    private String paymentIntentId;
 }

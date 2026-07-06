@@ -30,6 +30,7 @@ import org.springframework.http.HttpStatus;
 
 import it.unical.ea.dtos.itinerary.CreateItineraryRequest;
 import it.unical.ea.dtos.itinerary.ItineraryDto;
+import it.unical.ea.dtos.payment.PaymentIntentResponseDto;
 import it.unical.ea.Travel.Entities.itinerary.Itinerary;
 import it.unical.ea.Travel.Entities.activity.Activity;
 import it.unical.ea.Travel.Mappers.itinerary.ItineraryMapper;
@@ -138,12 +139,12 @@ public class ItineraryController {
 
     @Operation(summary = "Prenota un itinerario", description = "Prenota l'itinerario ed iscrive l'utente autenticato a tutte le attività collegate")
     @PostMapping("/{stringId}/book")
-    public ResponseEntity<Void> bookItinerary(
+    public ResponseEntity<PaymentIntentResponseDto> bookItinerary(
             @Parameter(description = "ID dell'itinerario", schema = @Schema(format = "uuid"), example = "550e8400-e29b-41d4-a716-446655440000") @PathVariable String stringId,
             @AuthenticationPrincipal Jwt jwt) {
         String email = jwt.getClaimAsString("email");
-        itineraryService.bookItinerary(stringId, email);
-        return ResponseEntity.status(HttpStatus.CREATED).build();
+        PaymentIntentResponseDto response = itineraryService.bookItinerary(stringId, email);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @Operation(summary = "Cancella la prenotazione di un itinerario", description = "Annulla l'iscrizione all'itinerario ed a tutte le sue attività per l'utente autenticato")
