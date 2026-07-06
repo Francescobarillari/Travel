@@ -34,7 +34,7 @@ import com.travel.app.presentation.admin.components.ZoomableImageDialog
 fun AdminCompaniesScreen(
     viewModel: AdminViewModel
 ) {
-    var filterState by remember { mutableStateOf(0) } // 0 = Approvate, 1 = In Attesa, 2 = Bloccate
+    var filterState by remember { mutableStateOf(0) } // 0 = Approvate, 1 = Bloccate
     var activeImageForZoom by remember { mutableStateOf<String?>(null) }
     var companyToBlock by remember { mutableStateOf<User?>(null) }
     var companyToUnblock by remember { mutableStateOf<User?>(null) }
@@ -50,8 +50,7 @@ fun AdminCompaniesScreen(
         viewModel.allCompanies.filter { company ->
             when (filterState) {
                 0 -> company.approved && !company.blocked
-                1 -> !company.approved && !company.blocked
-                2 -> company.blocked
+                1 -> company.blocked
                 else -> true
             }
         }
@@ -83,7 +82,7 @@ fun AdminCompaniesScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    val segments = listOf("Approvate", "In Attesa", "Bloccate")
+                    val segments = listOf("Approvate", "Bloccate")
                     segments.forEachIndexed { index, text ->
                         val isSelected = filterState == index
                         val bg = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
@@ -120,8 +119,7 @@ fun AdminCompaniesScreen(
             } else if (filteredList.isEmpty()) {
                 val subtitleText = when (filterState) {
                     0 -> "Nessuna società è ancora stata approvata."
-                    1 -> "Tutte le richieste sono state verificate."
-                    2 -> "Nessuna società risulta bloccata."
+                    1 -> "Nessuna società risulta bloccata."
                     else -> ""
                 }
                 EmptyPlaceholder(
