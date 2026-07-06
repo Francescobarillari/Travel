@@ -20,5 +20,5 @@ interface ReviewApiService {
     suspend fun updateReview(@Path("id") id: String, @Body review: CreateReviewDto): Response<ReviewDto>
 
     @DELETE("api/v1/reviews/{id}")
-    suspend fun deleteReview(@Path("id") id: String): Response<Unit>
+    suspend fun deleteReview(@Path("id") id: String): Response<Void>
 }

@@ -27,7 +27,7 @@ import java.util.UUID;
     @Index(name = "idx_activity_location", columnList = "location"),
     @Index(name = "idx_activity_name", columnList = "name")
 })
-@SQLDelete(sql = "UPDATE activities SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?")
+@SQLDelete(sql = "UPDATE activities SET deleted_at = CURRENT_TIMESTAMP WHERE id = ? AND version = ?")
 @SQLRestriction("deleted_at IS NULL")
 public class Activity extends AuditBaseEntity {
 

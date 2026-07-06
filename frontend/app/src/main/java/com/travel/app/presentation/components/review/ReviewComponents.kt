@@ -1,6 +1,7 @@
 package com.travel.app.presentation.components.review
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.background
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -89,26 +90,31 @@ fun ReviewCard(
                             IconButton(onClick = { expanded = true }) {
                                 Icon(Icons.Default.MoreVert, contentDescription = "Opzioni recensione")
                             }
-                            DropdownMenu(
-                                expanded = expanded,
-                                onDismissRequest = { expanded = false }
+                            MaterialTheme(
+                                shapes = MaterialTheme.shapes.copy(extraSmall = androidx.compose.foundation.shape.RoundedCornerShape(16.dp))
                             ) {
-                                DropdownMenuItem(
-                                    text = { Text("Modifica") },
-                                    leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
-                                    onClick = {
-                                        expanded = false
-                                        isEditing = true
-                                    }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text("Elimina") },
-                                    leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
-                                    onClick = {
-                                        expanded = false
-                                        onDelete()
-                                    }
-                                )
+                                DropdownMenu(
+                                    expanded = expanded,
+                                    onDismissRequest = { expanded = false },
+                                    modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.95f))
+                                ) {
+                                    DropdownMenuItem(
+                                        text = { Text("Modifica", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) },
+                                        leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                                        onClick = {
+                                            expanded = false
+                                            isEditing = true
+                                        }
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text("Elimina", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error) },
+                                        leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+                                        onClick = {
+                                            expanded = false
+                                            onDelete()
+                                        }
+                                    )
+                                }
                             }
                         }
                     }
