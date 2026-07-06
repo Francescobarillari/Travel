@@ -37,12 +37,14 @@ import java.util.Locale
 fun ItineraryDetailScreen(
     itinerary: ItineraryDto,
     onNavigateBack: () -> Unit,
+    onActivityClick: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val scrollState = rememberScrollState()
     val totalPrice = itinerary.getActivities()?.sumOf { it.getPrice()?.toDouble() ?: 0.0 } ?: 0.0
     val uniqueTags = itinerary.getActivities()?.flatMap { it.getTags() ?: emptySet() }?.toSet() ?: emptySet()
     val uniqueLocations = itinerary.getActivities()?.map { it.getLocation() }?.filter { !it.isNullOrBlank() }?.distinct() ?: emptyList()
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     Scaffold(
         bottomBar = {
@@ -74,11 +76,17 @@ fun ItineraryDetailScreen(
                         )
                     }
                     Button(
-                        onClick = onNavigateBack,
+                        onClick = {
+                            android.widget.Toast.makeText(
+                                context,
+                                "Prenotazione non ancora disponibile!",
+                                android.widget.Toast.LENGTH_SHORT
+                            ).show()
+                        },
                         modifier = Modifier.height(48.dp),
                         shape = RoundedCornerShape(24.dp)
                     ) {
-                        Text("Torna Indietro", fontWeight = FontWeight.Bold)
+                        Text("Prenota", fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -334,7 +342,8 @@ fun ItineraryDetailScreen(
                         ActivityTimelineRow(
                             index = index + 1,
                             activity = activity,
-                            isLast = index == activitiesList.lastIndex
+                            isLast = index == activitiesList.lastIndex,
+                            onClick = { activity.id?.toString()?.let(onActivityClick) }
                         )
                     }
                 }
@@ -348,7 +357,8 @@ fun ItineraryDetailScreen(
 private fun ActivityTimelineRow(
     index: Int,
     activity: ActivityDto,
-    isLast: Boolean
+    isLast: Boolean,
+    onClick: () -> Unit = {}
 ) {
     Row(
         modifier = Modifier
@@ -392,6 +402,7 @@ private fun ActivityTimelineRow(
 
         // Activity detail card on right
         Card(
+            onClick = onClick,
             modifier = Modifier
                 .weight(1f)
                 .padding(bottom = 16.dp),

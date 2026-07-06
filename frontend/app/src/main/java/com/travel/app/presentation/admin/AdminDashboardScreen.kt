@@ -293,7 +293,7 @@ fun PendingActivitiesList(
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun AdminDashboardScreenPreview() {
-    val mockApiService = object : ApiService {
+    val mockApiService = object : com.travel.app.service.MockApiService() {
         override suspend fun login(request: it.unical.ea.dtos.authDto.LoginRequest) = it.unical.ea.dtos.authDto.JwtResponse("mock", "mock_refresh")
         override suspend fun register(request: it.unical.ea.dtos.authDto.SignupRequest) = "mock"
         override suspend fun getMe() = it.unical.ea.dtos.user.UserDTO()

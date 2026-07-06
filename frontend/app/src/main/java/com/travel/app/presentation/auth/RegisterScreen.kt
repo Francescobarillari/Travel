@@ -191,7 +191,7 @@ fun RegisterScreen(
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun RegisterScreenPreview() {
-    val mockApiService = object : ApiService {
+    val mockApiService = object : com.travel.app.service.MockApiService() {
         override suspend fun login(request: it.unical.ea.dtos.authDto.LoginRequest) = it.unical.ea.dtos.authDto.JwtResponse("mock_token", "mock_refresh")
         override suspend fun register(request: it.unical.ea.dtos.authDto.SignupRequest) = "mock_user_id"
         override suspend fun getMe() = it.unical.ea.dtos.user.UserDTO().apply { email = "test@travel.com" }
@@ -228,7 +228,7 @@ fun RegisterScreenPreview() {
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun RegisterSocietaScreenPreview() {
-    val mockApiService = object : ApiService {
+    val mockApiService = object : com.travel.app.service.MockApiService() {
         override suspend fun login(request: it.unical.ea.dtos.authDto.LoginRequest) = it.unical.ea.dtos.authDto.JwtResponse("mock_token", "mock_refresh")
         override suspend fun register(request: it.unical.ea.dtos.authDto.SignupRequest) = "mock_user_id"
         override suspend fun getMe() = it.unical.ea.dtos.user.UserDTO().apply { email = "test@travel.com" }

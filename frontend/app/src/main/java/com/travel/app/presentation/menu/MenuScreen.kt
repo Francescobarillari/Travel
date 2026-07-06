@@ -40,6 +40,7 @@ fun MenuScreen(
     onNavigateToProfile: () -> Unit,
     onNavigateToSecurity: () -> Unit,
     onLogout: () -> Unit,
+    onNavigateToFavorites: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val scrollState = rememberScrollState()
@@ -185,12 +186,12 @@ fun MenuScreen(
                     onClick = onNavigateToProfile
                 )
                 MenuGridCard(
-                    title = "I Miei Viaggi",
-                    icon = Icons.Default.CardTravel,
-                    iconColor = Color(0xFF059669),
-                    iconBg = Color(0xFFECFDF5),
+                    title = "Preferiti",
+                    icon = Icons.Default.Favorite,
+                    iconColor = Color(0xFFDC2626),
+                    iconBg = Color(0xFFFEF2F2),
                     modifier = Modifier.weight(1f),
-                    onClick = { Toast.makeText(context, "I Miei Viaggi: Funzionalità in arrivo!", Toast.LENGTH_SHORT).show() }
+                    onClick = onNavigateToFavorites
                 )
             }
             Spacer(modifier = Modifier.height(16.dp))

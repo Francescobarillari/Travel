@@ -37,10 +37,10 @@ interface ApiService {
     suspend fun createActivity(@Body request: ActivityDto): ActivityDto
 
     @PUT("activity/{id}")
-    suspend fun updateActivity(@Path("id") id: String, @Body request: ActivityDto): ActivityDto = throw NotImplementedError()
+    suspend fun updateActivity(@Path("id") id: String, @Body request: ActivityDto): ActivityDto
 
     @GET("activity/{id}/bookings")
-    suspend fun getBookedUsers(@Path("id") id: String): List<UserDTO> = throw NotImplementedError()
+    suspend fun getBookedUsers(@Path("id") id: String): List<UserDTO>
 
     // Chiamata per recuperare tutte le attività
     @GET("activity")
@@ -53,7 +53,7 @@ interface ApiService {
         @retrofit2.http.Query("maxPrice") maxPrice: Double? = null,
         @retrofit2.http.Query("page") page: Int = 0,
         @retrofit2.http.Query("size") size: Int = 10
-    ): it.unical.ea.dtos.common.PageDto<ActivityDto> = throw NotImplementedError()
+    ): it.unical.ea.dtos.common.PageDto<ActivityDto>
 
     @GET("api/location/search")
     suspend fun searchLocalita(
@@ -66,10 +66,10 @@ interface ApiService {
     suspend fun getLocalitaById(@Path("id") id: String): it.unical.ea.dtos.location.LocationDto
 
     @GET("activity/{id}")
-    suspend fun getActivityById(@Path("id") id: String): ActivityDto = throw NotImplementedError()
+    suspend fun getActivityById(@Path("id") id: String): ActivityDto
 
     @GET("api/feed/personalized")
-    suspend fun getPersonalizedFeed(): List<it.unical.ea.dtos.location.LocationDto> = throw NotImplementedError()
+    suspend fun getPersonalizedFeed(): List<it.unical.ea.dtos.location.LocationDto>
 
     // Chiamata per recuperare tutti gli itinerari
     @GET("itinerary")
@@ -120,4 +120,38 @@ interface ApiService {
 
     @POST("api/admin/companies/{id}/unblock")
     suspend fun unblockCompany(@Path("id") id: String)
+}
+
+open class MockApiService : ApiService {
+    override suspend fun login(request: LoginRequest): JwtResponse = throw NotImplementedError()
+    override suspend fun register(request: SignupRequest): String = throw NotImplementedError()
+    override suspend fun getMe(): UserDTO = throw NotImplementedError()
+    override suspend fun updateMe(request: UserDTO): UserDTO = throw NotImplementedError()
+    override suspend fun createActivity(request: ActivityDto): ActivityDto = throw NotImplementedError()
+    override suspend fun updateActivity(id: String, request: ActivityDto): ActivityDto = throw NotImplementedError()
+    override suspend fun getBookedUsers(id: String): List<UserDTO> = throw NotImplementedError()
+    override suspend fun getActivities(): List<ActivityDto> = throw NotImplementedError()
+    override suspend fun searchActivities(
+        query: String, minPrice: Double?, maxPrice: Double?, page: Int, size: Int
+    ): it.unical.ea.dtos.common.PageDto<ActivityDto> = throw NotImplementedError()
+    override suspend fun searchLocalita(
+        query: String, page: Int, size: Int
+    ): it.unical.ea.dtos.common.PageDto<it.unical.ea.dtos.location.LocationDto> = throw NotImplementedError()
+    override suspend fun getLocalitaById(id: String): it.unical.ea.dtos.location.LocationDto = throw NotImplementedError()
+    override suspend fun getActivityById(id: String): ActivityDto = throw NotImplementedError()
+    override suspend fun getPersonalizedFeed(): List<it.unical.ea.dtos.location.LocationDto> = throw NotImplementedError()
+    override suspend fun getItineraries(): List<ItineraryDto> = throw NotImplementedError()
+    override suspend fun createItinerary(request: CreateItineraryRequest): ItineraryDto = throw NotImplementedError()
+    override suspend fun deleteItinerary(id: String) {}
+    override suspend fun deleteActivity(id: String) {}
+    override suspend fun uploadDocument(file: okhttp3.MultipartBody.Part): String = throw NotImplementedError()
+    override suspend fun getPendingCompanies(): List<UserDTO> = throw NotImplementedError()
+    override suspend fun approveCompany(id: String) {}
+    override suspend fun rejectCompany(id: String) {}
+    override suspend fun getPendingActivities(): List<ActivityDto> = throw NotImplementedError()
+    override suspend fun approveActivity(id: String) {}
+    override suspend fun rejectActivity(id: String) {}
+    override suspend fun getAllCompanies(): List<UserDTO> = throw NotImplementedError()
+    override suspend fun blockCompany(id: String) {}
+    override suspend fun unblockCompany(id: String) {}
 }
