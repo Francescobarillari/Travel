@@ -144,6 +144,8 @@ fun LoginScreenPreview() {
         override suspend fun getItineraries() = emptyList<it.unical.ea.dtos.itinerary.ItineraryDto>()
         override suspend fun createItinerary(request: it.unical.ea.dtos.itinerary.CreateItineraryRequest) = it.unical.ea.dtos.itinerary.ItineraryDto()
         override suspend fun deleteItinerary(id: String) {}
+        override suspend fun bookActivity(id: String) = it.unical.ea.dtos.payment.PaymentIntentResponseDto()
+        override suspend fun bookItinerary(id: String) = it.unical.ea.dtos.payment.PaymentIntentResponseDto()
         override suspend fun uploadDocument(file: okhttp3.MultipartBody.Part) = "mock"
         override suspend fun getPendingCompanies() = emptyList<it.unical.ea.dtos.user.UserDTO>()
         override suspend fun approveCompany(id: String) {}
