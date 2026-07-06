@@ -39,6 +39,10 @@ import com.travel.app.domain.model.User
 import com.travel.app.presentation.admin.components.EmptyPlaceholder
 import com.travel.app.presentation.admin.components.CompanyCard
 import com.travel.app.presentation.admin.components.ActivityModerationCard
+import com.travel.app.presentation.admin.components.KpiCard
+import com.travel.app.presentation.admin.components.CompanyStatusDonutChart
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -120,14 +124,27 @@ fun AdminDashboardScreen(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            Icon(Icons.Default.Business, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Text("Società (${viewModel.pendingCompanies.size})", fontWeight = FontWeight.SemiBold)
+                            Icon(Icons.Default.Dashboard, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Text("Panoramica", fontWeight = FontWeight.SemiBold)
                         }
                     }
                 )
                 Tab(
                     selected = selectedTab == 1,
                     onClick = { selectedTab = 1 },
+                    text = {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Icon(Icons.Default.Business, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Text("Società (${viewModel.pendingCompanies.size})", fontWeight = FontWeight.SemiBold)
+                        }
+                    }
+                )
+                Tab(
+                    selected = selectedTab == 2,
+                    onClick = { selectedTab = 2 },
                     text = {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -165,13 +182,18 @@ fun AdminDashboardScreen(
                     )
                 } else {
                     when (selectedTab) {
-                        0 -> PendingCompaniesList(
+                        0 -> OverviewTabContent(
+                            viewModel = viewModel,
+                            onNavigateToCompaniesTab = { selectedTab = 1 },
+                            onNavigateToActivitiesTab = { selectedTab = 2 }
+                        )
+                        1 -> PendingCompaniesList(
                             companies = viewModel.pendingCompanies,
                             onApprove = { viewModel.approveCompany(it) },
                             onReject = { viewModel.rejectCompany(it) },
                             onImageClick = { activeImageForZoom = it }
                         )
-                        1 -> PendingActivitiesList(
+                        2 -> PendingActivitiesList(
                             activities = viewModel.pendingActivities,
                             onApprove = { viewModel.approveActivity(it) },
                             onReject = { viewModel.rejectActivity(it) }
@@ -188,6 +210,129 @@ fun AdminDashboardScreen(
             imagePath = path,
             onDismiss = { activeImageForZoom = null }
         )
+    }
+}
+
+@Composable
+fun OverviewTabContent(
+    viewModel: AdminViewModel,
+    onNavigateToCompaniesTab: () -> Unit,
+    onNavigateToActivitiesTab: () -> Unit
+) {
+    val totalCompanies = viewModel.allCompanies.size
+    val approvedCompanies = viewModel.allCompanies.count { it.approved && !it.blocked }
+    val pendingCompanies = viewModel.allCompanies.count { !it.approved && !it.blocked }
+    val blockedCompanies = viewModel.allCompanies.count { it.blocked }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // KPI Cards Row
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            KpiCard(
+                title = "Società Totali",
+                value = "$totalCompanies",
+                icon = Icons.Default.Business,
+                iconColor = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.weight(1f)
+            )
+            KpiCard(
+                title = "Società Pending",
+                value = "${viewModel.pendingCompanies.size}",
+                icon = Icons.Default.PendingActions,
+                iconColor = Color(0xFFE65100),
+                modifier = Modifier.weight(1f)
+            )
+            KpiCard(
+                title = "Attività Pending",
+                value = "${viewModel.pendingActivities.size}",
+                icon = Icons.Default.Explore,
+                iconColor = Color(0xFFC62828),
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        // Donut Chart Card
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    text = "Stato di approvazione Società",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                CompanyStatusDonutChart(
+                    approvedCount = approvedCompanies,
+                    pendingCount = pendingCompanies,
+                    blockedCount = blockedCompanies
+                )
+            }
+        }
+
+        // Quick Actions Card
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    text = "Attività di Moderazione Rapida",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                Text(
+                    text = "Ci sono attualmente ${viewModel.pendingCompanies.size} società in attesa di essere verificate e ${viewModel.pendingActivities.size} attività che richiedono approvazione prima di essere pubblicate.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    if (viewModel.pendingCompanies.isNotEmpty()) {
+                        Button(
+                            onClick = onNavigateToCompaniesTab,
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text("Modera Società", style = MaterialTheme.typography.labelMedium)
+                        }
+                    }
+                    if (viewModel.pendingActivities.isNotEmpty()) {
+                        Button(
+                            onClick = onNavigateToActivitiesTab,
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text("Modera Attività", style = MaterialTheme.typography.labelMedium)
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 

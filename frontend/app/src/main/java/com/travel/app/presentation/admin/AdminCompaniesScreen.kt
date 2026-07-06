@@ -36,6 +36,8 @@ fun AdminCompaniesScreen(
 ) {
     var filterState by remember { mutableStateOf(0) } // 0 = Approvate, 1 = In Attesa, 2 = Bloccate
     var activeImageForZoom by remember { mutableStateOf<String?>(null) }
+    var companyToBlock by remember { mutableStateOf<User?>(null) }
+    var companyToUnblock by remember { mutableStateOf<User?>(null) }
 
     val isPreview = androidx.compose.ui.platform.LocalInspectionMode.current
     LaunchedEffect(Unit) {
@@ -138,9 +140,9 @@ fun AdminCompaniesScreen(
                             company = company,
                             onApprove = { company.id?.let { viewModel.approveCompany(it) } },
                             onReject = { company.id?.let { viewModel.rejectCompany(it) } },
-                            onBlock = { company.id?.let { viewModel.blockCompany(it) } },
-                            onUnblock = { company.id?.let { viewModel.unblockCompany(it) } },
-                            onImageClick = { activeImageForZoom = it }
+                             onBlock = { companyToBlock = company },
+                             onUnblock = { companyToUnblock = company },
+                             onImageClick = { activeImageForZoom = it }
                         )
                     }
                 }
@@ -153,6 +155,55 @@ fun AdminCompaniesScreen(
         ZoomableImageDialog(
             imagePath = path,
             onDismiss = { activeImageForZoom = null }
+        )
+    }
+
+    // Dialog di conferma blocco
+    companyToBlock?.let { company ->
+        AlertDialog(
+            onDismissRequest = { companyToBlock = null },
+            title = { Text("Conferma Blocco") },
+            text = { Text("Sei sicuro di voler bloccare la società \"${company.name ?: "società"}\"? Non potrà più accedere all'applicazione o pubblicare attività.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        company.id?.let { viewModel.blockCompany(it) }
+                        companyToBlock = null
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("Blocca")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { companyToBlock = null }) {
+                    Text("Annulla")
+                }
+            }
+        )
+    }
+
+    // Dialog di conferma sblocco
+    companyToUnblock?.let { company ->
+        AlertDialog(
+            onDismissRequest = { companyToUnblock = null },
+            title = { Text("Conferma Sblocco") },
+            text = { Text("Sei sicuro di voler sbloccare la società \"${company.name ?: "società"}\"? Verrà ripristinato il suo accesso e la visibilità delle sue attività.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        company.id?.let { viewModel.unblockCompany(it) }
+                        companyToUnblock = null
+                    }
+                ) {
+                    Text("Sblocca")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { companyToUnblock = null }) {
+                    Text("Annulla")
+                }
+            }
         )
     }
 }
