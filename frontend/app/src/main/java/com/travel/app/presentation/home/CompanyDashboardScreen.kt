@@ -16,15 +16,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.travel.app.presentation.components.itinerary.ItineraryCard
 import com.travel.app.presentation.theme.TravelTheme
-import it.unical.ea.dtos.itinerary.ItineraryDto
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.LocationOn
 import java.time.format.DateTimeFormatter
 import it.unical.ea.dtos.activity.ActivityDto
 import androidx.compose.ui.graphics.Color
+import com.travel.app.presentation.home.components.CompanyKpiCard
+import com.travel.app.presentation.home.components.OccupancyProgressRing
+import com.travel.app.presentation.home.components.ActivityFillRateBar
+import androidx.compose.material.icons.filled.People
+import androidx.compose.material.icons.filled.TrendingUp
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -32,9 +35,13 @@ fun CompanyDashboardScreen(
     viewModel: CompanyDashboardViewModel,
     onEditActivityClick: (String) -> Unit,
     onViewBookingsClick: (String) -> Unit,
-    modifier: Modifier = Modifier,
-    onItineraryClick: (ItineraryDto) -> Unit = {}
+    modifier: Modifier = Modifier
 ) {
+    val totalActivities = viewModel.activities.size
+    val totalOccupiedSeats = viewModel.activities.sumOf { it.currentParticipants ?: 0 }
+    val totalCapacitySeats = viewModel.activities.sumOf { it.participants ?: 0 }
+    val occupancyRate = if (totalCapacitySeats > 0) (100 * totalOccupiedSeats / totalCapacitySeats) else 0
+
     LaunchedEffect(Unit) {
         viewModel.fetchDashboardData()
     }
@@ -76,58 +83,124 @@ fun CompanyDashboardScreen(
                     }
                 }
             }
-        } else if (viewModel.itineraries.isEmpty() && viewModel.activities.isEmpty()) {
+        } else if (viewModel.activities.isEmpty()) {
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                Text("Non ci sono ancora itinerari o attività disponibili.", style = MaterialTheme.typography.bodyMedium)
+                Text("Non ci sono ancora attività disponibili.", style = MaterialTheme.typography.bodyMedium)
             }
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(bottom = 100.dp)
             ) {
-                if (viewModel.itineraries.isNotEmpty()) {
-                    item {
-                        Text(
-                            text = "Itinerari Disponibili",
-                            modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                        )
-                    }
-                    items(viewModel.itineraries) { itinerary ->
-                        ItineraryCard(
-                            itinerary = itinerary,
-                            onClick = { onItineraryClick(itinerary) },
-                            actions = {
-                                IconButton(onClick = { /* TODO */ }) {
-                                    Icon(
-                                        imageVector = Icons.Default.Edit,
-                                        contentDescription = "Modifica",
-                                        tint = MaterialTheme.colorScheme.primary
+                // Sezione Analitica / Statistiche
+                item {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp, vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        // Riga KPI
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            CompanyKpiCard(
+                                title = "Attività Pubblicate",
+                                value = "$totalActivities",
+                                icon = Icons.Default.CalendarToday,
+                                iconColor = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.weight(1f)
+                            )
+                            CompanyKpiCard(
+                                title = "Prenotazioni",
+                                value = "$totalOccupiedSeats",
+                                icon = Icons.Default.People,
+                                iconColor = MaterialTheme.colorScheme.secondary,
+                                modifier = Modifier.weight(1f)
+                            )
+                            CompanyKpiCard(
+                                title = "Tasso Occupazione",
+                                value = "$occupancyRate%",
+                                icon = Icons.Default.TrendingUp,
+                                iconColor = Color(0xFFE65100),
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+
+                        // Grafico Progress Ring Occupazione
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Text(
+                                    text = "Occupazione Posti Totale",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                                OccupancyProgressRing(
+                                    occupiedCount = totalOccupiedSeats,
+                                    capacityCount = totalCapacitySeats
+                                )
+                            }
+                        }
+
+                        // Riempimento singole attività
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Text(
+                                    text = "Performance Singole Attività",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                                viewModel.activities.forEach { activity ->
+                                    ActivityFillRateBar(
+                                        name = activity.name ?: "Senza Nome",
+                                        occupiedCount = activity.currentParticipants ?: 0,
+                                        capacityCount = activity.participants ?: 0
                                     )
                                 }
                             }
-                        )
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
                     }
                 }
 
-                if (viewModel.activities.isNotEmpty()) {
-                    item {
-                        Text(
-                            text = "Le Tue Attività",
-                            modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                        )
-                    }
-                    items(viewModel.activities) { activity ->
-                        ActivityDashboardCard(
-                            activity = activity,
-                            onEditClick = onEditActivityClick,
-                            onBookingsClick = onViewBookingsClick
-                        )
-                    }
+                item {
+                    Text(
+                        text = "Le Tue Attività",
+                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                    )
+                }
+                items(viewModel.activities) { activity ->
+                    ActivityDashboardCard(
+                        activity = activity,
+                        onEditClick = onEditActivityClick,
+                        onBookingsClick = onViewBookingsClick
+                    )
                 }
             }
         }
@@ -252,9 +325,6 @@ fun CompanyDashboardScreenPreview() {
     TravelTheme {
         val mockViewModel = remember {
             CompanyDashboardViewModel(
-                itineraryRepository = object : com.travel.app.domain.repository.ItineraryRepository {
-                    override suspend fun getItineraries() = Result.success(emptyList<ItineraryDto>())
-                },
                 activityRepository = object : com.travel.app.domain.repository.ActivityRepository {
                     override suspend fun createActivity(activity: it.unical.ea.dtos.activity.ActivityDto) = Result.success(activity)
                     override suspend fun getActivities() = Result.success(emptyList<it.unical.ea.dtos.activity.ActivityDto>())

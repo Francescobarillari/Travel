@@ -57,7 +57,6 @@ fun HomeScreen(
 
     val companyDashboardViewModel = remember {
         CompanyDashboardViewModel(
-            itineraryRepository = AppContainer.itineraryRepository,
             activityRepository = AppContainer.activityRepository,
             userRepository = AppContainer.userRepository
         )
@@ -116,8 +115,7 @@ fun HomeScreen(
                             },
                             onViewBookingsClick = { activityId ->
                                 selectedActivityIdForBookings = activityId
-                            },
-                            onItineraryClick = { selectedItinerary = it }
+                            }
                         )
                     }
                 } else {
@@ -142,8 +140,7 @@ fun HomeScreen(
                     CompanyDashboardScreen(
                         viewModel = companyDashboardViewModel,
                         onEditActivityClick = {},
-                        onViewBookingsClick = {},
-                        onItineraryClick = { selectedItinerary = it }
+                        onViewBookingsClick = {}
                     )
                 }
             }
