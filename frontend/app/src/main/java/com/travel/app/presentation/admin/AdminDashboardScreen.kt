@@ -91,13 +91,6 @@ fun AdminDashboardScreen(
                             tint = MaterialTheme.colorScheme.onSurface
                         )
                     }
-                    IconButton(onClick = onLogout) {
-                        Icon(
-                            imageVector = Icons.Default.ExitToApp,
-                            contentDescription = "Logout",
-                            tint = MaterialTheme.colorScheme.error
-                        )
-                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,

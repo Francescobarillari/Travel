@@ -10,6 +10,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -82,7 +83,7 @@ fun CompanyCard(
             // Sezione Foto Documenti
             if (!company.documentPhotos.isNullOrEmpty()) {
                 Text(
-                    text = "Documenti caricati (Tocca per zoom):",
+                    text = "Documenti caricati:",
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
@@ -91,25 +92,21 @@ fun CompanyCard(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    val token = if (AppContainer.isInitialized) AppContainer.sessionManager.getSessionToken().orEmpty() else ""
-                    company.documentPhotos.forEach { path ->
-                        val filename = path.substringAfterLast("/")
-                        val imgUrl = "${BuildConfig.BACKEND_URL}api/admin/documents/$filename"
-                        val imageRequest = ImageRequest.Builder(LocalContext.current)
-                            .data(imgUrl)
-                            .addHeader("Authorization", "Bearer $token")
-                            .crossfade(true)
-                            .build()
-
-                        AsyncImage(
-                            model = imageRequest,
-                            contentDescription = "Documento Società",
-                            modifier = Modifier
-                                .size(90.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
-                                .clickable { onImageClick(path) },
-                            contentScale = ContentScale.Crop
+                    company.documentPhotos.forEachIndexed { index, path ->
+                        AssistChip(
+                            onClick = { onImageClick(path) },
+                            label = { Text("Documento ${index + 1}") },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.Visibility,
+                                    contentDescription = "Visualizza documento",
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            },
+                            colors = AssistChipDefaults.assistChipColors(
+                                labelColor = MaterialTheme.colorScheme.primary,
+                                leadingIconContentColor = MaterialTheme.colorScheme.primary
+                            )
                         )
                     }
                 }
