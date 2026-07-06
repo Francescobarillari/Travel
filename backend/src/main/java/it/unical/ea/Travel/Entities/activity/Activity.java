@@ -1,5 +1,6 @@
 package it.unical.ea.Travel.Entities.activity;
 
+import it.unical.ea.enums.TravelTag;
 import it.unical.ea.Travel.Entities.audit.AuditBaseEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -9,7 +10,7 @@ import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-import it.unical.ea.enums.TravelTag;
+
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

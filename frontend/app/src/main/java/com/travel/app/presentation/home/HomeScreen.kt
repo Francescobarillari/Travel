@@ -20,6 +20,7 @@ import com.travel.app.presentation.profile.SecurityViewModel
 import com.travel.app.presentation.components.home.FloatingBottomNavBar
 import com.travel.app.presentation.theme.TravelTheme
 import com.travel.app.presentation.components.itinerary.ItineraryDetailScreen
+import com.travel.app.presentation.components.activity.ActivityDetailScreen
 import it.unical.ea.dtos.itinerary.ItineraryDto
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -65,7 +66,8 @@ fun HomeScreen(
     val esploraViewModel = remember {
         EsploraViewModel(
             activityRepository = AppContainer.activityRepository,
-            localitaRepository = AppContainer.localitaRepository
+            localitaRepository = AppContainer.localitaRepository,
+            itineraryRepository = AppContainer.itineraryRepository
         )
     }
 
@@ -89,7 +91,17 @@ fun HomeScreen(
         if (selectedItinerary != null) {
             ItineraryDetailScreen(
                 itinerary = selectedItinerary!!,
-                onNavigateBack = { selectedItinerary = null }
+                onNavigateBack = { selectedItinerary = null },
+                onActivityClick = { activityId ->
+                    selectedItinerary = null
+                    selectedItemId = activityId
+                    selectedItemIsTrip = false
+                }
+            )
+        } else if (selectedItemId != null && !selectedItemIsTrip) {
+            ActivityDetailScreen(
+                activityId = selectedItemId!!,
+                onNavigateBack = { selectedItemId = null }
             )
         } else {
             Box(modifier = Modifier.fillMaxSize()) {
@@ -122,9 +134,14 @@ fun HomeScreen(
                     EsploraScreen(
                         viewModel = esploraViewModel,
                         onItemClick = { id, isTrip ->
-                            // TODO: In attesa della pagina di dettaglio realizzata dall'altro collega
                             selectedItemId = id
                             selectedItemIsTrip = isTrip
+                            if (isTrip) {
+                                val found = esploraViewModel.filteredItineraries.find { it.id?.toString() == id }
+                                if (found != null) {
+                                    selectedItinerary = found
+                                }
+                            }
                         }
                     )
                 }
@@ -137,10 +154,12 @@ fun HomeScreen(
                         onNavigateBack = { selectedTab = HomeTab.ESPLORA }
                     )
                 } else {
-                    CompanyDashboardScreen(
-                        viewModel = companyDashboardViewModel,
-                        onEditActivityClick = {},
-                        onViewBookingsClick = {}
+                    PreferitiScreen(
+                        onActivityClick = { activityId -> 
+                            selectedItemId = activityId
+                            selectedItemIsTrip = false
+                        },
+                        onItineraryClick = { selectedItinerary = it }
                     )
                 }
             }
@@ -162,7 +181,8 @@ fun HomeScreen(
                 onBack = { selectedTab = HomeTab.ESPLORA },
                 onNavigateToProfile = { selectedTab = HomeTab.PROFILO },
                 onNavigateToSecurity = { selectedTab = HomeTab.SICUREZZA },
-                onLogout = onLogout
+                onLogout = onLogout,
+                onNavigateToFavorites = { selectedTab = HomeTab.PREFERITI }
             )
             HomeTab.SICUREZZA -> {
                 SecurityScreen(

@@ -21,8 +21,12 @@ import androidx.compose.ui.unit.dp
 import com.travel.app.presentation.theme.TravelTheme
 import it.unical.ea.dtos.activity.ActivityDto
 import it.unical.ea.dtos.location.LocationDto as LocalitaDto
-import com.travel.app.presentation.components.localita.LocalitaCard
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.ui.tooling.preview.Preview
+import com.travel.app.presentation.components.activity.ActivityCard
+import com.travel.app.presentation.components.localita.LocalitaCard
+import com.travel.app.presentation.components.itinerary.ItineraryCard
 import androidx.compose.foundation.lazy.items
 import it.unical.ea.enums.TravelTag
 
@@ -31,6 +35,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.gestures.detectTapGestures
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun EsploraScreen(
     viewModel: EsploraViewModel,
@@ -40,6 +45,23 @@ fun EsploraScreen(
     val scrollState = rememberScrollState()
     val focusManager = LocalFocusManager.current
     var isSearchFocused by remember { mutableStateOf(false) }
+
+    val favoriteActivities = remember { mutableStateMapOf<String, Boolean>() }
+    val favoriteItineraries = remember { mutableStateMapOf<String, Boolean>() }
+
+    LaunchedEffect(viewModel.activities, viewModel.filteredItineraries) {
+        val favActIds = com.travel.app.data.AppContainer.sessionManager.getFavoriteActivityIds()
+        viewModel.activities.forEach { act ->
+            val idStr = act.id?.toString() ?: ""
+            favoriteActivities[idStr] = favActIds.contains(idStr)
+        }
+        
+        val favItIds = com.travel.app.data.AppContainer.sessionManager.getFavoriteItineraryIds()
+        viewModel.filteredItineraries.forEach { itin ->
+            val idStr = itin.id?.toString() ?: ""
+            favoriteItineraries[idStr] = favItIds.contains(idStr)
+        }
+    }
 
     var sliderPosition by remember(viewModel.minPrice, viewModel.maxPrice) {
         val min = viewModel.minPrice?.toFloat() ?: 0f
@@ -173,6 +195,11 @@ fun EsploraScreen(
                     selected = viewModel.selectedTab == EsploraTab.ATTIVITA,
                     onClick = { viewModel.onTabSelected(EsploraTab.ATTIVITA) },
                     text = { Text("Attività") }
+                )
+                Tab(
+                    selected = viewModel.selectedTab == EsploraTab.ITINERARI,
+                    onClick = { viewModel.onTabSelected(EsploraTab.ITINERARI) },
+                    text = { Text("Itinerari") }
                 )
             }
         }
@@ -323,7 +350,44 @@ fun EsploraScreen(
                             }
                             items(viewModel.activities.size) { index ->
                                 val activity = viewModel.activities[index]
-                                ActivityCard(activity = activity, onClick = { onItemClick(activity.id.toString(), false) })
+                                val actId = activity.id?.toString() ?: ""
+                                val isFav = favoriteActivities[actId] == true
+                                ActivityCard(
+                                    activity = activity,
+                                    isFavorite = isFav,
+                                    onFavoriteClick = {
+                                        com.travel.app.data.AppContainer.sessionManager.toggleFavoriteActivity(actId)
+                                        favoriteActivities[actId] = !isFav
+                                    },
+                                    onClick = { onItemClick(actId, false) }
+                                )
+                            }
+                        }
+                    }
+
+                    if (viewModel.selectedTab == EsploraTab.TUTTI || viewModel.selectedTab == EsploraTab.ITINERARI) {
+                        if (viewModel.filteredItineraries.isNotEmpty()) {
+                            item {
+                                Text(
+                                    text = "Itinerari di Viaggio",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
+                                )
+                            }
+                            items(viewModel.filteredItineraries.size) { index ->
+                                val itinerary = viewModel.filteredItineraries[index]
+                                val itinId = itinerary.id?.toString() ?: ""
+                                val isFav = favoriteItineraries[itinId] == true
+                                ItineraryCard(
+                                    itinerary = itinerary,
+                                    isFavorite = isFav,
+                                    onFavoriteClick = {
+                                        com.travel.app.data.AppContainer.sessionManager.toggleFavoriteItinerary(itinId)
+                                        favoriteItineraries[itinId] = !isFav
+                                    },
+                                    onClick = { onItemClick(itinId, true) }
+                                )
                             }
                         }
                     }
@@ -346,166 +410,7 @@ fun EsploraScreen(
     } 
 } 
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun ActivityCard(activity: ActivityDto, onClick: () -> Unit = {}) {
-    Card(
-        onClick = onClick,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 8.dp),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = activity.name,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        text = "Organizzato da: ${activity.organizer ?: "N/D"}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                    )
-                }
-                
-                val priceDouble = activity.price?.toDouble() ?: 0.0
-                val priceText = if (priceDouble <= 0.0) "Gratuito" else "€${String.format("%.2f", priceDouble)}"
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = if (priceDouble <= 0.0) Color(0xFFDCFCE7) else MaterialTheme.colorScheme.primaryContainer
-                    ),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text(
-                        text = priceText,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = if (priceDouble <= 0.0) Color(0xFF15803D) else MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                }
-            }
-
-            if (!activity.description.isNullOrBlank()) {
-                Text(
-                    text = activity.description ?: "",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
-                    maxLines = 3
-                )
-            }
-
-            if (!activity.tags.isNullOrEmpty()) {
-                Spacer(modifier = Modifier.height(4.dp))
-                androidx.compose.foundation.lazy.LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    items(activity.tags.toList()) { tag ->
-                        val formattedTag = tag.name.lowercase().replaceFirstChar { 
-                            if (it.isLowerCase()) it.titlecase(java.util.Locale.getDefault()) else it.toString() 
-                        }
-                        val bgColor = try {
-                            Color(android.graphics.Color.parseColor(tag.bgColorHex))
-                        } catch (e: Exception) {
-                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
-                        }
-                        val textColor = try {
-                            Color(android.graphics.Color.parseColor(tag.textColorHex))
-                        } catch (e: Exception) {
-                            MaterialTheme.colorScheme.primary
-                        }
-                        Surface(
-                            color = bgColor,
-                            shape = RoundedCornerShape(8.dp),
-                            border = androidx.compose.foundation.BorderStroke(
-                                1.dp,
-                                textColor.copy(alpha = 0.2f)
-                            )
-                        ) {
-                            Text(
-                                text = formattedTag,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = textColor,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
-                    }
-                }
-            }
-
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.LocationOn,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.secondary,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Text(
-                        text = activity.location ?: "N/D",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                    )
-                }
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.CalendarToday,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.secondary,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Text(
-                        text = formatDateTime(activity.startTime),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                    )
-                }
-            }
-        }
-    }
-}
-
-
-fun formatDateTime(dateTime: java.time.LocalDateTime?): String {
-    if (dateTime == null) return ""
-    return try {
-        val formatter = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
-        dateTime.format(formatter)
-    } catch (e: Exception) {
-        dateTime.toString()
-    }
-}
-
+@RequiresApi(Build.VERSION_CODES.O)
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun EsploraScreenPreview() {
@@ -521,6 +426,9 @@ fun EsploraScreenPreview() {
                 localitaRepository = object : com.travel.app.domain.repository.LocalitaRepository {
                     override suspend fun getLocalitaById(id: String) = Result.failure<LocalitaDto>(Exception("Not implemented"))
                     override suspend fun searchLocalita(query: String, page: Int, size: Int) = Result.success(it.unical.ea.dtos.common.PageDto<LocalitaDto>(emptyList<LocalitaDto>(), 0L, 0, 10, 0))
+                },
+                itineraryRepository = object : com.travel.app.domain.repository.ItineraryRepository {
+                    override suspend fun getItineraries() = Result.success(emptyList<it.unical.ea.dtos.itinerary.ItineraryDto>())
                 }
             )
         }
