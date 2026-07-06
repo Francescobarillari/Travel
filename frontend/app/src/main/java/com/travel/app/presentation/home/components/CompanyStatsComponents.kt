@@ -10,9 +10,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 @Composable
 fun CompanyKpiCard(
@@ -24,32 +26,41 @@ fun CompanyKpiCard(
 ) {
     Card(
         modifier = modifier,
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = iconColor,
-                modifier = Modifier.size(20.dp)
-            )
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(iconColor.copy(alpha = 0.1f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = iconColor,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
             Text(
                 text = value,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.ExtraBold,
                 color = MaterialTheme.colorScheme.onSurface
             )
             Text(
                 text = title,
-                style = MaterialTheme.typography.labelSmall,
-                color = Color.Gray
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF64748B)
             )
         }
     }
@@ -76,6 +87,7 @@ fun OccupancyProgressRing(
             contentAlignment = Alignment.Center
         ) {
             val colorProgress = MaterialTheme.colorScheme.primary
+            val colorSecondary = MaterialTheme.colorScheme.secondary
             val colorTrack = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
 
             androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
@@ -101,7 +113,12 @@ fun OccupancyProgressRing(
                 val sweepAngle = 360f * percentage / 100f
                 if (sweepAngle > 0) {
                     drawArc(
-                        color = colorProgress,
+                        brush = Brush.linearGradient(
+                            colors = listOf(
+                                colorProgress,
+                                colorSecondary
+                            )
+                        ),
                         startAngle = -90f,
                         sweepAngle = sweepAngle,
                         useCenter = false,
