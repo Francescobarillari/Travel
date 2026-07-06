@@ -62,7 +62,7 @@ fun ItineraryDetailScreen(
         when (paymentResult) {
             is PaymentSheetResult.Completed -> {
                 Toast.makeText(context, "Pagamento completato!", Toast.LENGTH_SHORT).show()
-                viewModel.clearClientSecret()
+                viewModel.confirmPaymentSuccess()
             }
             is PaymentSheetResult.Canceled -> {
                 Toast.makeText(context, "Pagamento annullato", Toast.LENGTH_SHORT).show()
@@ -77,7 +77,6 @@ fun ItineraryDetailScreen(
 
     LaunchedEffect(clientSecret) {
         clientSecret?.let { secret ->
-            com.stripe.android.PaymentConfiguration.init(context, BuildConfig.STRIPE_PUBLISHABLE_KEY)
             paymentSheet.presentWithPaymentIntent(
                 secret,
                 PaymentSheet.Configuration(
@@ -123,15 +122,7 @@ fun ItineraryDetailScreen(
                             color = MaterialTheme.colorScheme.primary
                         )
                     }
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Button(
-                            onClick = onNavigateBack,
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
-                            modifier = Modifier.height(48.dp),
-                            shape = RoundedCornerShape(24.dp)
-                        ) {
-                            Text("Indietro", fontWeight = FontWeight.Bold)
-                        }
+                    Row(modifier = Modifier.fillMaxWidth()) {
                         Button(
                             onClick = { 
                                 itinerary.getId()?.toString()?.let {
@@ -139,8 +130,10 @@ fun ItineraryDetailScreen(
                                 }
                             },
                             enabled = !isLoading,
-                            modifier = Modifier.height(48.dp),
-                            shape = RoundedCornerShape(24.dp)
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(52.dp),
+                            shape = RoundedCornerShape(26.dp)
                         ) {
                             if (isLoading) {
                                 CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)

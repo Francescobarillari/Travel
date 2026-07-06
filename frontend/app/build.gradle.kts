@@ -29,6 +29,16 @@ android {
                 localProperties.load(inputStream)
             }
         }
+        
+        // Legge le variabili dal file .env nella root del progetto
+        val envProperties = Properties()
+        val envFile = rootProject.file("../.env")
+        if (envFile.exists()) {
+            envFile.inputStream().use { inputStream ->
+                envProperties.load(inputStream)
+            }
+        }
+
         val backendUrl = localProperties.getProperty("backend.url") ?: "http://10.0.2.2:8080/"
         buildConfigField("String", "BACKEND_URL", "\"$backendUrl\"")
 
@@ -42,7 +52,9 @@ android {
         buildConfigField("String", "KEYCLOAK_CLIENT_ID", "\"$keycloakClientId\"")
         buildConfigField("String", "KEYCLOAK_CLIENT_SECRET", "\"$keycloakClientSecret\"")
 
-        val stripePublishableKey = localProperties.getProperty("stripe.publishable.key") ?: "pk_test_4eC39HqLyjWDarjtT1zdp7dc"
+        val stripePublishableKey = envProperties.getProperty("STRIPE_PUBLISHABLE_KEY") 
+            ?: localProperties.getProperty("stripe.publishable.key") 
+            ?: "pk_test_4eC39HqLyjWDarjtT1zdp7dc"
         buildConfigField("String", "STRIPE_PUBLISHABLE_KEY", "\"$stripePublishableKey\"")
     }
 
@@ -96,7 +108,7 @@ dependencies {
     implementation("com.squareup.retrofit2:converter-scalars:2.9.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
     implementation("io.coil-kt:coil-compose:2.7.0")
-    implementation("com.stripe:stripe-android:20.35.0")
+    implementation("com.stripe:stripe-android:20.48.6")
     implementation(project(":common-dtos"))
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")

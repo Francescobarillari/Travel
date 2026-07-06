@@ -8,8 +8,12 @@ import it.unical.ea.Travel.Repositories.activity.ActivityRepository;
 import it.unical.ea.Travel.Repositories.itinerary.ItineraryRepository;
 import it.unical.ea.Travel.Repositories.location.LocationRepository;
 import it.unical.ea.Travel.Repositories.user.UserRepository;
+import it.unical.ea.Travel.Services.keycloak.KeycloakAdminService;
+import it.unical.ea.Travel.Services.keycloak.KeycloakUserAlreadyExistsException;
+import it.unical.ea.dtos.authDto.SignupRequest;
 import it.unical.ea.enums.UserType;
 import it.unical.ea.enums.TravelTag;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
@@ -24,28 +28,67 @@ import java.util.Set;
 import java.util.HashSet;
 import java.util.UUID;
 
+@Slf4j
 @Component
 @Profile("!test")
 @Order(2)
 public class DataSeeder implements CommandLineRunner {
 
+    private static final String TEST_EMAIL = "a@a.it";
+    private static final String TEST_PASSWORD = "aaa";
+
     private final UserRepository userRepository;
     private final ActivityRepository activityRepository;
     private final ItineraryRepository itineraryRepository;
     private final LocationRepository locationRepository;
+    private final KeycloakAdminService keycloakAdminService;
 
-    public DataSeeder(UserRepository userRepository, ActivityRepository activityRepository, ItineraryRepository itineraryRepository, LocationRepository locationRepository) {
+    public DataSeeder(UserRepository userRepository, ActivityRepository activityRepository,
+                      ItineraryRepository itineraryRepository, LocationRepository locationRepository,
+                      KeycloakAdminService keycloakAdminService) {
         this.userRepository = userRepository;
         this.activityRepository = activityRepository;
         this.itineraryRepository = itineraryRepository;
         this.locationRepository = locationRepository;
+        this.keycloakAdminService = keycloakAdminService;
     }
 
     @Override
     @Transactional
     public void run(String... args) throws Exception {
+        seedTestUser();
         if (activityRepository.count() == 0) {
             seedData();
+        }
+    }
+
+    private void seedTestUser() {
+        boolean existsInDb = userRepository.getUserByEmail(TEST_EMAIL).isPresent();
+        if (!existsInDb) {
+            try {
+                SignupRequest req = new SignupRequest();
+                req.setEmail(TEST_EMAIL);
+                req.setPassword(TEST_PASSWORD);
+                req.setUserType(UserType.VIAGGIATORE);
+                req.setFirstName("Test");
+                req.setLastName("User");
+                String keycloakId = keycloakAdminService.createUser(req);
+
+                User user = new User();
+                user.setEmail(TEST_EMAIL);
+                user.setPasswordHash("seeded");
+                user.setUserType(UserType.VIAGGIATORE);
+                user.setFirstName("Test");
+                user.setLastName("User");
+                user.setRoles("ROLE_VIAGGIATORE");
+                user.setKeycloakId(keycloakId);
+                userRepository.save(user);
+                log.info("✅ Utente test creato: {} / {}", TEST_EMAIL, TEST_PASSWORD);
+            } catch (KeycloakUserAlreadyExistsException e) {
+                log.info("ℹ️ Utente test già presente su Keycloak: {}", TEST_EMAIL);
+            } catch (Exception e) {
+                log.warn("⚠️ Impossibile creare utente test (Keycloak non raggiungibile?): {}", e.getMessage());
+            }
         }
     }
 

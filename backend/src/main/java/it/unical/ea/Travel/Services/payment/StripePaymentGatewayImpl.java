@@ -1,24 +1,31 @@
 package it.unical.ea.Travel.Services.payment;
 
-import com.stripe.Stripe;
+import com.stripe.StripeClient;
 import com.stripe.exception.StripeException;
 import com.stripe.model.PaymentIntent;
 import com.stripe.param.PaymentIntentCreateParams;
-import jakarta.annotation.PostConstruct;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 
+@Slf4j
 @Service
+@ConditionalOnProperty(name = "stripe.mock", havingValue = "false")
 public class StripePaymentGatewayImpl implements PaymentGateway {
 
-    @Value("${stripe.api.key}")
-    private String stripeApiKey;
+    private final StripeClient stripeClient;
 
-    @PostConstruct
-    public void init() {
-        Stripe.apiKey = stripeApiKey;
+    public StripePaymentGatewayImpl(@Value("${stripe.api.key}") String stripeApiKey) {
+        this.stripeClient = new StripeClient(stripeApiKey);
+        // Log partial key to verify it's loaded correctly at startup
+        if (stripeApiKey != null && stripeApiKey.length() > 10) {
+            log.info("Stripe initialized with key: {}...{}", stripeApiKey.substring(0, 10), stripeApiKey.substring(stripeApiKey.length() - 4));
+        } else {
+            log.warn("Stripe API key is missing or too short!");
+        }
     }
 
     @Override
@@ -30,14 +37,14 @@ public class StripePaymentGatewayImpl implements PaymentGateway {
                 .setAmount(amountInCents)
                 .setCurrency(currency)
                 .setDescription(description)
-                // For demonstration, we could add metadata to store booking info,
-                // but we will rely on the paymentIntentId saved in our DB instead.
+                .addPaymentMethodType("card")
                 .build();
 
         try {
-            PaymentIntent intent = PaymentIntent.create(params);
+            PaymentIntent intent = stripeClient.paymentIntents().create(params);
             return intent.getClientSecret();
         } catch (StripeException e) {
+            log.error("Stripe error: {} (code: {})", e.getMessage(), e.getCode());
             throw new RuntimeException("Failed to create Stripe Payment Intent", e);
         }
     }

@@ -90,6 +90,9 @@ interface ApiService {
     @POST("itinerary/{id}/book")
     suspend fun bookItinerary(@Path("id") id: String): PaymentIntentResponseDto
 
+    @POST("itinerary/booking/{bookingId}/confirm")
+    suspend fun confirmItineraryBooking(@Path("bookingId") bookingId: String)
+
     @DELETE("activity/{id}")
     suspend fun deleteActivity(@Path("id") id: String) { throw NotImplementedError() }
 

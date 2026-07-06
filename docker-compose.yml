@@ -83,6 +83,8 @@ services:
       - KEYCLOAK_ADMIN_CLIENT_SECRET=travel-backend-admin-secret
       - KEYCLOAK_DEFAULT_CLIENT_ROLE=BASIC
       - UNSPLASH_ACCESS_KEY=${UNSPLASH_ACCESS_KEY}
+      - STRIPE_API_KEY=${STRIPE_API_KEY}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
 
 volumes:
   postgres_data:

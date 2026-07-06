@@ -19,6 +19,7 @@ import it.unical.ea.dtos.payment.PaymentIntentResponseDto;
 import it.unical.ea.Travel.Entities.payment.BookingStatus;
 import java.math.BigDecimal;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -26,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.List;
 import java.util.UUID;
 
@@ -43,6 +45,9 @@ public class ItineraryService {
     private final ActivityService activityService;
     private final AuditLogService auditLogService;
     private final PaymentGateway paymentGateway;
+
+    @Value("${stripe.mock:true}")
+    private boolean stripeMock;
 
     @Autowired
     public ItineraryService(ItineraryRepository itineraryRepository,
@@ -189,15 +194,21 @@ public class ItineraryService {
             }
         }
 
-        if (itineraryBookingRepository.findByUserIdAndItineraryId(user.getId(), itinerary.getId()).isPresent()) {
-            throw new ApiException(HttpStatus.CONFLICT, "itinerary.booking.alreadyBooked");
+        Optional<ItineraryBooking> existingBookingOpt = itineraryBookingRepository.findByUserIdAndItineraryId(user.getId(), itinerary.getId());
+        if (existingBookingOpt.isPresent()) {
+            ItineraryBooking existingBooking = existingBookingOpt.get();
+            if (existingBooking.getStatus() == BookingStatus.PENDING || existingBooking.getStatus() == BookingStatus.FAILED) {
+                cancelItineraryBooking(itineraryId, userEmail);
+            } else {
+                throw new ApiException(HttpStatus.CONFLICT, "itinerary.booking.alreadyBooked");
+            }
         }
 
         String clientSecret = null;
         String paymentIntentId = null;
         BookingStatus status = BookingStatus.PENDING;
 
-        if (totalPrice.compareTo(BigDecimal.ZERO) > 0) {
+        if (totalPrice.compareTo(BigDecimal.ZERO) > 0 && !stripeMock) {
             clientSecret = paymentGateway.createPaymentIntent(totalPrice, "eur", "Booking for Itinerary: " + itinerary.getTitle());
             if (clientSecret != null && clientSecret.contains("_secret_")) {
                 paymentIntentId = clientSecret.substring(0, clientSecret.indexOf("_secret_"));
@@ -248,10 +259,36 @@ public class ItineraryService {
         // Rimuove l'iscrizione a cascata da tutte le attività collegate
         List<ActivityBooking> associatedBookings = activityBookingRepository.findByUserIdAndItineraryId(user.getId(), itinerary.getId());
         activityBookingRepository.deleteAll(associatedBookings);
+        activityBookingRepository.flush();
 
         // Rimuove la prenotazione dell'itinerario
         itineraryBookingRepository.delete(booking);
+        itineraryBookingRepository.flush();
+        
         auditLogService.log("CANCEL_ITINERARY_BOOKING", "ItineraryBooking", booking.getId().toString(), "User " + userEmail + " cancelled booking for itinerary: " + itinerary.getTitle());
+    }
+
+    @Transactional
+    public void confirmItineraryBooking(String bookingId) {
+        ItineraryBooking booking = itineraryBookingRepository.findById(UUID.fromString(bookingId))
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "itinerary.booking.notFound"));
+        booking.setStatus(BookingStatus.CONFIRMED);
+        itineraryBookingRepository.save(booking);
+
+        // Aggiorna le prenotazioni delle attività collegate
+        List<ActivityBooking> activityBookings = null;
+        if (booking.getPaymentIntentId() != null) {
+            activityBookings = activityBookingRepository.findByPaymentIntentId(booking.getPaymentIntentId());
+        }
+        if (activityBookings == null || activityBookings.isEmpty()) {
+            activityBookings = activityBookingRepository.findByUserIdAndItineraryId(booking.getUser().getId(), booking.getItinerary().getId());
+        }
+        for (ActivityBooking ab : activityBookings) {
+            ab.setStatus(BookingStatus.CONFIRMED);
+            activityBookingRepository.save(ab);
+        }
+        
+        auditLogService.log("CONFIRM_ITINERARY_BOOKING", "ItineraryBooking", booking.getId().toString(), "Booking confirmed client-side");
     }
 }
 

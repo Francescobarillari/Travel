@@ -176,6 +176,7 @@ fun AdminHomeScreenPreview() {
         override suspend fun deleteItinerary(id: String) {}
         override suspend fun bookActivity(id: String) = it.unical.ea.dtos.payment.PaymentIntentResponseDto()
         override suspend fun bookItinerary(id: String) = it.unical.ea.dtos.payment.PaymentIntentResponseDto()
+        override suspend fun confirmItineraryBooking(bookingId: String) {}
         override suspend fun uploadDocument(file: okhttp3.MultipartBody.Part) = "mock"
         override suspend fun getPendingCompanies(): List<it.unical.ea.dtos.user.UserDTO> {
             return listOf(

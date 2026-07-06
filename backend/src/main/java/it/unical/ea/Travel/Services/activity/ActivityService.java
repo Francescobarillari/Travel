@@ -14,6 +14,7 @@ import it.unical.ea.Travel.Services.audit.AuditLogService;
 import it.unical.ea.dtos.user.UserDTO;
 import it.unical.ea.Travel.Mappers.user.UserMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -23,6 +24,7 @@ import org.springframework.web.multipart.MultipartFile;
 import it.unical.ea.Travel.Config.SecurityUtils;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.List;
 import java.util.UUID;
 import java.math.BigDecimal;
@@ -45,6 +47,9 @@ public class ActivityService {
     private final UserMapper userMapper;
     private final it.unical.ea.Travel.Services.location.LocationService locationService;
     private final PaymentGateway paymentGateway;
+
+    @Value("${stripe.mock:true}")
+    private boolean stripeMock;
 
     public List<ActivityDto> getAllActivities() {
         List<Activity> activities = activityRepository.findByApproved(true);
@@ -178,15 +183,21 @@ public class ActivityService {
             throw new ApiException(HttpStatus.BAD_REQUEST, "activity.booking.full");
         }
 
-        if (activityBookingRepository.findByUserIdAndActivityId(user.getId(), activity.getId()).isPresent()) {
-            throw new ApiException(HttpStatus.CONFLICT, "activity.booking.alreadyBooked");
+        Optional<ActivityBooking> existingBookingOpt = activityBookingRepository.findByUserIdAndActivityId(user.getId(), activity.getId());
+        if (existingBookingOpt.isPresent()) {
+            ActivityBooking existingBooking = existingBookingOpt.get();
+            if (existingBooking.getStatus() == BookingStatus.PENDING || existingBooking.getStatus() == BookingStatus.FAILED) {
+                cancelActivityBooking(activity.getId().toString(), userEmail);
+            } else {
+                throw new ApiException(HttpStatus.CONFLICT, "activity.booking.alreadyBooked");
+            }
         }
 
         String clientSecret = null;
         String paymentIntentId = null;
         BookingStatus status = BookingStatus.PENDING;
 
-        if (activity.getPrice() != null && activity.getPrice().compareTo(BigDecimal.ZERO) > 0) {
+        if (activity.getPrice() != null && activity.getPrice().compareTo(BigDecimal.ZERO) > 0 && !stripeMock) {
             clientSecret = paymentGateway.createPaymentIntent(activity.getPrice(), "eur", "Booking for Activity: " + activity.getName());
             if (clientSecret != null && clientSecret.contains("_secret_")) {
                 paymentIntentId = clientSecret.substring(0, clientSecret.indexOf("_secret_"));
@@ -223,6 +234,7 @@ public class ActivityService {
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "activity.booking.notFound"));
 
         activityBookingRepository.delete(booking);
+        activityBookingRepository.flush();
         auditLogService.log("CANCEL_BOOKING", "ActivityBooking", booking.getId().toString(), "User " + userEmail + " cancelled booking for activity: " + activity.getName());
     }
 

@@ -157,6 +157,14 @@ public class ItineraryController {
         return ResponseEntity.noContent().build();
     }
 
+    @Operation(summary = "Conferma la prenotazione di un itinerario", description = "Conferma la prenotazione dell'itinerario e di tutte le attività collegate dopo il successo del pagamento su mobile")
+    @PostMapping("/booking/{bookingId}/confirm")
+    public ResponseEntity<Void> confirmItineraryBooking(
+            @Parameter(description = "ID della prenotazione", schema = @Schema(format = "uuid")) @PathVariable String bookingId) {
+        itineraryService.confirmItineraryBooking(bookingId);
+        return ResponseEntity.ok().build();
+    }
+
     // --- Helper per costruire imageUrl ---
 
     private ItineraryDto toDTO(Itinerary itinerary) {

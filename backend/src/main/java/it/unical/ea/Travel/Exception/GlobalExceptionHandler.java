@@ -21,8 +21,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<Map<String, String>> handleApiException(ApiException ex, Locale locale) {
-        // Recupera il messaggio localizzato usando il locale corrente della richiesta
-        String translatedMessage = messageSource.getMessage(ex.getMessageKey(), null, locale);
+        // Recupera il messaggio localizzato usando il locale corrente della richiesta, con fallback sulla chiave stessa
+        String translatedMessage = messageSource.getMessage(ex.getMessageKey(), null, ex.getMessageKey(), locale);
         
         // Restituisce un JSON del tipo {"error": "messaggio tradotto"} e il corretto status HTTP
         return new ResponseEntity<>(Map.of("error", translatedMessage), ex.getStatus());

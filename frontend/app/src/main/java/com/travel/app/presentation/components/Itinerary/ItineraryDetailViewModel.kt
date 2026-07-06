@@ -20,6 +20,8 @@ class ItineraryDetailViewModel : ViewModel() {
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error
 
+    private var currentBookingId: String? = null
+
     fun bookItinerary(itineraryId: String) {
         viewModelScope.launch {
             _isLoading.value = true
@@ -27,10 +29,11 @@ class ItineraryDetailViewModel : ViewModel() {
             try {
                 val response = apiService.bookItinerary(itineraryId)
                 if (response.clientSecret != null) {
+                    currentBookingId = response.bookingId
                     _paymentClientSecret.value = response.clientSecret
                 } else {
-                    // It was a free itinerary or something
-                    _error.value = "Prenotazione confermata (Gratuita)"
+                    // It was a free itinerary, mock payment or something
+                    _error.value = "Prenotazione confermata!"
                 }
             } catch (e: Exception) {
                 _error.value = "Errore durante la prenotazione: ${e.message}"
@@ -40,7 +43,25 @@ class ItineraryDetailViewModel : ViewModel() {
         }
     }
 
+    fun confirmPaymentSuccess() {
+        val bookingId = currentBookingId ?: return
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                apiService.confirmItineraryBooking(bookingId)
+                _error.value = "Prenotazione confermata!"
+            } catch (e: Exception) {
+                _error.value = "Errore durante la conferma: ${e.message}"
+            } finally {
+                _isLoading.value = false
+                currentBookingId = null
+                _paymentClientSecret.value = null
+            }
+        }
+    }
+
     fun clearClientSecret() {
         _paymentClientSecret.value = null
+        currentBookingId = null
     }
 }
