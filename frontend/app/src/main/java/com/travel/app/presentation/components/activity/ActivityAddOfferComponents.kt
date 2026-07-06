@@ -54,7 +54,8 @@ fun ActivityInputField(
     singleLine: Boolean = true,
     keyboardType: KeyboardType = KeyboardType.Text,
     leadingIcon: @Composable (() -> Unit)? = null,
-    shape: androidx.compose.ui.graphics.Shape = RoundedCornerShape(16.dp)
+    shape: androidx.compose.ui.graphics.Shape = RoundedCornerShape(16.dp),
+    enabled: Boolean = true
 ) {
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -69,6 +70,7 @@ fun ActivityInputField(
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
+            enabled = enabled,
             placeholder = if (placeholder.isNotEmpty()) { { Text(placeholder, color = Color(0xFF94A3B8)) } } else null,
             modifier = Modifier.fillMaxWidth(),
             shape = shape,
@@ -81,7 +83,10 @@ fun ActivityInputField(
                 focusedBorderColor = MaterialTheme.colorScheme.primary,
                 unfocusedBorderColor = Color(0xFFE2E8F0),
                 focusedTextColor = Color(0xFF0F172A),
-                unfocusedTextColor = Color(0xFF334155)
+                unfocusedTextColor = Color(0xFF334155),
+                disabledContainerColor = Color(0xFFF1F5F9), // Disabled background Slate 100
+                disabledTextColor = Color(0xFF64748B), // Disabled text Slate 500
+                disabledBorderColor = Color(0xFFE2E8F0)
             )
         )
     }
@@ -110,7 +115,7 @@ fun rememberUriImageBitmap(uri: Uri): ImageBitmap? {
 fun ImagePreviewCard(
     uri: Uri,
     size: androidx.compose.ui.unit.Dp = 72.dp,
-    onRemove: () -> Unit
+    onRemove: (() -> Unit)? = null
 ) {
     val bitmap = rememberUriImageBitmap(uri)
     Box(
@@ -136,22 +141,24 @@ fun ImagePreviewCard(
         }
 
         // Remove overlay button
-        Box(
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(4.dp)
-                .size(20.dp)
-                .clip(CircleShape)
-                .background(Color.Black.copy(alpha = 0.5f))
-                .clickable { onRemove() },
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Default.Close,
-                contentDescription = "Rimuovi foto",
-                tint = Color.White,
-                modifier = Modifier.size(12.dp)
-            )
+        if (onRemove != null) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(4.dp)
+                    .size(20.dp)
+                    .clip(CircleShape)
+                    .background(Color.Black.copy(alpha = 0.5f))
+                    .clickable { onRemove() },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "Rimuovi foto",
+                    tint = Color.White,
+                    modifier = Modifier.size(12.dp)
+                )
+            }
         }
     }
 }

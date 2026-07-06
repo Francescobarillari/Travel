@@ -156,7 +156,8 @@ fun CompanyAddOfferScreen(
                         onValueChange = { viewModel.description = it },
                         placeholder = "Fornisci dettagli sull'itinerario e l'attività...",
                         singleLine = false,
-                        modifier = Modifier.height(110.dp)
+                        modifier = Modifier.height(110.dp),
+                        enabled = !viewModel.isEditMode
                     )
                     
                     ActivityInputField(
@@ -171,7 +172,8 @@ fun CompanyAddOfferScreen(
                                 tint = Color(0xFF64748B)
                             )
                         },
-                        shape = RoundedCornerShape(28.dp)
+                        shape = RoundedCornerShape(28.dp),
+                        enabled = !viewModel.isEditMode
                     )
                 }
             }
@@ -307,71 +309,95 @@ fun CompanyAddOfferScreen(
                         .padding(20.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    if (viewModel.selectedImages.isEmpty()) {
-                        // Empty State: Sleek full-width upload card
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(90.dp)
-                                .clip(RoundedCornerShape(16.dp))
-                                .background(Color(0xFFF8FAFC))
-                                .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(16.dp))
-                                .clickable { imagePickerLauncher.launch("image/*") },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.AddPhotoAlternate,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(22.dp)
-                                )
-                                Text(
-                                    text = "Carica foto dell'attività",
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                            }
-                        }
-                    } else {
-                        // Selected State: Compact grid list with a trailing add button
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(72.dp)
-                                    .clip(RoundedCornerShape(16.dp))
-                                    .background(Color(0xFFF8FAFC))
-                                    .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(16.dp))
-                                    .clickable { imagePickerLauncher.launch("image/*") },
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Add,
-                                    contentDescription = "Aggiungi altra foto",
-                                    tint = Color(0xFF64748B),
-                                    modifier = Modifier.size(24.dp)
-                                )
-                            }
-
+                    if (viewModel.isEditMode) {
+                        if (viewModel.selectedImages.isEmpty()) {
+                            Text(
+                                text = "Nessuna foto disponibile per questa attività.",
+                                fontSize = 14.sp,
+                                color = Color(0xFF64748B)
+                            )
+                        } else {
                             androidx.compose.foundation.lazy.LazyRow(
                                 horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                modifier = Modifier.weight(1f)
+                                modifier = Modifier.fillMaxWidth()
                             ) {
                                 items(viewModel.selectedImages.size) { index ->
                                     val uri = viewModel.selectedImages[index]
                                     ImagePreviewCard(
                                         uri = uri,
                                         size = 72.dp,
-                                        onRemove = { viewModel.selectedImages.removeAt(index) }
+                                        onRemove = null
                                     )
+                                }
+                            }
+                        }
+                    } else {
+                        if (viewModel.selectedImages.isEmpty()) {
+                            // Empty State: Sleek full-width upload card
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(90.dp)
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .background(Color(0xFFF8FAFC))
+                                    .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(16.dp))
+                                    .clickable { imagePickerLauncher.launch("image/*") },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.AddPhotoAlternate,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                    Text(
+                                        text = "Carica foto dell'attività",
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            }
+                        } else {
+                            // Selected State: Compact grid list with a trailing add button
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(72.dp)
+                                        .clip(RoundedCornerShape(16.dp))
+                                        .background(Color(0xFFF8FAFC))
+                                        .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(16.dp))
+                                        .clickable { imagePickerLauncher.launch("image/*") },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Add,
+                                        contentDescription = "Aggiungi altra foto",
+                                        tint = Color(0xFF64748B),
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+
+                                androidx.compose.foundation.lazy.LazyRow(
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    items(viewModel.selectedImages.size) { index ->
+                                        val uri = viewModel.selectedImages[index]
+                                        ImagePreviewCard(
+                                            uri = uri,
+                                            size = 72.dp,
+                                            onRemove = { viewModel.selectedImages.removeAt(index) }
+                                        )
+                                    }
                                 }
                             }
                         }
