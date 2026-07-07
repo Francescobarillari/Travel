@@ -38,6 +38,7 @@ import com.travel.app.domain.model.review.CreateReviewDto
 import com.travel.app.presentation.components.review.ReviewCard
 import com.travel.app.presentation.components.review.AddReviewInline
 import kotlinx.coroutines.launch
+import com.travel.app.utils.CalendarExportUtil
 
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -203,21 +204,50 @@ fun ActivityDetailScreen(
                             )
                         }
 
-                        // Floating Circular Favorite Button
-                        IconButton(
-                            onClick = onFavoriteClick,
+                        // Top Right Action Buttons
+                        Row(
                             modifier = Modifier
                                 .align(Alignment.TopEnd)
                                 .padding(top = 16.dp, end = 16.dp)
-                                .statusBarsPadding()
-                                .size(44.dp)
-                                .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                                .statusBarsPadding(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            Icon(
-                                imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                                contentDescription = "Preferito",
-                                tint = if (isFavorite) Color.Red else Color.White
-                            )
+                            // Calendar Export Button
+                            IconButton(
+                                onClick = {
+                                    CalendarExportUtil.exportToIcs(
+                                        context = context,
+                                        title = act.name ?: "Attività",
+                                        description = act.description,
+                                        location = act.location,
+                                        startTime = act.startTime,
+                                        endTime = act.endTime
+                                    )
+                                },
+                                modifier = Modifier
+                                    .size(44.dp)
+                                    .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.CalendarToday,
+                                    contentDescription = "Esporta Calendario",
+                                    tint = Color.White
+                                )
+                            }
+                            
+                            // Favorite Button
+                            IconButton(
+                                onClick = onFavoriteClick,
+                                modifier = Modifier
+                                    .size(44.dp)
+                                    .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                            ) {
+                                Icon(
+                                    imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                    contentDescription = "Preferito",
+                                    tint = if (isFavorite) Color.Red else Color.White
+                                )
+                            }
                         }
 
                         // Title Overlay
