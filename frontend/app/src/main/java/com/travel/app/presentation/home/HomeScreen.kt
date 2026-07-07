@@ -36,10 +36,13 @@ fun HomeScreen(
     var selectedItemIsTrip by remember { mutableStateOf(true) }
     var selectedActivityIdForBookings by remember { mutableStateOf<String?>(null) }
     var selectedItinerary by remember { mutableStateOf<ItineraryDto?>(null) }
+    var personalizingItinerary by remember { mutableStateOf<ItineraryDto?>(null) }
+    var itinerariesRefreshTrigger by remember { mutableStateOf(0) }
     var favoritesTrigger by remember { mutableStateOf(0) }
 
     var currentUser by remember(user) { 
         mutableStateOf(user ?: User(
+            id = "550e8400-e29b-41d4-a716-446655440000",
             email = "johnkinggraphics@gmail.com", 
             userType = "VIAGGIATORE",
             phone = "6895312",
@@ -169,7 +172,7 @@ fun HomeScreen(
                     onNavigateToProfile = { selectedTab = HomeTab.PROFILO },
                     onNavigateToSecurity = { selectedTab = HomeTab.SICUREZZA },
                     onLogout = onLogout,
-                    onNavigateToFavorites = { selectedTab = HomeTab.PREFERITI }
+                    onNavigateToMyItineraries = { selectedTab = HomeTab.I_MIEI_ITINERARI }
                 )
                 HomeTab.SICUREZZA -> {
                     SecurityScreen(
@@ -180,6 +183,16 @@ fun HomeScreen(
                             currentUser = savedUser
                             selectedTab = HomeTab.MENU
                         }
+                    )
+                }
+                HomeTab.I_MIEI_ITINERARI -> {
+                    MyItinerariesScreen(
+                        user = currentUser,
+                        onBack = { selectedTab = HomeTab.MENU },
+                        onItineraryClick = { itinerary ->
+                            selectedItinerary = itinerary
+                        },
+                        refreshTrigger = itinerariesRefreshTrigger
                     )
                 }
             }
@@ -221,6 +234,13 @@ fun HomeScreen(
                     AppContainer.sessionManager.toggleFavoriteItinerary(itineraryId)
                     isFav = !isFav
                     favoritesTrigger++
+                },
+                onPersonalizeClick = { itinerary ->
+                    personalizingItinerary = itinerary
+                },
+                onDeleteSuccess = {
+                    selectedItinerary = null
+                    itinerariesRefreshTrigger++
                 }
             )
         } else if (selectedItemId != null && !selectedItemIsTrip) {
@@ -236,6 +256,17 @@ fun HomeScreen(
                     AppContainer.sessionManager.toggleFavoriteActivity(activityId)
                     isFav = !isFav
                     favoritesTrigger++
+                }
+            )
+        }
+
+        if (personalizingItinerary != null) {
+            PersonalizeItineraryScreen(
+                itinerary = personalizingItinerary!!,
+                onNavigateBack = { personalizingItinerary = null },
+                onPersonalizeSuccess = {
+                    personalizingItinerary = null
+                    selectedItinerary = null
                 }
             )
         }

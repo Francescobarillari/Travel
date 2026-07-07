@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
@@ -57,6 +58,7 @@ public class ItineraryController {
         itinerary.setDescription(request.getDescription());
         itinerary.setStartDateTime(request.getStartDateTime());
         itinerary.setEndDateTime(request.getEndDateTime());
+        itinerary.setVisibility(request.getVisibility() != null ? request.getVisibility() : "PRIVATE");
 
         Itinerary savedItinerary = itineraryService.createItinerary(
                 itinerary,
@@ -64,6 +66,16 @@ public class ItineraryController {
                 request.getActivityIds());
 
         return toDTO(savedItinerary);
+    }
+
+    @Operation(summary = "Aggiorna la visibilità dell'itinerario")
+    @PutMapping("/{stringId}/visibility")
+    public ItineraryDto updateVisibility(
+            @PathVariable String stringId,
+            @RequestBody String visibility) {
+        String cleanVisibility = visibility.replace("\"", "").trim();
+        Itinerary updated = itineraryService.updateVisibility(stringId, cleanVisibility);
+        return toDTO(updated);
     }
 
     @Operation(summary = "Ottieni un itinerario per ID")

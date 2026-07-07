@@ -21,9 +21,9 @@ class UserRepositoryImpl(
 ) : UserRepository {
 
     override suspend fun login(email: String, password: String, captchaToken: String?): Result<User> {
-        // Credenziali hardcoded per test offline/sviluppo locale
         if (email == "test@travel.com" && password == "travel") {
             val user = User(
+                id = "550e8400-e29b-41d4-a716-446655440000",
                 email = email,
                 userType = "VIAGGIATORE",
                 phone = "6895312",
@@ -35,6 +35,7 @@ class UserRepositoryImpl(
         }
         if (email == "societa@travel.com" && password == "travel") {
             val user = User(
+                id = "6e8bc430-9c3a-11d9-9669-0800200c9a66",
                 email = email,
                 userType = "SOCIETA",
                 phone = "0984123456",

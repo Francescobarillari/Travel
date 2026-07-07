@@ -40,7 +40,7 @@ fun MenuScreen(
     onNavigateToProfile: () -> Unit,
     onNavigateToSecurity: () -> Unit,
     onLogout: () -> Unit,
-    onNavigateToFavorites: () -> Unit = {},
+    onNavigateToMyItineraries: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val scrollState = rememberScrollState()
@@ -186,12 +186,12 @@ fun MenuScreen(
                     onClick = onNavigateToProfile
                 )
                 MenuGridCard(
-                    title = "Preferiti",
-                    icon = Icons.Default.Favorite,
-                    iconColor = Color(0xFFDC2626),
-                    iconBg = Color(0xFFFEF2F2),
+                    title = "I miei itinerari",
+                    icon = Icons.Default.Handyman,
+                    iconColor = Color(0xFF8B5CF6),
+                    iconBg = Color(0xFFEDE9FE),
                     modifier = Modifier.weight(1f),
-                    onClick = onNavigateToFavorites
+                    onClick = onNavigateToMyItineraries
                 )
             }
             Spacer(modifier = Modifier.height(16.dp))

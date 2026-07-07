@@ -430,6 +430,10 @@ fun EsploraScreenPreview() {
                 },
                 itineraryRepository = object : com.travel.app.domain.repository.ItineraryRepository {
                     override suspend fun getItineraries() = Result.success(emptyList<it.unical.ea.dtos.itinerary.ItineraryDto>())
+                    override suspend fun getItinerariesByCreator(creatorId: String) = Result.success(emptyList<it.unical.ea.dtos.itinerary.ItineraryDto>())
+                    override suspend fun createItinerary(request: it.unical.ea.dtos.itinerary.CreateItineraryRequest) = Result.failure<it.unical.ea.dtos.itinerary.ItineraryDto>(Exception("Not implemented"))
+                    override suspend fun updateItineraryVisibility(id: String, visibility: String) = Result.failure<it.unical.ea.dtos.itinerary.ItineraryDto>(Exception("Not implemented"))
+                    override suspend fun deleteItinerary(id: String) = Result.success(Unit)
                 }
             )
         }

@@ -57,6 +57,9 @@ public class Itinerary extends AuditBaseEntity {
     @Column(name = "image_path", length = 500)
     private String imagePath;
 
+    @Column(name = "visibility", length = 50, nullable = false)
+    private String visibility = "PRIVATE";
+
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 

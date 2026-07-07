@@ -221,5 +221,13 @@ public class ItineraryService {
         itineraryBookingRepository.delete(booking);
         auditLogService.log("CANCEL_ITINERARY_BOOKING", "ItineraryBooking", booking.getId().toString(), "User " + userEmail + " cancelled booking for itinerary: " + itinerary.getTitle());
     }
+
+    public Itinerary updateVisibility(String stringId, String visibility) {
+        Itinerary itinerary = getItinerary(stringId);
+        itinerary.setVisibility(visibility);
+        Itinerary saved = itineraryRepository.save(itinerary);
+        auditLogService.log("UPDATE_ITINERARY_VISIBILITY", "Itinerary", stringId, "Updated visibility to: " + visibility);
+        return saved;
+    }
 }
 

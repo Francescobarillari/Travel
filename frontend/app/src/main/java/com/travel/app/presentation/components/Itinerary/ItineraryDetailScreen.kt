@@ -4,6 +4,7 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -12,6 +13,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.LocationOn
@@ -45,6 +47,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
 import com.travel.app.utils.CalendarExportUtil
+import androidx.compose.material.icons.filled.Handyman
 
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -55,6 +58,8 @@ fun ItineraryDetailScreen(
     onActivityClick: (String) -> Unit = {},
     isFavorite: Boolean = false,
     onFavoriteClick: () -> Unit = {},
+    onPersonalizeClick: (ItineraryDto) -> Unit = {},
+    onDeleteSuccess: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val scrollState = rememberScrollState()
@@ -65,6 +70,9 @@ fun ItineraryDetailScreen(
 
     var reviews by remember { mutableStateOf<List<ReviewDto>>(emptyList()) }
     val scope = rememberCoroutineScope()
+
+    val currentUser = remember { AppContainer.sessionManager.getSessionUser() }
+    val isViaggiatore = currentUser?.userType == "VIAGGIATORE"
 
     LaunchedEffect(itinerary.id) {
         val id = itinerary.id?.toString()
@@ -77,6 +85,22 @@ fun ItineraryDetailScreen(
     }
 
     Scaffold(
+        floatingActionButton = {
+            if (isViaggiatore && itinerary.creatorId?.toString() != currentUser?.id) {
+                FloatingActionButton(
+                    onClick = { onPersonalizeClick(itinerary) },
+                    shape = CircleShape,
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.padding(bottom = 12.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Handyman,
+                        contentDescription = "Personalizza itinerario"
+                    )
+                }
+            }
+        },
         bottomBar = {
             Surface(
                 shadowElevation = 12.dp,
@@ -179,8 +203,39 @@ fun ItineraryDetailScreen(
                         .align(Alignment.TopEnd)
                         .padding(top = 16.dp, end = 16.dp)
                         .statusBarsPadding(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
+                    // Delete Button (only if current user is creator)
+                    if (currentUser != null && itinerary.creatorId?.toString() == currentUser.id) {
+                        IconButton(
+                            onClick = {
+                                scope.launch {
+                                    val idStr = itinerary.id?.toString() ?: ""
+                                    val res = AppContainer.itineraryRepository.deleteItinerary(idStr)
+                                    res.fold(
+                                        onSuccess = {
+                                            android.widget.Toast.makeText(context, "Itinerario eliminato con successo", android.widget.Toast.LENGTH_SHORT).show()
+                                            onDeleteSuccess()
+                                        },
+                                        onFailure = { err ->
+                                            android.widget.Toast.makeText(context, "Errore: ${err.message}", android.widget.Toast.LENGTH_LONG).show()
+                                        }
+                                    )
+                                }
+                            },
+                            modifier = Modifier
+                                .size(44.dp)
+                                .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = "Elimina Itinerario",
+                                tint = Color.White
+                            )
+                        }
+                    }
+
                     // Calendar Export Button
                     IconButton(
                         onClick = {
