@@ -15,6 +15,8 @@ import com.travel.app.presentation.auth.LoginViewModel
 import com.travel.app.presentation.auth.RegisterViewModel
 import com.travel.app.presentation.auth.LoginScreen
 import com.travel.app.presentation.auth.RegisterScreen
+import com.travel.app.presentation.auth.ForgotPasswordViewModel
+import com.travel.app.presentation.auth.ForgotPasswordScreen
 import com.travel.app.presentation.home.HomeScreen
 import com.travel.app.presentation.navigation.Screen
 import com.travel.app.presentation.admin.AdminViewModel
@@ -69,6 +71,7 @@ fun TravelApp(
                     LoginScreen(
                         viewModel = loginViewModel,
                         onNavigateToRegister = { currentScreen = Screen.REGISTER },
+                        onNavigateToForgotPassword = { currentScreen = Screen.FORGOT_PASSWORD },
                         onLoginSuccess = { user ->
                             currentUser = user
                             currentScreen = if (user.userType == "ADMIN") Screen.ADMIN else Screen.HOME
@@ -92,6 +95,13 @@ fun TravelApp(
                                 snackbarHostState.showSnackbar(msg)
                             }
                         }
+                    )
+                }
+                Screen.FORGOT_PASSWORD -> {
+                    val forgotPasswordViewModel = remember { ForgotPasswordViewModel(userRepository) }
+                    ForgotPasswordScreen(
+                        viewModel = forgotPasswordViewModel,
+                        onNavigateToLogin = { currentScreen = Screen.LOGIN }
                     )
                 }
                 Screen.HOME -> {

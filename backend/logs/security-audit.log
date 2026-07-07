@@ -710,3 +710,6 @@
 2026-07-06 22:30:13.252 INFO  [http-nio-8080-exec-5] security-audit - REQUEST_END: method=DELETE, uri=/api/v1/reviews/f38e60b8-5a8e-4876-816e-a47980e33009, user=fra@example.com
 2026-07-06 22:30:13.281 INFO  [http-nio-8080-exec-7] security-audit - REQUEST_START: method=GET, uri=/api/v1/reviews/itinerary/0341dc09-6f01-4f05-ab9e-9944a7f1e5e7, user=fra@example.com
 2026-07-06 22:30:13.304 INFO  [http-nio-8080-exec-7] security-audit - REQUEST_END: method=GET, uri=/api/v1/reviews/itinerary/0341dc09-6f01-4f05-ab9e-9944a7f1e5e7, user=fra@example.com
+2026-07-07 09:24:12.488 INFO  [http-nio-8080-exec-1] security-audit - REQUEST_START: method=POST, uri=/api/auth/signup, user=SYSTEM
+2026-07-07 09:24:16.627 INFO  [http-nio-8080-exec-1] security-audit - AUDIT_EVENT: actor=SYSTEM, action=USER_REGISTER, entityName=User, entityId=49afa9ae-2698-42d0-a69b-6d727b50b5f8, details=Registered user with email: mattia.schiavello15@gmail.com of type VIAGGIATORE
+2026-07-07 09:24:17.273 INFO  [http-nio-8080-exec-1] security-audit - REQUEST_END: method=POST, uri=/api/auth/signup, user=SYSTEM

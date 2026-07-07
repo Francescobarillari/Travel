@@ -76,6 +76,6 @@ fun LoginScreenPreview() {
     val mockRepo = UserRepositoryImpl(mockApiService) { error("Not used in preview") }
     val mockViewModel = LoginViewModel(mockRepo)
     TravelTheme {
-        LoginScreen(viewModel = mockViewModel, onNavigateToRegister = {}, onLoginSuccess = {})
+        LoginScreen(viewModel = mockViewModel, onNavigateToRegister = {}, onNavigateToForgotPassword = {}, onLoginSuccess = {})
     }
 }
