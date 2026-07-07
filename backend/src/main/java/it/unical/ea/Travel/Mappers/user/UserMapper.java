@@ -34,21 +34,25 @@ public interface UserMapper {
     @org.mapstruct.AfterMapping
     default void mapAvatarUrl(User user, @org.mapstruct.MappingTarget UserDTO dto) {
         if (user.getAvatarUrl() != null) {
-            String avatarUrl;
-            try {
-                if (org.springframework.web.context.request.RequestContextHolder.getRequestAttributes() != null) {
-                    avatarUrl = org.springframework.web.servlet.support.ServletUriComponentsBuilder.fromCurrentContextPath()
-                            .path("/user/")
-                            .path(user.getId().toString())
-                            .path("/avatar")
-                            .toUriString();
-                } else {
+            if (user.getAvatarUrl().startsWith("http://") || user.getAvatarUrl().startsWith("https://")) {
+                dto.setAvatarUrl(user.getAvatarUrl());
+            } else {
+                String avatarUrl;
+                try {
+                    if (org.springframework.web.context.request.RequestContextHolder.getRequestAttributes() != null) {
+                        avatarUrl = org.springframework.web.servlet.support.ServletUriComponentsBuilder.fromCurrentContextPath()
+                                .path("/user/")
+                                .path(user.getId().toString())
+                                .path("/avatar")
+                                .toUriString();
+                    } else {
+                        avatarUrl = "/api/user/" + user.getId() + "/avatar";
+                    }
+                } catch (Exception e) {
                     avatarUrl = "/api/user/" + user.getId() + "/avatar";
                 }
-            } catch (Exception e) {
-                avatarUrl = "/api/user/" + user.getId() + "/avatar";
+                dto.setAvatarUrl(avatarUrl);
             }
-            dto.setAvatarUrl(avatarUrl);
         } else {
             String seed;
             String style;

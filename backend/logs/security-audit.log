@@ -2991,3 +2991,6 @@
 2026-07-07 15:13:04.056 INFO  [http-nio-8080-exec-10] security-audit - REQUEST_END: method=GET, uri=/itinerary, user=mattia.schiavello30@gmail.com
 2026-07-07 15:13:04.066 INFO  [http-nio-8080-exec-3] security-audit - REQUEST_END: method=GET, uri=/activity/search, user=mattia.schiavello30@gmail.com
 2026-07-07 15:13:04.105 INFO  [http-nio-8080-exec-6] security-audit - REQUEST_END: method=GET, uri=/activity, user=mattia.schiavello30@gmail.com
+2026-07-07 16:04:11.968 INFO  [http-nio-8080-exec-1] security-audit - REQUEST_START: method=POST, uri=/api/auth/signup, user=SYSTEM
+2026-07-07 16:04:20.860 INFO  [http-nio-8080-exec-1] security-audit - AUDIT_EVENT: actor=SYSTEM, action=USER_REGISTER, entityName=User, entityId=a639348c-49ef-445e-a2d9-3945cc8c684e, details=Registered user with email: baudouvoufrateu-8570@yopmail.com of type VIAGGIATORE
+2026-07-07 16:04:21.340 INFO  [http-nio-8080-exec-1] security-audit - REQUEST_END: method=POST, uri=/api/auth/signup, user=SYSTEM

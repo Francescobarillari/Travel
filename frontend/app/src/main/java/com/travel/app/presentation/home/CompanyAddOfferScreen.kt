@@ -18,6 +18,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Brush
@@ -48,6 +50,7 @@ fun CompanyAddOfferScreen(
     val context = LocalContext.current
     val scrollState = rememberScrollState()
     val calendar = Calendar.getInstance()
+    val focusManager = LocalFocusManager.current
 
     // Image Picker Launcher
     val imagePickerLauncher = rememberLauncherForActivityResult(
@@ -66,6 +69,12 @@ fun CompanyAddOfferScreen(
         modifier = modifier
             .fillMaxSize()
             .background(Color(0xFFF8FAFC)) // Match dashboard background
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+            ) {
+                focusManager.clearFocus()
+            }
     ) {
         Column(
             modifier = Modifier
@@ -191,6 +200,7 @@ fun CompanyAddOfferScreen(
                                                 .clickable {
                                                     viewModel.location = suggestion.name ?: ""
                                                     viewModel.locationSuggestions.clear()
+                                                    focusManager.clearFocus()
                                                 }
                                                 .padding(horizontal = 16.dp, vertical = 12.dp),
                                             verticalAlignment = Alignment.CenterVertically,

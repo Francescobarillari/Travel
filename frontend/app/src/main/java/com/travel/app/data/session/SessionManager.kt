@@ -43,6 +43,7 @@ class SessionManager(context: Context) {
             putString(KEY_USER_TYPE, user.userType)
             putString(KEY_USER_NAME, user.name)
             putString(KEY_USER_PHONE, user.phone)
+            putString(KEY_USER_AVATAR, user.avatarUrl)
             apply()
         }
     }
@@ -56,6 +57,7 @@ class SessionManager(context: Context) {
             putString(KEY_USER_TYPE, user.userType)
             putString(KEY_USER_NAME, user.name)
             putString(KEY_USER_PHONE, user.phone)
+            putString(KEY_USER_AVATAR, user.avatarUrl)
             apply()
         }
     }
@@ -74,6 +76,7 @@ class SessionManager(context: Context) {
         val userType = prefs.getString(KEY_USER_TYPE, "VIAGGIATORE") ?: "VIAGGIATORE"
         val name = prefs.getString(KEY_USER_NAME, null)
         val phone = prefs.getString(KEY_USER_PHONE, null)
+        val avatarUrl = prefs.getString(KEY_USER_AVATAR, null)
 
         return User(
             id = id,
@@ -81,7 +84,8 @@ class SessionManager(context: Context) {
             userType = userType,
             phone = phone,
             name = name,
-            password = null // Sicurezza: Non memorizziamo mai la password dell'utente in SharedPreferences
+            password = null, // Sicurezza: Non memorizziamo mai la password dell'utente in SharedPreferences
+            avatarUrl = avatarUrl
         )
     }
 
@@ -142,6 +146,7 @@ class SessionManager(context: Context) {
         private const val KEY_USER_TYPE = "user_type"
         private const val KEY_USER_NAME = "user_name"
         private const val KEY_USER_PHONE = "user_phone"
+        private const val KEY_USER_AVATAR = "user_avatar"
         private const val KEY_DARK_MODE = "dark_mode"
         private const val KEY_FAVORITE_ACTIVITIES = "favorite_activities"
         private const val KEY_FAVORITE_ITINERARIES = "favorite_itineraries"

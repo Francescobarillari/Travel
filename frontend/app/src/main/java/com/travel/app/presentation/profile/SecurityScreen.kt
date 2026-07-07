@@ -4,6 +4,8 @@ import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -57,7 +59,17 @@ fun SecurityScreen(
     val isDark = isSystemInDarkTheme()
     var showConfirmationDialog by remember { mutableStateOf(false) }
 
-    Box(modifier = modifier) {
+    val focusManager = LocalFocusManager.current
+
+    Box(
+        modifier = modifier
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+            ) {
+                focusManager.clearFocus()
+            }
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -305,6 +317,8 @@ fun SecurityScreenPreview() {
                     override suspend fun getAllCompanies() = Result.success(emptyList<User>())
                     override suspend fun blockCompany(id: String) = Result.success(Unit)
                     override suspend fun unblockCompany(id: String) = Result.success(Unit)
+                    override suspend fun deleteAccount(userId: String) = Result.success(Unit)
+                    override suspend fun uploadAvatar(userId: String, imageBytes: ByteArray, mimeType: String, fileName: String) = Result.success(User(email="mock@travel.com"))
                 }
             )
         }

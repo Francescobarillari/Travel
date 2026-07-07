@@ -89,6 +89,29 @@ public class UserService {
             user.setApproved(false);
         }
 
+        // Genera e salva l'avatar casuale di default nel database per il nuovo utente
+        String seed;
+        String style;
+        if (request.getUserType() == UserType.SOCIETA) {
+            seed = request.getCompanyName() != null ? request.getCompanyName() : "default";
+            style = "shape-grid";
+        } else {
+            String firstName = request.getFirstName() != null ? request.getFirstName() : "";
+            String lastName = request.getLastName() != null ? request.getLastName() : "";
+            seed = (firstName + " " + lastName).trim();
+            if (seed.isEmpty()) {
+                seed = "default";
+            }
+            style = "glyphs";
+        }
+        try {
+            String encodedSeed = java.net.URLEncoder.encode(seed, java.nio.charset.StandardCharsets.UTF_8).replace("+", "%20");
+            user.setAvatarUrl("https://api.dicebear.com/10.x/" + style + "/png?seed=" + encodedSeed);
+        } catch (Exception e) {
+            user.setAvatarUrl("https://api.dicebear.com/10.x/" + style + "/png?seed=default");
+        }
+
+
         try {
             User savedUser = userRepository.save(user);
             auditLogService.log("USER_REGISTER", "User", savedUser.getId().toString(), "Registered user with email: " + savedUser.getEmail() + " of type " + savedUser.getUserType());

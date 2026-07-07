@@ -32,7 +32,8 @@ class UserRepositoryImpl(
                 userType = "VIAGGIATORE",
                 phone = "6895312",
                 name = "Charlotte king",
-                password = password
+                password = password,
+                avatarUrl = "https://api.dicebear.com/10.x/glyphs/png?seed=Charlotte%20king"
             )
             saveSession(user, "mock_test_token")
             return Result.success(user)
@@ -44,7 +45,8 @@ class UserRepositoryImpl(
                 userType = "SOCIETA",
                 phone = "0984123456",
                 name = "Travel Agency S.r.l.",
-                password = password
+                password = password,
+                avatarUrl = "https://api.dicebear.com/10.x/shape-grid/png?seed=Travel%20Agency%20S.r.l."
             )
             saveSession(user, "mock_societa_token")
             return Result.success(user)
