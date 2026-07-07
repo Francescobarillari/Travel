@@ -55,7 +55,7 @@ services:
     command: >
       sh -c "
         cd /in_common && mvn clean install -DskipTests -q &&
-        cd /app && mvn clean spring-boot:run -Dmaven.test.skip=true
+        cd /app && mvn clean compile spring-boot:run -Dmaven.test.skip=true
       "
     ports:
       - "8080:8080"

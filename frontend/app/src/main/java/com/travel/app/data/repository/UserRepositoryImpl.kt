@@ -16,6 +16,8 @@ import com.travel.app.service.ApiService
 import retrofit2.HttpException
 import java.io.IOException
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.toRequestBody
 
 class UserRepositoryImpl(
     private val apiService: ApiService,
@@ -182,6 +184,30 @@ class UserRepositoryImpl(
             val dtoToSend = user.toDto().apply { password = user.password }
             val returnedDto = apiService.updateMe(dtoToSend)
             val updatedUser = returnedDto.toDomain().copy(password = user.password)
+            val token = sessionManagerProvider().getSessionToken().orEmpty()
+            saveSession(updatedUser, token)
+            Result.success(updatedUser)
+        } catch (e: Exception) {
+            Result.failure(Exception(handleError(e)))
+        }
+    }
+
+    override suspend fun deleteAccount(userId: String): Result<Unit> {
+        return try {
+            apiService.deleteUser(userId)
+            logout()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(Exception(handleError(e)))
+        }
+    }
+
+    override suspend fun uploadAvatar(userId: String, imageBytes: ByteArray, mimeType: String, fileName: String): Result<User> {
+        return try {
+            val requestBody = imageBytes.toRequestBody(mimeType.toMediaTypeOrNull())
+            val part = MultipartBody.Part.createFormData("file", fileName, requestBody)
+            val returnedDto = apiService.uploadAvatar(userId, part)
+            val updatedUser = returnedDto.toDomain()
             val token = sessionManagerProvider().getSessionToken().orEmpty()
             saveSession(updatedUser, token)
             Result.success(updatedUser)

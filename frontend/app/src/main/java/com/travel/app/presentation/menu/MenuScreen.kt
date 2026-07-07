@@ -30,6 +30,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.travel.app.domain.model.User
 import com.travel.app.presentation.theme.TravelTheme
+import coil.compose.AsyncImage
+import androidx.compose.ui.layout.ContentScale
 
 @Composable
 fun MenuScreen(
@@ -85,24 +87,35 @@ fun MenuScreen(
 
                 Spacer(modifier = Modifier.width(16.dp))
 
-                // Initials Avatar
-                Box(
-                    modifier = Modifier
-                        .size(64.dp)
-                        .background(
-                            brush = Brush.radialGradient(
-                                colors = listOf(Color(0xFF8FA4A6), Color(0xFF6B7F82))
-                            ),
-                            shape = CircleShape
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = initials,
-                        color = Color.White,
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold
+                // Avatar rendering: use AsyncImage if URL exists, else fallback to initials
+                if (!user?.avatarUrl.isNullOrEmpty()) {
+                    AsyncImage(
+                        model = user?.avatarUrl,
+                        contentDescription = "User Avatar",
+                        modifier = Modifier
+                            .size(64.dp)
+                            .clip(CircleShape),
+                        contentScale = ContentScale.Crop
                     )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .size(64.dp)
+                            .background(
+                                brush = Brush.radialGradient(
+                                    colors = listOf(Color(0xFF8FA4A6), Color(0xFF6B7F82))
+                                ),
+                                shape = CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = initials,
+                            color = Color.White,
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
 

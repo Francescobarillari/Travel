@@ -31,6 +31,8 @@ interface UserRepository {
 
     suspend fun getMe(): Result<User>
     suspend fun updateMe(user: User): Result<User>
+    suspend fun deleteAccount(userId: String): Result<Unit>
+    suspend fun uploadAvatar(userId: String, imageBytes: ByteArray, mimeType: String, fileName: String): Result<User>
     suspend fun uploadDocument(fileBytes: ByteArray, filename: String): Result<String>
     suspend fun getAllCompanies(): Result<List<User>>
     suspend fun blockCompany(id: String): Result<Unit>
