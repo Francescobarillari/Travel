@@ -9,7 +9,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.travel.app.domain.repository.ActivityRepository
 import com.travel.app.domain.repository.UserRepository
+import com.travel.app.domain.repository.LocalitaRepository
 import it.unical.ea.dtos.activity.ActivityDto
+import it.unical.ea.dtos.location.LocationDto
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.math.BigDecimal
 import java.time.LocalDateTime
@@ -17,8 +21,32 @@ import java.util.Calendar
 
 class CompanyAddOfferViewModel(
     private val activityRepository: ActivityRepository,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val localitaRepository: LocalitaRepository
 ) : ViewModel() {
+
+    val locationSuggestions = mutableStateListOf<LocationDto>()
+    private var searchJob: Job? = null
+
+    fun fetchLocationSuggestions(query: String) {
+        searchJob?.cancel()
+        if (query.trim().length < 2) {
+            locationSuggestions.clear()
+            return
+        }
+        searchJob = viewModelScope.launch {
+            delay(500)
+            localitaRepository.searchLocalita(query.trim(), includeExternal = true).fold(
+                onSuccess = { pageDto ->
+                    locationSuggestions.clear()
+                    locationSuggestions.addAll(pageDto.content)
+                },
+                onFailure = {
+                    locationSuggestions.clear()
+                }
+            )
+        }
+    }
 
     val defaultOrganizer: String by lazy {
         try {

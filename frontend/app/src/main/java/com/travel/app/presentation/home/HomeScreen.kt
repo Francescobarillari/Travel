@@ -53,7 +53,8 @@ fun HomeScreen(
     val companyAddOfferViewModel = remember {
         CompanyAddOfferViewModel(
             activityRepository = AppContainer.activityRepository,
-            userRepository = AppContainer.userRepository
+            userRepository = AppContainer.userRepository,
+            localitaRepository = AppContainer.localitaRepository
         )
     }
 

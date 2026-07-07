@@ -66,6 +66,7 @@ interface ApiService {
     @GET("api/location/search")
     suspend fun searchLocalita(
         @retrofit2.http.Query("query") query: String,
+        @retrofit2.http.Query("includeExternal") includeExternal: Boolean,
         @retrofit2.http.Query("page") page: Int = 0,
         @retrofit2.http.Query("size") size: Int = 10
     ): it.unical.ea.dtos.common.PageDto<it.unical.ea.dtos.location.LocationDto>
@@ -145,7 +146,7 @@ open class MockApiService : ApiService {
         query: String, minPrice: Double?, maxPrice: Double?, page: Int, size: Int
     ): it.unical.ea.dtos.common.PageDto<ActivityDto> = throw NotImplementedError()
     override suspend fun searchLocalita(
-        query: String, page: Int, size: Int
+        query: String, includeExternal: Boolean, page: Int, size: Int
     ): it.unical.ea.dtos.common.PageDto<it.unical.ea.dtos.location.LocationDto> = throw NotImplementedError()
     override suspend fun getLocalitaById(id: String): it.unical.ea.dtos.location.LocationDto = throw NotImplementedError()
     override suspend fun getActivityById(id: String): ActivityDto = throw NotImplementedError()

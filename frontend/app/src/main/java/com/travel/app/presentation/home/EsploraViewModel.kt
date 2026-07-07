@@ -108,7 +108,12 @@ class EsploraViewModel(
                 }
                 
                 val localitaDeferred = viewModelScope.launch {
-                    val result = localitaRepository.searchLocalita(searchQuery, currentLocalitaPage, PAGE_SIZE)
+                    val result = localitaRepository.searchLocalita(
+                        query = searchQuery,
+                        includeExternal = false,
+                        page = currentLocalitaPage,
+                        size = PAGE_SIZE
+                    )
                     result.fold(
                         onSuccess = { page -> 
                             localitaList = page.content ?: emptyList()
@@ -183,7 +188,12 @@ class EsploraViewModel(
         isLoadingMore = true
         currentLocalitaPage++
         viewModelScope.launch {
-            val result = localitaRepository.searchLocalita(searchQuery, currentLocalitaPage, PAGE_SIZE)
+            val result = localitaRepository.searchLocalita(
+                query = searchQuery,
+                includeExternal = false,
+                page = currentLocalitaPage,
+                size = PAGE_SIZE
+            )
             result.fold(
                 onSuccess = { page -> 
                     localitaList = localitaList + (page.content ?: emptyList())

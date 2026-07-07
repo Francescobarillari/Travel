@@ -21,9 +21,9 @@ class LocalitaRepositoryImpl(
         }
     }
 
-    override suspend fun searchLocalita(query: String, page: Int, size: Int): Result<it.unical.ea.dtos.common.PageDto<LocalitaDto>> {
+    override suspend fun searchLocalita(query: String, includeExternal: Boolean, page: Int, size: Int): Result<it.unical.ea.dtos.common.PageDto<LocalitaDto>> {
         return try {
-            val result = apiService.searchLocalita(query, page, size)
+            val result = apiService.searchLocalita(query, includeExternal, page, size)
             Result.success(result)
         } catch (e: Exception) {
             Result.failure(Exception(handleError(e)))

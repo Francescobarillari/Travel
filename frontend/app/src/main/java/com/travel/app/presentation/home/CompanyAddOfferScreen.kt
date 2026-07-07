@@ -126,21 +126,85 @@ fun CompanyAddOfferScreen(
                         }
                     )
                     
-                    ActivityInputField(
-                        label = "Posizione (Città, Luogo) *",
-                        value = viewModel.location,
-                        onValueChange = { viewModel.location = it },
-                        placeholder = "Cerca città o luogo...",
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Default.LocationOn,
-                                contentDescription = null,
-                                tint = Color(0xFF64748B)
-                            )
-                        },
-                        shape = RoundedCornerShape(28.dp),
-                        enabled = !viewModel.isEditMode
-                    )
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        ActivityInputField(
+                            label = "Posizione (Città, Luogo) *",
+                            value = viewModel.location,
+                            onValueChange = {
+                                viewModel.location = it
+                                viewModel.fetchLocationSuggestions(it)
+                            },
+                            placeholder = "Cerca città o luogo...",
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.LocationOn,
+                                    contentDescription = null,
+                                    tint = Color(0xFF64748B)
+                                )
+                            },
+                            shape = RoundedCornerShape(28.dp),
+                            enabled = !viewModel.isEditMode
+                        )
+
+                        if (viewModel.locationSuggestions.isNotEmpty()) {
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .border(
+                                        width = 1.dp,
+                                        color = Color(0xFFE2E8F0),
+                                        shape = RoundedCornerShape(16.dp)
+                                    ),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                            ) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .heightIn(max = 200.dp)
+                                        .verticalScroll(rememberScrollState())
+                                ) {
+                                    viewModel.locationSuggestions.forEachIndexed { index, suggestion ->
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clickable {
+                                                    viewModel.location = suggestion.name ?: ""
+                                                    viewModel.locationSuggestions.clear()
+                                                }
+                                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Place,
+                                                contentDescription = null,
+                                                tint = Color(0xFF3B82F6),
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                            Text(
+                                                text = suggestion.name ?: "",
+                                                fontSize = 14.sp,
+                                                color = Color(0xFF1E293B),
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                        }
+                                        if (index < viewModel.locationSuggestions.size - 1) {
+                                            HorizontalDivider(
+                                                color = Color(0xFFF1F5F9),
+                                                thickness = 1.dp,
+                                                modifier = Modifier.padding(horizontal = 16.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
 

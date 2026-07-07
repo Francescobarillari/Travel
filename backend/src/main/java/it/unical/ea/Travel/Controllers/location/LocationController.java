@@ -19,10 +19,11 @@ public class LocationController {
     @GetMapping("/search")
     public ResponseEntity<Page<LocationDto>> searchLocation(
             @RequestParam(required = false) String query,
+            @RequestParam(defaultValue = "false") boolean includeExternal,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        Page<LocationDto> results = locationService.searchLocation(query, page, size);
+        Page<LocationDto> results = locationService.searchLocation(query, includeExternal, page, size);
         return ResponseEntity.ok(results);
     }
 

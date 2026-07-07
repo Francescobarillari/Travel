@@ -34,11 +34,90 @@ public class LocationService {
     private final LocationMapper locationMapper;
 
     @Transactional(readOnly = true)
-    public Page<LocationDto> searchLocation(String keyword, int page, int size) {
+    public Page<LocationDto> searchLocation(String keyword, boolean includeExternal, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         String safeKeyword = (keyword == null) ? "" : keyword.trim();
-        Page<Location> locationPage = locationRepository.searchByKeyword(safeKeyword, pageable);
-        return locationPage.map(locationMapper::toDto);
+        
+        // 1. Cerca nel DB locale
+        Page<Location> localLocations = locationRepository.searchByKeyword(safeKeyword, pageable);
+        List<LocationDto> mergedResults = new java.util.ArrayList<>();
+        for (Location loc : localLocations.getContent()) {
+            if (!includeExternal && (loc.getImageUrl() == null || loc.getImageUrl().trim().isEmpty())) {
+                continue;
+            }
+            mergedResults.add(locationMapper.toDto(loc));
+        }
+
+        // 2. Se includeExternal è true e l'utente sta digitando (almeno 2 caratteri) ed è la prima pagina, chiedi a Nominatim
+        if (includeExternal && !safeKeyword.isEmpty() && page == 0 && safeKeyword.length() >= 2) {
+            List<LocationDto> onlineSuggestions = fetchSuggestionsFromNominatim(safeKeyword);
+            for (LocationDto suggestion : onlineSuggestions) {
+                // Evita duplicati con quelli locali confrontando la prima parte del nome
+                boolean exists = mergedResults.stream()
+                        .anyMatch(loc -> {
+                            String name1 = loc.getName().toLowerCase().split(",")[0].trim();
+                            String name2 = suggestion.getName().toLowerCase().split(",")[0].trim();
+                            return name1.equals(name2) 
+                                || name2.startsWith(name1) 
+                                || name1.startsWith(name2) 
+                                || loc.getName().equalsIgnoreCase(suggestion.getName());
+                        });
+                if (!exists) {
+                    mergedResults.add(suggestion);
+                }
+            }
+        }
+
+        // Tronca la lista in base al size richiesto
+        int end = Math.min(mergedResults.size(), size);
+        List<LocationDto> subList = mergedResults.subList(0, end);
+
+        return new org.springframework.data.domain.PageImpl<>(
+            subList,
+            pageable,
+            Math.max(localLocations.getTotalElements(), mergedResults.size())
+        );
+    }
+
+    private List<LocationDto> fetchSuggestionsFromNominatim(String query) {
+        List<LocationDto> suggestions = new java.util.ArrayList<>();
+        try {
+            RestTemplate restTemplate = new RestTemplate();
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("User-Agent", "TravelApp/1.0 (contact: admin@travelapp.com)");
+            HttpEntity<String> entity = new HttpEntity<>(headers);
+
+            String url = UriComponentsBuilder.fromUriString("https://nominatim.openstreetmap.org/search")
+                    .queryParam("q", query)
+                    .queryParam("format", "json")
+                    .queryParam("limit", 5)
+                    .build()
+                    .toUriString();
+
+            ResponseEntity<List> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    entity,
+                    List.class);
+            List<?> body = response.getBody();
+            if (body != null) {
+                for (Object item : body) {
+                    if (item instanceof java.util.Map) {
+                        java.util.Map<?, ?> map = (java.util.Map<?, ?>) item;
+                        String displayName = (String) map.get("display_name");
+                        if (displayName != null) {
+                            LocationDto dto = new LocationDto();
+                            dto.setName(displayName);
+                            dto.setDescription("Trovato tramite OpenStreetMap.");
+                            suggestions.add(dto);
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to fetch suggestions from Nominatim: " + e.getMessage());
+        }
+        return suggestions;
     }
 
     @Transactional(readOnly = true)
@@ -54,29 +133,36 @@ public class LocationService {
 
         String trimmedName = locationName.trim();
 
-        // 1. Cerca nel database (case-insensitive)
+        // 1. Cerca nel database (case-insensitive - corrispondenza esatta)
         Optional<Location> existing = locationRepository.findByNameIgnoreCase(trimmedName);
         if (existing.isPresent()) {
-            Location loc = existing.get();
-            if (loc.getImageUrl() == null || loc.getImageUrl().contains("wikimedia.org")
-                    || loc.getImageUrl().contains("photo-1488646953014-85cb44e25828")
-                    || loc.getImageUrl().contains("loremflickr.com")) {
-                loc.setImageUrl(fetchUnsplashImageUrl(trimmedName));
-                loc = locationRepository.save(loc);
-            }
-            return loc;
+            return existing.get();
         }
 
-        // 2. Verifica tramite l'API OpenStreetMap Nominatim
+        // 2. Cerca una corrispondenza intelligente/parziale con le località esistenti nel DB
+        List<Location> allLocations = locationRepository.findAll();
+        for (Location loc : allLocations) {
+            String dbName = loc.getName().toLowerCase();
+            String targetName = trimmedName.toLowerCase();
+            
+            String dbCity = dbName.split(",")[0].trim();
+            String targetCity = targetName.split(",")[0].trim();
+
+            if (dbCity.equals(targetCity) || dbName.contains(targetCity) || targetName.contains(dbCity)) {
+                return loc; // Associa direttamente alla città preesistente!
+            }
+        }
+
+        // 3. Verifica tramite l'API OpenStreetMap Nominatim
         boolean isValid = verifyLocationWithNominatim(trimmedName);
         if (!isValid) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "location.invalidName");
         }
 
-        // 3. Crea e salva la nuova Location
+        // 4. Crea e salva la nuova Location (senza immagine)
         Location newLocation = new Location();
         newLocation.setName(trimmedName);
-        newLocation.setImageUrl(fetchUnsplashImageUrl(trimmedName));
+        newLocation.setImageUrl(null);
         newLocation.setDescription("Località verificata tramite OpenStreetMap.");
 
         return locationRepository.save(newLocation);
