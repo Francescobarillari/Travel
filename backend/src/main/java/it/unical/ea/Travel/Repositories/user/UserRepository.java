@@ -17,6 +17,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     public Optional<User> getUserByEmail(String email);
     public List<User> findByUserTypeAndApproved(UserType userType, Boolean approved);
     public List<User> findByUserType(UserType userType);
+    boolean existsByVatNumber(String vatNumber);
 
     // bisogna cambiare questa query in sql -> JPA Specifications
     @Query(value = "SELECT * FROM users WHERE email = ?1", nativeQuery = true)

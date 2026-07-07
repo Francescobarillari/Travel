@@ -45,6 +45,7 @@ public class UserService {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Il tipo utente è obbligatorio");
         }
 
+        String normalizedVat = null;
         if (request.getUserType() == UserType.VIAGGIATORE) {
             if (request.getFirstName() == null || request.getFirstName().strip().isEmpty()) {
                 throw new ApiException(HttpStatus.BAD_REQUEST, "Il nome è obbligatorio per i viaggiatori");
@@ -59,6 +60,14 @@ public class UserService {
             if (request.getVatNumber() == null || request.getVatNumber().strip().isEmpty()) {
                 throw new ApiException(HttpStatus.BAD_REQUEST, "La Partita IVA è obbligatoria per le società");
             }
+            normalizedVat = request.getVatNumber().strip().toUpperCase().replaceAll("\\s+", "");
+            if (!normalizedVat.matches("^(IT)?[0-9]{11}$")) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "Il formato della Partita IVA non è valido. Deve essere di 11 cifre numeriche (es. IT12345678901 o 12345678901)");
+            }
+            if (userRepository.existsByVatNumber(normalizedVat)) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "La Partita IVA inserita è già associata ad un'altra società registrata");
+            }
+            request.setVatNumber(normalizedVat);
         }
 
         String keycloakUserId = keycloakAdminService.createUser(request);
@@ -76,7 +85,7 @@ public class UserService {
             user.setRoles("ROLE_VIAGGIATORE");
         } else {
             user.setCompanyName(request.getCompanyName());
-            user.setVatNumber(request.getVatNumber());
+            user.setVatNumber(normalizedVat);
             user.setDocumentPhotos(request.getDocumentPhotos());
             user.setRoles("ROLE_SOCIETA");
             user.setApproved(false);
