@@ -52,10 +52,10 @@ android {
         buildConfigField("String", "KEYCLOAK_CLIENT_ID", "\"$keycloakClientId\"")
         buildConfigField("String", "KEYCLOAK_CLIENT_SECRET", "\"$keycloakClientSecret\"")
 
-        val stripePublishableKey = envProperties.getProperty("STRIPE_PUBLISHABLE_KEY") 
-            ?: localProperties.getProperty("stripe.publishable.key") 
-            ?: "pk_test_4eC39HqLyjWDarjtT1zdp7dc"
-        buildConfigField("String", "STRIPE_PUBLISHABLE_KEY", "\"$stripePublishableKey\"")
+        val paypalClientId = envProperties.getProperty("PAYPAL_CLIENT_ID") 
+            ?: localProperties.getProperty("paypal.client.id") 
+            ?: "YOUR_SANDBOX_CLIENT_ID"
+        buildConfigField("String", "PAYPAL_CLIENT_ID", "\"$paypalClientId\"")
     }
 
     buildTypes {
@@ -108,7 +108,7 @@ dependencies {
     implementation("com.squareup.retrofit2:converter-scalars:2.9.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
     implementation("io.coil-kt:coil-compose:2.7.0")
-    implementation("com.stripe:stripe-android:20.48.6")
+    implementation("com.paypal.checkout:android-sdk:1.3.1")
     implementation(project(":common-dtos"))
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")

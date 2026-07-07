@@ -137,11 +137,25 @@ public class ItineraryController {
         return toDTO(updated);
     }
 
+    @Operation(summary = "Verifica se l'utente ha prenotato l'itinerario")
+    @GetMapping("/{stringId}/isBooked")
+    public ResponseEntity<Boolean> isItineraryBooked(
+            @Parameter(description = "ID dell'itinerario", schema = @Schema(format = "uuid")) @PathVariable String stringId,
+            @AuthenticationPrincipal Jwt jwt) {
+        if (jwt == null) return ResponseEntity.ok(false);
+        String email = jwt.getClaimAsString("email");
+        boolean isBooked = itineraryService.isItineraryBooked(stringId, email);
+        return ResponseEntity.ok(isBooked);
+    }
+
     @Operation(summary = "Prenota un itinerario", description = "Prenota l'itinerario ed iscrive l'utente autenticato a tutte le attività collegate")
     @PostMapping("/{stringId}/book")
     public ResponseEntity<PaymentIntentResponseDto> bookItinerary(
             @Parameter(description = "ID dell'itinerario", schema = @Schema(format = "uuid"), example = "550e8400-e29b-41d4-a716-446655440000") @PathVariable String stringId,
             @AuthenticationPrincipal Jwt jwt) {
+        if (jwt == null) {
+            throw new it.unical.ea.Travel.Exception.ApiException(HttpStatus.UNAUTHORIZED, "User not authenticated");
+        }
         String email = jwt.getClaimAsString("email");
         PaymentIntentResponseDto response = itineraryService.bookItinerary(stringId, email);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -152,6 +166,9 @@ public class ItineraryController {
     public ResponseEntity<Void> cancelItineraryBooking(
             @Parameter(description = "ID dell'itinerario", schema = @Schema(format = "uuid"), example = "550e8400-e29b-41d4-a716-446655440000") @PathVariable String stringId,
             @AuthenticationPrincipal Jwt jwt) {
+        if (jwt == null) {
+            throw new it.unical.ea.Travel.Exception.ApiException(HttpStatus.UNAUTHORIZED, "User not authenticated");
+        }
         String email = jwt.getClaimAsString("email");
         itineraryService.cancelItineraryBooking(stringId, email);
         return ResponseEntity.noContent().build();

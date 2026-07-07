@@ -41,7 +41,7 @@ services:
       KEYCLOAK_BACKEND_ADMIN_CLIENT_ID: travel-backend-admin
     volumes:
       - ./keycloak/configure-realm.sh:/opt/keycloak/configure-realm.sh:ro
-    entrypoint: ["/bin/sh", "/opt/keycloak/configure-realm.sh"]
+    entrypoint: [ "/bin/sh", "/opt/keycloak/configure-realm.sh" ]
 
   backend:
     image: maven:3.9.6-eclipse-temurin-21
@@ -82,9 +82,9 @@ services:
       - KEYCLOAK_ADMIN_CLIENT_ID=travel-backend-admin
       - KEYCLOAK_ADMIN_CLIENT_SECRET=travel-backend-admin-secret
       - KEYCLOAK_DEFAULT_CLIENT_ROLE=BASIC
-      - UNSPLASH_ACCESS_KEY=${UNSPLASH_ACCESS_KEY}
-      - STRIPE_API_KEY=${STRIPE_API_KEY}
-      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+      - PAYMENT_MOCK=${PAYMENT_MOCK}
+      - PAYPAL_CLIENT_ID=${PAYPAL_CLIENT_ID}
+      - PAYPAL_CLIENT_SECRET=${PAYPAL_CLIENT_SECRET}
 
 volumes:
   postgres_data:

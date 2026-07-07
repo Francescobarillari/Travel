@@ -90,6 +90,9 @@ interface ApiService {
     @POST("itinerary/{id}/book")
     suspend fun bookItinerary(@Path("id") id: String): PaymentIntentResponseDto
 
+    @GET("itinerary/{id}/isBooked")
+    suspend fun isItineraryBooked(@Path("id") id: String): Boolean
+
     @POST("itinerary/booking/{bookingId}/confirm")
     suspend fun confirmItineraryBooking(@Path("bookingId") bookingId: String)
 

@@ -46,8 +46,8 @@ public class ItineraryService {
     private final AuditLogService auditLogService;
     private final PaymentGateway paymentGateway;
 
-    @Value("${stripe.mock:true}")
-    private boolean stripeMock;
+    @Value("${payment.mock:true}")
+    private boolean paymentMock;
 
     @Autowired
     public ItineraryService(ItineraryRepository itineraryRepository,
@@ -208,11 +208,10 @@ public class ItineraryService {
         String paymentIntentId = null;
         BookingStatus status = BookingStatus.PENDING;
 
-        if (totalPrice.compareTo(BigDecimal.ZERO) > 0 && !stripeMock) {
+        if (totalPrice.compareTo(BigDecimal.ZERO) > 0 && !paymentMock) {
             clientSecret = paymentGateway.createPaymentIntent(totalPrice, "eur", "Booking for Itinerary: " + itinerary.getTitle());
-            if (clientSecret != null && clientSecret.contains("_secret_")) {
-                paymentIntentId = clientSecret.substring(0, clientSecret.indexOf("_secret_"));
-            }
+            // For PayPal, the returned value is the Order ID.
+            paymentIntentId = clientSecret;
         } else {
             status = BookingStatus.CONFIRMED;
         }
@@ -227,6 +226,9 @@ public class ItineraryService {
 
         // 5. Iscrizione automatica a cascata in tutte le attività
         for (Activity activity : itinerary.getActivities()) {
+            if (activityBookingRepository.findByUserIdAndActivityId(user.getId(), activity.getId()).isPresent()) {
+                continue;
+            }
             ActivityBooking actBooking = new ActivityBooking();
             actBooking.setUser(user);
             actBooking.setActivity(activity);
@@ -289,6 +291,14 @@ public class ItineraryService {
         }
         
         auditLogService.log("CONFIRM_ITINERARY_BOOKING", "ItineraryBooking", booking.getId().toString(), "Booking confirmed client-side");
+    }
+
+    public boolean isItineraryBooked(String itineraryId, String userEmail) {
+        User user = userRepository.getUserByEmail(userEmail).orElse(null);
+        if (user == null) return false;
+
+        Optional<ItineraryBooking> existingBookingOpt = itineraryBookingRepository.findByUserIdAndItineraryId(user.getId(), UUID.fromString(itineraryId));
+        return existingBookingOpt.isPresent() && existingBookingOpt.get().getStatus() == BookingStatus.CONFIRMED;
     }
 }
 

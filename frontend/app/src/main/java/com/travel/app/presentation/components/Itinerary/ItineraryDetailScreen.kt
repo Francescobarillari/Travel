@@ -26,9 +26,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
-import com.stripe.android.paymentsheet.PaymentSheet
-import com.stripe.android.paymentsheet.PaymentSheetResult
-import com.stripe.android.paymentsheet.rememberPaymentSheet
+import com.paypal.checkout.PayPalCheckout
+import com.paypal.checkout.approve.OnApprove
+import com.paypal.checkout.cancel.OnCancel
+import com.paypal.checkout.error.OnError
 import it.unical.ea.dtos.activity.ActivityDto
 import it.unical.ea.dtos.itinerary.ItineraryDto
 import java.time.LocalDateTime
@@ -46,7 +47,7 @@ fun ItineraryDetailScreen(
     itinerary: ItineraryDto,
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: ItineraryDetailViewModel = viewModel()
+    viewModel: ItineraryDetailViewModel = viewModel(key = itinerary.getId()?.toString())
 ) {
     val scrollState = rememberScrollState()
     val context = LocalContext.current
@@ -57,33 +58,37 @@ fun ItineraryDetailScreen(
     val clientSecret by viewModel.paymentClientSecret.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
+    val isBooked by viewModel.isBooked.collectAsState()
+    val showSummaryDialog by viewModel.showSummaryDialog.collectAsState()
 
-    val paymentSheet = rememberPaymentSheet { paymentResult ->
-        when (paymentResult) {
-            is PaymentSheetResult.Completed -> {
-                Toast.makeText(context, "Pagamento completato!", Toast.LENGTH_SHORT).show()
-                viewModel.confirmPaymentSuccess()
-            }
-            is PaymentSheetResult.Canceled -> {
-                Toast.makeText(context, "Pagamento annullato", Toast.LENGTH_SHORT).show()
-                viewModel.clearClientSecret()
-            }
-            is PaymentSheetResult.Failed -> {
-                Toast.makeText(context, "Errore nel pagamento: ${paymentResult.error.message}", Toast.LENGTH_LONG).show()
-                viewModel.clearClientSecret()
-            }
+    LaunchedEffect(itinerary.getId()) {
+        itinerary.getId()?.let {
+            viewModel.checkIsBooked(it.toString())
         }
     }
 
+    LaunchedEffect(Unit) {
+        PayPalCheckout.registerCallbacks(
+            onApprove = OnApprove { approval ->
+                Toast.makeText(context, "Pagamento completato!", Toast.LENGTH_SHORT).show()
+                viewModel.confirmPaymentSuccess()
+            },
+            onCancel = OnCancel {
+                Toast.makeText(context, "Pagamento annullato", Toast.LENGTH_SHORT).show()
+                viewModel.clearClientSecret()
+            },
+            onError = OnError { errorInfo ->
+                Toast.makeText(context, "Errore nel pagamento: ${errorInfo.error.message}", Toast.LENGTH_LONG).show()
+                viewModel.clearClientSecret()
+            }
+        )
+    }
+
     LaunchedEffect(clientSecret) {
-        clientSecret?.let { secret ->
-            paymentSheet.presentWithPaymentIntent(
-                secret,
-                PaymentSheet.Configuration(
-                    merchantDisplayName = "Travel App",
-                    allowsDelayedPaymentMethods = true
-                )
-            )
+        clientSecret?.let { orderId ->
+            PayPalCheckout.startCheckout(com.paypal.checkout.createorder.CreateOrder { createOrderActions ->
+                createOrderActions.set(orderId)
+            })
         }
     }
 
@@ -91,6 +96,31 @@ fun ItineraryDetailScreen(
         error?.let {
             Toast.makeText(context, it, Toast.LENGTH_LONG).show()
         }
+    }
+
+    if (showSummaryDialog) {
+        AlertDialog(
+            onDismissRequest = { viewModel.onSummaryDialogDismissed() },
+            title = {
+                Text(text = "Prenotazione Confermata 🎉", fontWeight = FontWeight.Bold)
+            },
+            text = {
+                Column {
+                    Text("Hai prenotato con successo l'itinerario:")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(text = itinerary.getTitle() ?: "N/D", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(text = "Totale: €${String.format("%.2f", totalPrice)}", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                }
+            },
+            confirmButton = {
+                Button(onClick = { viewModel.onSummaryDialogDismissed() }) {
+                    Text("Chiudi")
+                }
+            },
+            shape = RoundedCornerShape(16.dp),
+            containerColor = MaterialTheme.colorScheme.surface
+        )
     }
 
     Scaffold(
@@ -109,9 +139,9 @@ fun ItineraryDetailScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Prezzo Totale Itinerario",
+                            text = "Prezzo Totale",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -122,7 +152,19 @@ fun ItineraryDetailScreen(
                             color = MaterialTheme.colorScheme.primary
                         )
                     }
-                    Row(modifier = Modifier.fillMaxWidth()) {
+                    if (isBooked) {
+                        Surface(
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            shape = RoundedCornerShape(16.dp)
+                        ) {
+                            Text(
+                                text = "Prenotato",
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                            )
+                        }
+                    } else {
                         Button(
                             onClick = { 
                                 itinerary.getId()?.toString()?.let {
@@ -131,7 +173,7 @@ fun ItineraryDetailScreen(
                             },
                             enabled = !isLoading,
                             modifier = Modifier
-                                .fillMaxWidth()
+                                .width(160.dp)
                                 .height(52.dp),
                             shape = RoundedCornerShape(26.dp)
                         ) {

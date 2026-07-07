@@ -137,6 +137,9 @@ public class ActivityController {
     public ResponseEntity<PaymentIntentResponseDto> bookActivity(
             @Parameter(description = "ID dell'attività", schema = @Schema(format = "uuid"), example = "550e8400-e29b-41d4-a716-446655440000") @PathVariable String stringId,
             @AuthenticationPrincipal Jwt jwt) {
+        if (jwt == null) {
+            throw new it.unical.ea.Travel.Exception.ApiException(HttpStatus.UNAUTHORIZED, "User not authenticated");
+        }
         String email = jwt.getClaimAsString("email");
         PaymentIntentResponseDto response = activityService.bookActivity(stringId, email);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -144,9 +147,12 @@ public class ActivityController {
 
     @Operation(summary = "Cancella prenotazione attività", description = "Cancella la prenotazione dell'attività per l'utente autenticato")
     @DeleteMapping("/{stringId}/book")
-    public ResponseEntity<Void> cancelBooking(
+    public ResponseEntity<Void> cancelActivityBooking(
             @Parameter(description = "ID dell'attività", schema = @Schema(format = "uuid"), example = "550e8400-e29b-41d4-a716-446655440000") @PathVariable String stringId,
             @AuthenticationPrincipal Jwt jwt) {
+        if (jwt == null) {
+            throw new it.unical.ea.Travel.Exception.ApiException(HttpStatus.UNAUTHORIZED, "User not authenticated");
+        }
         String email = jwt.getClaimAsString("email");
         activityService.cancelActivityBooking(stringId, email);
         return ResponseEntity.noContent().build();

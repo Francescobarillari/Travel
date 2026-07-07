@@ -20,7 +20,26 @@ class ItineraryDetailViewModel : ViewModel() {
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error
 
+    private val _isBooked = MutableStateFlow(false)
+    val isBooked: StateFlow<Boolean> = _isBooked
+
+    private val _showSummaryDialog = MutableStateFlow(false)
+    val showSummaryDialog: StateFlow<Boolean> = _showSummaryDialog
+
     private var currentBookingId: String? = null
+
+    fun checkIsBooked(itineraryId: String) {
+        viewModelScope.launch {
+            try {
+                val status = apiService.isItineraryBooked(itineraryId)
+                if (status) {
+                    _isBooked.value = true
+                }
+            } catch (e: Exception) {
+                // Ignore failure to fetch status, defaults to false
+            }
+        }
+    }
 
     fun bookItinerary(itineraryId: String) {
         viewModelScope.launch {
@@ -33,6 +52,8 @@ class ItineraryDetailViewModel : ViewModel() {
                     _paymentClientSecret.value = response.clientSecret
                 } else {
                     // It was a free itinerary, mock payment or something
+                    _isBooked.value = true
+                    _showSummaryDialog.value = true
                     _error.value = "Prenotazione confermata!"
                 }
             } catch (e: Exception) {
@@ -49,6 +70,8 @@ class ItineraryDetailViewModel : ViewModel() {
             _isLoading.value = true
             try {
                 apiService.confirmItineraryBooking(bookingId)
+                _isBooked.value = true
+                _showSummaryDialog.value = true
                 _error.value = "Prenotazione confermata!"
             } catch (e: Exception) {
                 _error.value = "Errore durante la conferma: ${e.message}"
@@ -63,5 +86,9 @@ class ItineraryDetailViewModel : ViewModel() {
     fun clearClientSecret() {
         _paymentClientSecret.value = null
         currentBookingId = null
+    }
+
+    fun onSummaryDialogDismissed() {
+        _showSummaryDialog.value = false
     }
 }

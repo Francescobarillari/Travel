@@ -48,8 +48,8 @@ public class ActivityService {
     private final it.unical.ea.Travel.Services.location.LocationService locationService;
     private final PaymentGateway paymentGateway;
 
-    @Value("${stripe.mock:true}")
-    private boolean stripeMock;
+    @Value("${payment.mock:true}")
+    private boolean paymentMock;
 
     public List<ActivityDto> getAllActivities() {
         List<Activity> activities = activityRepository.findByApproved(true);
@@ -197,7 +197,7 @@ public class ActivityService {
         String paymentIntentId = null;
         BookingStatus status = BookingStatus.PENDING;
 
-        if (activity.getPrice() != null && activity.getPrice().compareTo(BigDecimal.ZERO) > 0 && !stripeMock) {
+        if (activity.getPrice() != null && activity.getPrice().compareTo(BigDecimal.ZERO) > 0 && !paymentMock) {
             clientSecret = paymentGateway.createPaymentIntent(activity.getPrice(), "eur", "Booking for Activity: " + activity.getName());
             if (clientSecret != null && clientSecret.contains("_secret_")) {
                 paymentIntentId = clientSecret.substring(0, clientSecret.indexOf("_secret_"));
