@@ -84,6 +84,14 @@ public class AuthController {
 
             // Autenticazione riuscita: azzera i tentativi falliti
             loginAttemptService.loginSucceeded(email);
+
+            // Contrassegna l'email come verificata nel DB locale e invia la mail di benvenuto
+            try {
+                userService.markEmailAsVerified(email);
+            } catch (Exception e) {
+                System.err.println("Impossibile aggiornare lo stato di verifica email in DB locale: " + e.getMessage());
+            }
+
             return ResponseEntity.ok(tokenResponse);
         } catch (ApiException e) {
             throw e;

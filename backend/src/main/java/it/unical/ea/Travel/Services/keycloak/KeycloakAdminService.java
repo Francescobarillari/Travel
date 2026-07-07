@@ -62,7 +62,7 @@ public class KeycloakAdminService {
                 "lastName", lastName,
                 "enabled", true,
                 "emailVerified", false,
-                "requiredActions", List.of());
+                "requiredActions", List.of("VERIFY_EMAIL"));
 
         try {
             ResponseEntity<Void> response = restClient.post()
@@ -88,6 +88,19 @@ public class KeycloakAdminService {
                     .toBodilessEntity();
 
             assignDefaultClientRole(token, userId);
+
+            // Invia l'email di verifica in modo esplicito tramite Keycloak Admin API (execute-actions-email)
+            try {
+                restClient.put()
+                        .uri("/admin/realms/{realm}/users/{userId}/execute-actions-email", realm, userId)
+                        .header("Authorization", "Bearer " + token)
+                        .body(List.of("VERIFY_EMAIL"))
+                        .retrieve()
+                        .toBodilessEntity();
+            } catch (Exception e) {
+                System.err.println("Errore nell'invio dell'email di verifica tramite Keycloak: " + e.getMessage());
+            }
+
             return userId;
         } catch (HttpClientErrorException.Conflict exception) {
             throw new KeycloakUserAlreadyExistsException("Utente gia presente in Keycloak");

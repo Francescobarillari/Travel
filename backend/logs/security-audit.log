@@ -713,3 +713,41 @@
 2026-07-07 09:24:12.488 INFO  [http-nio-8080-exec-1] security-audit - REQUEST_START: method=POST, uri=/api/auth/signup, user=SYSTEM
 2026-07-07 09:24:16.627 INFO  [http-nio-8080-exec-1] security-audit - AUDIT_EVENT: actor=SYSTEM, action=USER_REGISTER, entityName=User, entityId=49afa9ae-2698-42d0-a69b-6d727b50b5f8, details=Registered user with email: mattia.schiavello15@gmail.com of type VIAGGIATORE
 2026-07-07 09:24:17.273 INFO  [http-nio-8080-exec-1] security-audit - REQUEST_END: method=POST, uri=/api/auth/signup, user=SYSTEM
+2026-07-07 09:37:46.718 INFO  [http-nio-8080-exec-7] security-audit - REQUEST_START: method=POST, uri=/api/auth/signup, user=SYSTEM
+2026-07-07 09:37:49.950 INFO  [http-nio-8080-exec-7] security-audit - REQUEST_END: method=POST, uri=/api/auth/signup, user=SYSTEM
+2026-07-07 09:38:38.288 INFO  [http-nio-8080-exec-4] security-audit - REQUEST_START: method=POST, uri=/api/auth/signup, user=SYSTEM
+2026-07-07 09:38:39.789 INFO  [http-nio-8080-exec-4] security-audit - AUDIT_EVENT: actor=SYSTEM, action=USER_REGISTER, entityName=User, entityId=35005eee-41c4-4cf7-93dd-478f6bcca1ea, details=Registered user with email: mattia.schiavello30@gmail.com of type VIAGGIATORE
+2026-07-07 09:38:43.405 INFO  [http-nio-8080-exec-4] security-audit - REQUEST_END: method=POST, uri=/api/auth/signup, user=SYSTEM
+2026-07-07 09:40:52.123 INFO  [http-nio-8080-exec-10] security-audit - REQUEST_START: method=POST, uri=/api/auth/forgot-password, user=SYSTEM
+2026-07-07 09:40:54.710 INFO  [http-nio-8080-exec-10] security-audit - REQUEST_END: method=POST, uri=/api/auth/forgot-password, user=SYSTEM
+2026-07-07 09:41:45.246 INFO  [http-nio-8080-exec-8] security-audit - REQUEST_START: method=POST, uri=/api/auth/reset-password, user=SYSTEM
+2026-07-07 09:41:45.711 INFO  [http-nio-8080-exec-8] security-audit - AUDIT_EVENT: actor=SYSTEM, action=USER_UPDATE, entityName=User, entityId=35005eee-41c4-4cf7-93dd-478f6bcca1ea, details=Updated profile for user: mattia.schiavello30@gmail.com
+2026-07-07 09:41:45.870 INFO  [http-nio-8080-exec-8] security-audit - REQUEST_END: method=POST, uri=/api/auth/reset-password, user=SYSTEM
+2026-07-07 09:42:07.564 INFO  [http-nio-8080-exec-3] security-audit - REQUEST_START: method=POST, uri=/api/auth/login, user=SYSTEM
+2026-07-07 09:42:07.743 INFO  [http-nio-8080-exec-3] security-audit - LOGIN_SUCCESS: User email=mattia.schiavello30@gmail.com
+2026-07-07 09:42:07.800 INFO  [http-nio-8080-exec-3] security-audit - REQUEST_END: method=POST, uri=/api/auth/login, user=SYSTEM
+2026-07-07 09:42:08.963 INFO  [http-nio-8080-exec-9] security-audit - REQUEST_START: method=GET, uri=/user/me, user=mattia.schiavello30@gmail.com
+2026-07-07 09:42:08.999 INFO  [http-nio-8080-exec-9] security-audit - REQUEST_END: method=GET, uri=/user/me, user=mattia.schiavello30@gmail.com
+2026-07-07 09:42:09.108 INFO  [http-nio-8080-exec-6] security-audit - REQUEST_START: method=GET, uri=/activity/search, user=mattia.schiavello30@gmail.com
+2026-07-07 09:42:09.122 INFO  [http-nio-8080-exec-5] security-audit - REQUEST_START: method=GET, uri=/api/location/search, user=mattia.schiavello30@gmail.com
+2026-07-07 09:42:09.127 INFO  [http-nio-8080-exec-7] security-audit - REQUEST_START: method=GET, uri=/itinerary, user=mattia.schiavello30@gmail.com
+2026-07-07 09:42:09.246 INFO  [http-nio-8080-exec-4] security-audit - REQUEST_START: method=GET, uri=/activity/search, user=mattia.schiavello30@gmail.com
+2026-07-07 09:42:09.246 INFO  [http-nio-8080-exec-2] security-audit - REQUEST_START: method=GET, uri=/api/location/search, user=mattia.schiavello30@gmail.com
+2026-07-07 09:42:09.333 INFO  [http-nio-8080-exec-2] security-audit - REQUEST_END: method=GET, uri=/api/location/search, user=mattia.schiavello30@gmail.com
+2026-07-07 09:42:09.334 INFO  [http-nio-8080-exec-5] security-audit - REQUEST_END: method=GET, uri=/api/location/search, user=mattia.schiavello30@gmail.com
+2026-07-07 09:42:09.373 INFO  [http-nio-8080-exec-1] security-audit - REQUEST_START: method=GET, uri=/itinerary, user=mattia.schiavello30@gmail.com
+2026-07-07 09:42:09.390 INFO  [http-nio-8080-exec-7] security-audit - REQUEST_END: method=GET, uri=/itinerary, user=mattia.schiavello30@gmail.com
+2026-07-07 09:42:09.391 INFO  [http-nio-8080-exec-6] security-audit - REQUEST_END: method=GET, uri=/activity/search, user=mattia.schiavello30@gmail.com
+2026-07-07 09:42:09.391 INFO  [http-nio-8080-exec-4] security-audit - REQUEST_END: method=GET, uri=/activity/search, user=mattia.schiavello30@gmail.com
+2026-07-07 09:42:09.431 INFO  [http-nio-8080-exec-1] security-audit - REQUEST_END: method=GET, uri=/itinerary, user=mattia.schiavello30@gmail.com
+2026-07-07 10:03:07.552 INFO  [http-nio-8080-exec-2] security-audit - REQUEST_START: method=POST, uri=/api/auth/signup, user=SYSTEM
+2026-07-07 10:03:12.736 INFO  [http-nio-8080-exec-2] security-audit - AUDIT_EVENT: actor=SYSTEM, action=USER_REGISTER, entityName=User, entityId=a18b9e09-0a7b-4596-96cf-0e581b80a83c, details=Registered user with email: mattia.schiavello15@gmail.com of type VIAGGIATORE
+2026-07-07 10:03:16.205 INFO  [http-nio-8080-exec-2] security-audit - REQUEST_END: method=POST, uri=/api/auth/signup, user=SYSTEM
+2026-07-07 10:08:11.882 INFO  [http-nio-8080-exec-1] security-audit - REQUEST_START: method=POST, uri=/api/auth/signup, user=SYSTEM
+2026-07-07 10:08:16.246 INFO  [http-nio-8080-exec-1] security-audit - AUDIT_EVENT: actor=SYSTEM, action=USER_REGISTER, entityName=User, entityId=f3b88597-cf29-4fb2-8dca-3669b3b382bb, details=Registered user with email: mattia.schiavello15@gmail.com of type VIAGGIATORE
+2026-07-07 10:08:16.621 INFO  [http-nio-8080-exec-1] security-audit - REQUEST_END: method=POST, uri=/api/auth/signup, user=SYSTEM
+2026-07-07 10:08:58.957 INFO  [http-nio-8080-exec-2] security-audit - REQUEST_START: method=POST, uri=/api/auth/login, user=SYSTEM
+2026-07-07 10:08:59.394 INFO  [http-nio-8080-exec-2] security-audit - REQUEST_END: method=POST, uri=/api/auth/login, user=SYSTEM
+2026-07-07 10:14:16.660 INFO  [http-nio-8080-exec-1] security-audit - REQUEST_START: method=POST, uri=/api/auth/signup, user=SYSTEM
+2026-07-07 10:14:20.676 INFO  [http-nio-8080-exec-1] security-audit - AUDIT_EVENT: actor=SYSTEM, action=USER_REGISTER, entityName=User, entityId=04770f0a-0323-4bd3-9dc8-1aff12cccb5f, details=Registered user with email: mattia.schiavello30@gmail.com of type VIAGGIATORE
+2026-07-07 10:14:21.006 INFO  [http-nio-8080-exec-1] security-audit - REQUEST_END: method=POST, uri=/api/auth/signup, user=SYSTEM

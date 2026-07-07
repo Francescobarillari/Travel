@@ -85,16 +85,6 @@ public class UserService {
         try {
             User savedUser = userRepository.save(user);
             auditLogService.log("USER_REGISTER", "User", savedUser.getId().toString(), "Registered user with email: " + savedUser.getEmail() + " of type " + savedUser.getUserType());
-            
-            // Invia mail di benvenuto in modo non bloccante
-            try {
-                String name = savedUser.getUserType() == UserType.VIAGGIATORE ? savedUser.getFirstName() : savedUser.getCompanyName();
-                boolean isCompany = savedUser.getUserType() == UserType.SOCIETA;
-                emailService.sendWelcomeEmail(savedUser.getEmail(), name, isCompany);
-            } catch (Exception e) {
-                System.err.println("Errore durante l'invio della mail di benvenuto: " + e.getMessage());
-            }
-
             return savedUser;
         } catch (RuntimeException exception) {
             keycloakAdminService.deleteUser(keycloakUserId);
@@ -222,5 +212,24 @@ public class UserService {
         }
 
         return user;
+    }
+
+    @Transactional
+    public void markEmailAsVerified(String email) {
+        userRepository.getUserByEmail(email).ifPresent(user -> {
+            if (Boolean.FALSE.equals(user.getEmailVerified())) {
+                user.setEmailVerified(true);
+                userRepository.save(user);
+                
+                // Invia la mail di benvenuto in modo non bloccante dopo la verifica dell'email
+                try {
+                    String name = user.getUserType() == UserType.VIAGGIATORE ? user.getFirstName() : user.getCompanyName();
+                    boolean isCompany = user.getUserType() == UserType.SOCIETA;
+                    emailService.sendWelcomeEmail(user.getEmail(), name, isCompany);
+                } catch (Exception e) {
+                    System.err.println("Errore durante l'invio della mail di benvenuto dopo la verifica: " + e.getMessage());
+                }
+            }
+        });
     }
 }
