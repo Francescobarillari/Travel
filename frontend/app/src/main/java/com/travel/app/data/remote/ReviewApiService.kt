@@ -21,4 +21,7 @@ interface ReviewApiService {
 
     @DELETE("api/v1/reviews/{id}")
     suspend fun deleteReview(@Path("id") id: String): Response<Void>
+
+    @GET("api/v1/reviews/user/{userId}")
+    suspend fun getReviewsByUser(@Path("userId") userId: String): Response<List<ReviewDto>>
 }

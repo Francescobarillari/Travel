@@ -58,6 +58,15 @@ class ItineraryRepositoryImpl(
         }
     }
 
+    override suspend fun getItineraryById(id: String): Result<ItineraryDto> {
+        return try {
+            val result = apiService.getItineraryById(id)
+            Result.success(result)
+        } catch (e: Exception) {
+            Result.failure(Exception(handleError(e)))
+        }
+    }
+
     private fun handleError(e: Exception): String {
         return when (e) {
             is HttpException -> {

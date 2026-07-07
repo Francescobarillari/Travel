@@ -233,6 +233,24 @@ class UserRepositoryImpl(
         }
     }
 
+    override suspend fun getAllUsers(): Result<List<User>> {
+        return try {
+            val list = apiService.getUsers().map { it.toDomain() }
+            Result.success(list)
+        } catch (e: Exception) {
+            Result.failure(Exception(handleError(e)))
+        }
+    }
+
+    override suspend fun getUserById(id: String): Result<User> {
+        return try {
+            val userDto = apiService.getUser(id)
+            Result.success(userDto.toDomain())
+        } catch (e: Exception) {
+            Result.failure(Exception(handleError(e)))
+        }
+    }
+
     private fun handleError(e: Exception): String {
         return when (e) {
             is HttpException -> {

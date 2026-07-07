@@ -35,4 +35,7 @@ interface UserRepository {
     suspend fun getAllCompanies(): Result<List<User>>
     suspend fun blockCompany(id: String): Result<Unit>
     suspend fun unblockCompany(id: String): Result<Unit>
+
+    suspend fun getAllUsers(): Result<List<User>> = Result.success(emptyList())
+    suspend fun getUserById(id: String): Result<User> = Result.failure(Exception("Not implemented"))
 }

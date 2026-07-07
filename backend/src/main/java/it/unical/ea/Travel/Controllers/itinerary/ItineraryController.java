@@ -72,9 +72,8 @@ public class ItineraryController {
     @PutMapping("/{stringId}/visibility")
     public ItineraryDto updateVisibility(
             @PathVariable String stringId,
-            @RequestBody String visibility) {
-        String cleanVisibility = visibility.replace("\"", "").trim();
-        Itinerary updated = itineraryService.updateVisibility(stringId, cleanVisibility);
+            @org.springframework.web.bind.annotation.RequestParam("visibility") String visibility) {
+        Itinerary updated = itineraryService.updateVisibility(stringId, visibility.trim());
         return toDTO(updated);
     }
 

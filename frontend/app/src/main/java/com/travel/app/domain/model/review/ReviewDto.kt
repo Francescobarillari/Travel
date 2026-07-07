@@ -9,7 +9,8 @@ data class ReviewDto(
     val createdAt: String? = null,
     val activityId: String? = null,
     val activityName: String? = null,
-    val itineraryId: String? = null
+    val itineraryId: String? = null,
+    val itineraryName: String? = null
 )
 
 data class CreateReviewDto(

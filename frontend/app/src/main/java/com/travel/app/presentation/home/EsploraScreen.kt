@@ -20,26 +20,31 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.travel.app.presentation.theme.TravelTheme
 import it.unical.ea.dtos.activity.ActivityDto
-import it.unical.ea.dtos.location.LocationDto as LocalitaDto
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.ui.tooling.preview.Preview
 import com.travel.app.presentation.components.activity.ActivityCard
-import com.travel.app.presentation.components.localita.LocalitaCard
 import com.travel.app.presentation.components.itinerary.ItineraryCard
 import androidx.compose.foundation.lazy.items
 import it.unical.ea.enums.TravelTag
+import androidx.compose.ui.text.style.TextOverflow
+import coil.compose.AsyncImage
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
 
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.gestures.detectTapGestures
+import com.travel.app.domain.model.User
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun EsploraScreen(
     viewModel: EsploraViewModel,
     onItemClick: (String, Boolean) -> Unit = { _, _ -> },
+    onUserClick: (User) -> Unit = {},
     favoritesTrigger: Int = 0,
     modifier: Modifier = Modifier
 ) {
@@ -109,7 +114,7 @@ fun EsploraScreen(
                 .onFocusChanged { isSearchFocused = it.isFocused },
             placeholder = { 
                 Text(
-                    text = "Cerca per località, nome...",
+                    text = "Cerca per utenti, itinerari, attività...",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 ) 
@@ -188,9 +193,9 @@ fun EsploraScreen(
                     text = { Text("Tutti") }
                 )
                 Tab(
-                    selected = viewModel.selectedTab == EsploraTab.LOCALITA,
-                    onClick = { viewModel.onTabSelected(EsploraTab.LOCALITA) },
-                    text = { Text("Località") }
+                    selected = viewModel.selectedTab == EsploraTab.UTENTI,
+                    onClick = { viewModel.onTabSelected(EsploraTab.UTENTI) },
+                    text = { Text("Utenti") }
                 )
                 Tab(
                     selected = viewModel.selectedTab == EsploraTab.ATTIVITA,
@@ -300,7 +305,7 @@ fun EsploraScreen(
                             }
                         }
                     }
-                } else if (!viewModel.isLoading && viewModel.activities.isEmpty() && viewModel.localitaList.isEmpty()) {
+                } else if (!viewModel.isLoading && viewModel.activities.isEmpty() && viewModel.userList.isEmpty() && viewModel.filteredItineraries.isEmpty()) {
                     item {
                         Box(
                             modifier = Modifier
@@ -316,24 +321,21 @@ fun EsploraScreen(
                         }
                     }
                 } else {
-                    if (viewModel.selectedTab == EsploraTab.TUTTI || viewModel.selectedTab == EsploraTab.LOCALITA) {
-                        if (viewModel.localitaList.isNotEmpty()) {
+                    if (viewModel.selectedTab == EsploraTab.TUTTI || viewModel.selectedTab == EsploraTab.UTENTI) {
+                        if (viewModel.userList.isNotEmpty()) {
                             item {
                                 Text(
-                                    text = "Località",
+                                    text = "Utenti",
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
                                     modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
                                 )
                             }
-                            items(viewModel.localitaList.size) { index ->
-                                val localita = viewModel.localitaList[index]
-                                LocalitaCard(
-                                    localita = localita,
-                                    onClick = {
-                                        viewModel.onSearchQueryChanged(localita.name ?: "")
-                                        viewModel.performSearch()
-                                    }
+                            items(viewModel.userList.size) { index ->
+                                val user = viewModel.userList[index]
+                                UserCard(
+                                    user = user,
+                                    onClick = { onUserClick(user) }
                                 )
                             }
                         }
@@ -411,6 +413,73 @@ fun EsploraScreen(
     } 
 } 
 
+@Composable
+fun UserCard(
+    user: User,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        onClick = onClick,
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 8.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(50.dp)
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                if (!user.avatarUrl.isNullOrBlank()) {
+                    AsyncImage(
+                        model = user.avatarUrl,
+                        contentDescription = "Avatar",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(CircleShape),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Text(
+                        text = user.name?.firstOrNull()?.uppercase() ?: "?",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+            
+            Spacer(modifier = Modifier.width(16.dp))
+            
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = user.name ?: "Utente",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = if (user.userType == "SOCIETA") "Società/Agenzia" else "Viaggiatore",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
 @RequiresApi(Build.VERSION_CODES.O)
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
@@ -424,9 +493,22 @@ fun EsploraScreenPreview() {
                     override suspend fun getActivityById(id: String) = Result.failure<ActivityDto>(Exception("Not implemented"))
                     override suspend fun searchActivities(query: String, minPrice: Double?, maxPrice: Double?, page: Int, size: Int) = Result.success(it.unical.ea.dtos.common.PageDto<ActivityDto>(emptyList<ActivityDto>(), 0L, 0, 10, 0))
                 },
-                localitaRepository = object : com.travel.app.domain.repository.LocalitaRepository {
-                    override suspend fun getLocalitaById(id: String) = Result.failure<LocalitaDto>(Exception("Not implemented"))
-                    override suspend fun searchLocalita(query: String, page: Int, size: Int) = Result.success(it.unical.ea.dtos.common.PageDto<LocalitaDto>(emptyList<LocalitaDto>(), 0L, 0, 10, 0))
+                userRepository = object : com.travel.app.domain.repository.UserRepository {
+                    override suspend fun login(email: String, password: String, captchaToken: String?) = Result.failure<User>(Exception("Not implemented"))
+                    override suspend fun registerViaggiatoreUser(email: String, firstName: String, lastName: String, password: String, phone: String?, captchaToken: String?) = Result.failure<User>(Exception("Not implemented"))
+                    override suspend fun registerSocietaUser(email: String, companyName: String, vatNumber: String, password: String, phone: String?, captchaToken: String?, documentPhotos: List<String>) = Result.failure<User>(Exception("Not implemented"))
+                    override fun getSessionUser() = null
+                    override fun saveSession(user: User, token: String) {}
+                    override fun saveSession(user: User, accessToken: String, refreshToken: String) {}
+                    override fun logout() {}
+                    override suspend fun getMe() = Result.failure<User>(Exception("Not implemented"))
+                    override suspend fun updateMe(user: User) = Result.failure<User>(Exception("Not implemented"))
+                    override suspend fun uploadDocument(fileBytes: ByteArray, filename: String) = Result.failure<String>(Exception("Not implemented"))
+                    override suspend fun getAllCompanies() = Result.success(emptyList<User>())
+                    override suspend fun blockCompany(id: String) = Result.success(Unit)
+                    override suspend fun unblockCompany(id: String) = Result.success(Unit)
+                    override suspend fun getAllUsers() = Result.success(emptyList<User>())
+                    override suspend fun getUserById(id: String) = Result.failure<User>(Exception("Not implemented"))
                 },
                 itineraryRepository = object : com.travel.app.domain.repository.ItineraryRepository {
                     override suspend fun getItineraries() = Result.success(emptyList<it.unical.ea.dtos.itinerary.ItineraryDto>())

@@ -22,6 +22,10 @@ import com.travel.app.presentation.theme.TravelTheme
 import com.travel.app.presentation.components.itinerary.ItineraryDetailScreen
 import com.travel.app.presentation.components.activity.ActivityDetailScreen
 import it.unical.ea.dtos.itinerary.ItineraryDto
+import androidx.compose.ui.platform.LocalContext
+import android.widget.Toast
+import com.travel.app.domain.model.review.ReviewDto
+import kotlinx.coroutines.launch
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -31,12 +35,15 @@ fun HomeScreen(
     onDarkModeChange: (Boolean) -> Unit = {},
     onLogout: () -> Unit = {}
 ) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     var selectedTab by remember { mutableStateOf(HomeTab.ESPLORA) }
     var selectedItemId by remember { mutableStateOf<String?>(null) }
     var selectedItemIsTrip by remember { mutableStateOf(true) }
     var selectedActivityIdForBookings by remember { mutableStateOf<String?>(null) }
     var selectedItinerary by remember { mutableStateOf<ItineraryDto?>(null) }
     var personalizingItinerary by remember { mutableStateOf<ItineraryDto?>(null) }
+    var selectedProfileUser by remember { mutableStateOf<User?>(null) }
     var itinerariesRefreshTrigger by remember { mutableStateOf(0) }
     var favoritesTrigger by remember { mutableStateOf(0) }
 
@@ -70,7 +77,7 @@ fun HomeScreen(
     val esploraViewModel = remember {
         EsploraViewModel(
             activityRepository = AppContainer.activityRepository,
-            localitaRepository = AppContainer.localitaRepository,
+            userRepository = AppContainer.userRepository,
             itineraryRepository = AppContainer.itineraryRepository
         )
     }
@@ -132,6 +139,9 @@ fun HomeScreen(
                                         selectedItinerary = found
                                     }
                                 }
+                            },
+                            onUserClick = { user ->
+                                selectedProfileUser = user
                             }
                         )
                     }
@@ -216,6 +226,37 @@ fun HomeScreen(
         }
 
         // Overlay detail screens on top of the main content
+        
+        // 1. User Profile Overlay (composed first, so details render on top of it)
+        if (selectedProfileUser != null) {
+            UserProfileScreen(
+                user = selectedProfileUser!!,
+                onBack = { selectedProfileUser = null },
+                onItineraryClick = { itinerary ->
+                    selectedItinerary = itinerary
+                },
+                onReviewClick = { review ->
+                    if (review.itineraryId != null) {
+                        scope.launch {
+                            val res = AppContainer.itineraryRepository.getItineraryById(review.itineraryId.toString())
+                            res.fold(
+                                onSuccess = { itinerary ->
+                                    selectedItinerary = itinerary
+                                },
+                                onFailure = { err ->
+                                    Toast.makeText(context, "Errore: ${err.message}", Toast.LENGTH_SHORT).show()
+                                }
+                            )
+                        }
+                    } else if (review.activityId != null) {
+                        selectedItemId = review.activityId.toString()
+                        selectedItemIsTrip = false
+                    }
+                }
+            )
+        }
+
+        // 2. Itinerary Detail Overlay
         if (selectedItinerary != null) {
             val itineraryId = selectedItinerary!!.id?.toString() ?: ""
             var isFav by remember(itineraryId, favoritesTrigger) { 
@@ -243,7 +284,10 @@ fun HomeScreen(
                     itinerariesRefreshTrigger++
                 }
             )
-        } else if (selectedItemId != null && !selectedItemIsTrip) {
+        }
+
+        // 3. Activity Detail Overlay
+        if (selectedItemId != null && !selectedItemIsTrip) {
             val activityId = selectedItemId!!
             var isFav by remember(activityId, favoritesTrigger) { 
                 mutableStateOf(AppContainer.sessionManager.isFavoriteActivity(activityId)) 
@@ -260,6 +304,7 @@ fun HomeScreen(
             )
         }
 
+        // 4. Personalize Overlay
         if (personalizingItinerary != null) {
             PersonalizeItineraryScreen(
                 itinerary = personalizingItinerary!!,
