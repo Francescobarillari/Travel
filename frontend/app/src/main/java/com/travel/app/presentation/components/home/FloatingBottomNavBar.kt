@@ -65,8 +65,8 @@ fun FloatingBottomNavBar(
                 modifier = Modifier.weight(1f)
             )
             HomeTabItem(
-                icon = if (isSocieta) Icons.Default.Add else Icons.Default.Dashboard,
-                label = if (isSocieta) "Aggiungi" else "Dashboard",
+                icon = if (isSocieta) Icons.Default.Add else Icons.Default.Favorite,
+                label = if (isSocieta) "Aggiungi" else "Preferiti",
                 isSelected = selectedTab == HomeTab.PREFERITI,
                 onClick = { onTabSelected(HomeTab.PREFERITI) },
                 modifier = Modifier.weight(1f)

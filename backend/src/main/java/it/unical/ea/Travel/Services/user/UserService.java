@@ -19,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 
 import it.unical.ea.Travel.Services.storage.FileStorageService;
 import it.unical.ea.Travel.Services.audit.AuditLogService;
+import it.unical.ea.Travel.Services.mail.EmailService;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.core.io.Resource;
 
@@ -31,6 +32,7 @@ public class UserService {
     private final KeycloakAdminService keycloakAdminService;
     private final FileStorageService fileStorageService;
     private final AuditLogService auditLogService;
+    private final EmailService emailService;
 
     @Transactional
     public User saveUser(SignupRequest request) {
@@ -43,6 +45,7 @@ public class UserService {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Il tipo utente è obbligatorio");
         }
 
+        String normalizedVat = null;
         if (request.getUserType() == UserType.VIAGGIATORE) {
             if (request.getFirstName() == null || request.getFirstName().strip().isEmpty()) {
                 throw new ApiException(HttpStatus.BAD_REQUEST, "Il nome è obbligatorio per i viaggiatori");
@@ -51,12 +54,18 @@ public class UserService {
                 throw new ApiException(HttpStatus.BAD_REQUEST, "Il cognome è obbligatorio per i viaggiatori");
             }
         } else if (request.getUserType() == UserType.SOCIETA) {
-            if (request.getCompanyName() == null || request.getCompanyName().strip().isEmpty()) {
-                throw new ApiException(HttpStatus.BAD_REQUEST, "La ragione sociale è obbligatoria per le società");
-            }
             if (request.getVatNumber() == null || request.getVatNumber().strip().isEmpty()) {
-                throw new ApiException(HttpStatus.BAD_REQUEST, "La Partita IVA è obbligatoria per le società");
+                throw new ApiException(HttpStatus.BAD_REQUEST, "La Partita IVA è obbligatoria per le agenzie");
             }
+            normalizedVat = request.getVatNumber().strip().toUpperCase().replaceAll("\\s+", "");
+            if (!normalizedVat.matches("^(IT)?[0-9]{11}$")) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "Il formato della Partita IVA non è valido. Deve essere di 11 cifre numeriche (es. IT12345678901 o 12345678901)");
+            }
+            if (userRepository.existsByVatNumber(normalizedVat)) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "La Partita IVA inserita è già associata ad un'altra agenzia registrata");
+            }
+            request.setVatNumber(normalizedVat);
+            request.setCompanyName(normalizedVat);
         }
 
         String keycloakUserId = keycloakAdminService.createUser(request);
@@ -74,11 +83,34 @@ public class UserService {
             user.setRoles("ROLE_VIAGGIATORE");
         } else {
             user.setCompanyName(request.getCompanyName());
-            user.setVatNumber(request.getVatNumber());
+            user.setVatNumber(normalizedVat);
             user.setDocumentPhotos(request.getDocumentPhotos());
             user.setRoles("ROLE_SOCIETA");
             user.setApproved(false);
         }
+
+        // Genera e salva l'avatar casuale di default nel database per il nuovo utente
+        String seed;
+        String style;
+        if (request.getUserType() == UserType.SOCIETA) {
+            seed = request.getCompanyName() != null ? request.getCompanyName() : "default";
+            style = "shape-grid";
+        } else {
+            String firstName = request.getFirstName() != null ? request.getFirstName() : "";
+            String lastName = request.getLastName() != null ? request.getLastName() : "";
+            seed = (firstName + " " + lastName).trim();
+            if (seed.isEmpty()) {
+                seed = "default";
+            }
+            style = "glyphs";
+        }
+        try {
+            String encodedSeed = java.net.URLEncoder.encode(seed, java.nio.charset.StandardCharsets.UTF_8).replace("+", "%20");
+            user.setAvatarUrl("https://api.dicebear.com/10.x/" + style + "/png?seed=" + encodedSeed);
+        } catch (Exception e) {
+            user.setAvatarUrl("https://api.dicebear.com/10.x/" + style + "/png?seed=default");
+        }
+
 
         try {
             User savedUser = userRepository.save(user);
@@ -210,5 +242,24 @@ public class UserService {
         }
 
         return user;
+    }
+
+    @Transactional
+    public void markEmailAsVerified(String email) {
+        userRepository.getUserByEmail(email).ifPresent(user -> {
+            if (Boolean.FALSE.equals(user.getEmailVerified())) {
+                user.setEmailVerified(true);
+                userRepository.save(user);
+                
+                // Invia la mail di benvenuto in modo non bloccante dopo la verifica dell'email
+                try {
+                    String name = user.getUserType() == UserType.VIAGGIATORE ? user.getFirstName() : user.getCompanyName();
+                    boolean isCompany = user.getUserType() == UserType.SOCIETA;
+                    emailService.sendWelcomeEmail(user.getEmail(), name, isCompany);
+                } catch (Exception e) {
+                    System.err.println("Errore durante l'invio della mail di benvenuto dopo la verifica: " + e.getMessage());
+                }
+            }
+        });
     }
 }

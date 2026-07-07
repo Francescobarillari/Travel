@@ -4,6 +4,8 @@ import com.google.gson.Gson
 import com.travel.app.data.dto.ErrorResponseDto
 import it.unical.ea.dtos.authDto.LoginRequest
 import it.unical.ea.dtos.authDto.SignupRequest
+import it.unical.ea.dtos.authDto.ForgotPasswordRequest
+import it.unical.ea.dtos.authDto.ResetPasswordRequest
 import it.unical.ea.enums.UserType
 import com.travel.app.data.session.SessionManager
 import com.travel.app.domain.model.User
@@ -14,6 +16,8 @@ import com.travel.app.service.ApiService
 import retrofit2.HttpException
 import java.io.IOException
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.toRequestBody
 
 class UserRepositoryImpl(
     private val apiService: ApiService,
@@ -21,25 +25,28 @@ class UserRepositoryImpl(
 ) : UserRepository {
 
     override suspend fun login(email: String, password: String, captchaToken: String?): Result<User> {
-        // Credenziali hardcoded per test offline/sviluppo locale
         if (email == "test@travel.com" && password == "travel") {
             val user = User(
+                id = "550e8400-e29b-41d4-a716-446655440000",
                 email = email,
                 userType = "VIAGGIATORE",
                 phone = "6895312",
                 name = "Charlotte king",
-                password = password
+                password = password,
+                avatarUrl = "https://api.dicebear.com/10.x/glyphs/png?seed=Charlotte%20king"
             )
             saveSession(user, "mock_test_token")
             return Result.success(user)
         }
         if (email == "societa@travel.com" && password == "travel") {
             val user = User(
+                id = "6e8bc430-9c3a-11d9-9669-0800200c9a66",
                 email = email,
                 userType = "SOCIETA",
                 phone = "0984123456",
                 name = "Travel Agency S.r.l.",
-                password = password
+                password = password,
+                avatarUrl = "https://api.dicebear.com/10.x/shape-grid/png?seed=Travel%20Agency%20S.r.l."
             )
             saveSession(user, "mock_societa_token")
             return Result.success(user)
@@ -187,6 +194,30 @@ class UserRepositoryImpl(
         }
     }
 
+    override suspend fun deleteAccount(userId: String): Result<Unit> {
+        return try {
+            apiService.deleteUser(userId)
+            logout()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(Exception(handleError(e)))
+        }
+    }
+
+    override suspend fun uploadAvatar(userId: String, imageBytes: ByteArray, mimeType: String, fileName: String): Result<User> {
+        return try {
+            val requestBody = imageBytes.toRequestBody(mimeType.toMediaTypeOrNull())
+            val part = MultipartBody.Part.createFormData("file", fileName, requestBody)
+            val returnedDto = apiService.uploadAvatar(userId, part)
+            val updatedUser = returnedDto.toDomain()
+            val token = sessionManagerProvider().getSessionToken().orEmpty()
+            saveSession(updatedUser, token)
+            Result.success(updatedUser)
+        } catch (e: Exception) {
+            Result.failure(Exception(handleError(e)))
+        }
+    }
+
     override suspend fun uploadDocument(fileBytes: ByteArray, filename: String): Result<String> {
         return try {
             val extension = filename.substringAfterLast('.', "").lowercase()
@@ -227,6 +258,48 @@ class UserRepositoryImpl(
         return try {
             apiService.unblockCompany(id)
             Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(Exception(handleError(e)))
+        }
+    }
+
+    override suspend fun forgotPassword(email: String): Result<String> {
+        return try {
+            val response = apiService.forgotPassword(ForgotPasswordRequest().apply {
+                this.email = email
+            })
+            Result.success(response)
+        } catch (e: Exception) {
+            Result.failure(Exception(handleError(e)))
+        }
+    }
+
+    override suspend fun getAllUsers(): Result<List<User>> {
+        return try {
+            val list = apiService.getUsers().map { it.toDomain() }
+            Result.success(list)
+        } catch (e: Exception) {
+            Result.failure(Exception(handleError(e)))
+        }
+    }
+
+    override suspend fun resetPassword(email: String, otp: String, newPassword: String): Result<String> {
+        return try {
+            val response = apiService.resetPassword(ResetPasswordRequest().apply {
+                this.email = email
+                this.otp = otp
+                this.newPassword = newPassword
+            })
+            Result.success(response)
+        } catch (e: Exception) {
+            Result.failure(Exception(handleError(e)))
+        }
+    }
+
+    override suspend fun getUserById(id: String): Result<User> {
+        return try {
+            val userDto = apiService.getUser(id)
+            Result.success(userDto.toDomain())
         } catch (e: Exception) {
             Result.failure(Exception(handleError(e)))
         }

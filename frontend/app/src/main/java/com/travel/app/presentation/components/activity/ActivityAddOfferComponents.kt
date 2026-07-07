@@ -1,5 +1,7 @@
 package com.travel.app.presentation.components.activity
 
+import android.app.DatePickerDialog
+import android.app.TimePickerDialog
 import android.graphics.ImageDecoder
 import android.net.Uri
 import android.os.Build
@@ -14,7 +16,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material3.*
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -36,10 +44,9 @@ fun FormCardSection(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         content = content
     )
 }
@@ -54,7 +61,8 @@ fun ActivityInputField(
     singleLine: Boolean = true,
     keyboardType: KeyboardType = KeyboardType.Text,
     leadingIcon: @Composable (() -> Unit)? = null,
-    shape: androidx.compose.ui.graphics.Shape = RoundedCornerShape(16.dp)
+    shape: androidx.compose.ui.graphics.Shape = RoundedCornerShape(16.dp),
+    enabled: Boolean = true
 ) {
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -69,6 +77,7 @@ fun ActivityInputField(
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
+            enabled = enabled,
             placeholder = if (placeholder.isNotEmpty()) { { Text(placeholder, color = Color(0xFF94A3B8)) } } else null,
             modifier = Modifier.fillMaxWidth(),
             shape = shape,
@@ -81,7 +90,10 @@ fun ActivityInputField(
                 focusedBorderColor = MaterialTheme.colorScheme.primary,
                 unfocusedBorderColor = Color(0xFFE2E8F0),
                 focusedTextColor = Color(0xFF0F172A),
-                unfocusedTextColor = Color(0xFF334155)
+                unfocusedTextColor = Color(0xFF334155),
+                disabledContainerColor = Color(0xFFF1F5F9), // Disabled background Slate 100
+                disabledTextColor = Color(0xFF64748B), // Disabled text Slate 500
+                disabledBorderColor = Color(0xFFE2E8F0)
             )
         )
     }
@@ -110,7 +122,7 @@ fun rememberUriImageBitmap(uri: Uri): ImageBitmap? {
 fun ImagePreviewCard(
     uri: Uri,
     size: androidx.compose.ui.unit.Dp = 72.dp,
-    onRemove: () -> Unit
+    onRemove: (() -> Unit)? = null
 ) {
     val bitmap = rememberUriImageBitmap(uri)
     Box(
@@ -136,22 +148,272 @@ fun ImagePreviewCard(
         }
 
         // Remove overlay button
+        if (onRemove != null) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(4.dp)
+                    .size(20.dp)
+                    .clip(CircleShape)
+                    .background(Color.Black.copy(alpha = 0.5f))
+                    .clickable { onRemove() },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "Rimuovi foto",
+                    tint = Color.White,
+                    modifier = Modifier.size(12.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun SectionHeader(
+    title: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    iconColor: Color,
+    badgeBgColor: Color,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        modifier = modifier.padding(top = 20.dp, bottom = 8.dp)
+    ) {
         Box(
             modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(4.dp)
-                .size(20.dp)
+                .size(32.dp)
                 .clip(CircleShape)
-                .background(Color.Black.copy(alpha = 0.5f))
-                .clickable { onRemove() },
+                .background(badgeBgColor),
             contentAlignment = Alignment.Center
         ) {
             Icon(
-                imageVector = Icons.Default.Close,
-                contentDescription = "Rimuovi foto",
-                tint = Color.White,
-                modifier = Modifier.size(12.dp)
+                imageVector = icon,
+                contentDescription = null,
+                tint = iconColor,
+                modifier = Modifier.size(16.dp)
+            )
+        }
+        Text(
+            text = title,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF0F172A)
+        )
+    }
+}
+
+@Composable
+fun ActivityDatePickerField(
+    label: String,
+    dateText: String,
+    isSet: Boolean,
+    badgeColor: Color,
+    iconColor: Color,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(84.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .background(Color(0xFFF8FAFC))
+            .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(16.dp))
+            .clickable { onClick() }
+            .padding(16.dp),
+        contentAlignment = Alignment.CenterStart
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .background(badgeColor, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.CalendarMonth,
+                        contentDescription = null,
+                        tint = iconColor,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+                Column {
+                    Text(
+                        text = label,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF64748B)
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = if (isSet) dateText else "Imposta data e ora",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (isSet) Color(0xFF0F172A) else Color(0xFF94A3B8)
+                    )
+                }
+            }
+            Icon(
+                imageVector = Icons.Default.ChevronRight,
+                contentDescription = null,
+                tint = Color(0xFF94A3B8),
+                modifier = Modifier.size(20.dp)
             )
         }
     }
+}
+
+@Composable
+fun ActivityImageSelector(
+    selectedImages: List<Uri>,
+    isEditMode: Boolean,
+    onAddImageClick: () -> Unit,
+    onRemoveImageClick: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        if (isEditMode) {
+            if (selectedImages.isEmpty()) {
+                Text(
+                    text = "Nessuna foto disponibile per questa attività.",
+                    fontSize = 14.sp,
+                    color = Color(0xFF64748B)
+                )
+            } else {
+                androidx.compose.foundation.lazy.LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    items(selectedImages.size) { index ->
+                        val uri = selectedImages[index]
+                        ImagePreviewCard(
+                            uri = uri,
+                            size = 72.dp,
+                            onRemove = null
+                        )
+                    }
+                }
+            }
+        } else {
+            if (selectedImages.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(120.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(Color(0xFFF8FAFC))
+                        .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(16.dp))
+                        .clickable { onAddImageClick() }
+                        .padding(16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(44.dp)
+                                .background(Color(0xFFEFF6FF), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.AddPhotoAlternate,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+                        Text(
+                            text = "Carica foto dell'attività",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = "Supporta JPEG, PNG (max 5MB)",
+                            fontSize = 11.sp,
+                            color = Color(0xFF94A3B8)
+                        )
+                    }
+                }
+            } else {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(72.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(Color(0xFFF8FAFC))
+                            .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(16.dp))
+                            .clickable { onAddImageClick() },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Aggiungi altra foto",
+                            tint = Color(0xFF64748B),
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+
+                    androidx.compose.foundation.lazy.LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        items(selectedImages.size) { index ->
+                            val uri = selectedImages[index]
+                            ImagePreviewCard(
+                                uri = uri,
+                                size = 72.dp,
+                                onRemove = { onRemoveImageClick(index) }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+fun showDateTimePicker(
+    context: android.content.Context,
+    calendar: java.util.Calendar,
+    onDateTimeSelected: (year: Int, month: Int, day: Int, hour: Int, minute: Int) -> Unit
+) {
+    DatePickerDialog(
+        context,
+        { _, year, month, dayOfMonth ->
+            TimePickerDialog(
+                context,
+                { _, hourOfDay, minute ->
+                    onDateTimeSelected(year, month + 1, dayOfMonth, hourOfDay, minute)
+                },
+                calendar.get(java.util.Calendar.HOUR_OF_DAY),
+                calendar.get(java.util.Calendar.MINUTE),
+                true
+            ).show()
+        },
+        calendar.get(java.util.Calendar.YEAR),
+        calendar.get(java.util.Calendar.MONTH),
+        calendar.get(java.util.Calendar.DAY_OF_MONTH)
+    ).show()
 }

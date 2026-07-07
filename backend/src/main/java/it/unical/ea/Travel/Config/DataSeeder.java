@@ -11,6 +11,8 @@ import it.unical.ea.Travel.Repositories.user.UserRepository;
 import it.unical.ea.Travel.Services.keycloak.KeycloakAdminService;
 import it.unical.ea.Travel.Services.keycloak.KeycloakUserAlreadyExistsException;
 import it.unical.ea.dtos.authDto.SignupRequest;
+import it.unical.ea.Travel.Entities.review.Review;
+import it.unical.ea.Travel.Repositories.review.ReviewRepository;
 import it.unical.ea.enums.UserType;
 import it.unical.ea.enums.TravelTag;
 import lombok.extern.slf4j.Slf4j;
@@ -42,15 +44,17 @@ public class DataSeeder implements CommandLineRunner {
     private final ItineraryRepository itineraryRepository;
     private final LocationRepository locationRepository;
     private final KeycloakAdminService keycloakAdminService;
+    private final ReviewRepository reviewRepository;
 
     public DataSeeder(UserRepository userRepository, ActivityRepository activityRepository,
                       ItineraryRepository itineraryRepository, LocationRepository locationRepository,
-                      KeycloakAdminService keycloakAdminService) {
+                      KeycloakAdminService keycloakAdminService, ReviewRepository reviewRepository) {
         this.userRepository = userRepository;
         this.activityRepository = activityRepository;
         this.itineraryRepository = itineraryRepository;
         this.locationRepository = locationRepository;
         this.keycloakAdminService = keycloakAdminService;
+        this.reviewRepository = reviewRepository;
     }
 
     @Override
@@ -59,6 +63,9 @@ public class DataSeeder implements CommandLineRunner {
         seedTestUser();
         if (activityRepository.count() == 0) {
             seedData();
+        }
+        if (reviewRepository.count() == 0) {
+            seedReviews();
         }
     }
 
@@ -115,6 +122,17 @@ public class DataSeeder implements CommandLineRunner {
         traveler.setKeycloakId(UUID.randomUUID().toString());
         traveler.setPreferences(new HashSet<>(Arrays.asList(TravelTag.AVVENTURA, TravelTag.NATURA)));
         userRepository.save(traveler);
+
+        // Create the super short account
+        User shortUser = new User();
+        shortUser.setEmail("a@a.com");
+        shortUser.setPasswordHash("hashed_password");
+        shortUser.setUserType(UserType.VIAGGIATORE);
+        shortUser.setFirstName("A");
+        shortUser.setLastName("A");
+        shortUser.setRoles("ROLE_VIAGGIATORE");
+        shortUser.setKeycloakId(UUID.randomUUID().toString());
+        userRepository.save(shortUser);
 
         // --- Località 1: Roma ---
         Location loc1 = locationRepository.findByNameIgnoreCase("Roma, Italia")
@@ -281,5 +299,44 @@ public class DataSeeder implements CommandLineRunner {
 
         // Save all itineraries
         itineraryRepository.saveAll(Arrays.asList(itinerary1, itinerary2, itinerary3));
+    }
+
+    private void seedReviews() {
+        // Find users
+        List<User> travelers = userRepository.findByUserType(UserType.VIAGGIATORE);
+        if (travelers.isEmpty()) return;
+        User reviewer = travelers.get(0);
+        
+        List<Activity> activities = activityRepository.findAll();
+        if (!activities.isEmpty()) {
+            Activity act1 = activities.get(0);
+            Review rev1 = new Review();
+            rev1.setAuthor(reviewer);
+            rev1.setActivity(act1);
+            rev1.setRating(5);
+            rev1.setComment("Attività fantastica, guida super preparata!");
+            reviewRepository.save(rev1);
+
+            if (activities.size() > 1) {
+                Activity act2 = activities.get(1);
+                Review rev2 = new Review();
+                rev2.setAuthor(reviewer);
+                rev2.setActivity(act2);
+                rev2.setRating(4);
+                rev2.setComment("Molto bello, ma faceva un po' freddo.");
+                reviewRepository.save(rev2);
+            }
+        }
+
+        List<Itinerary> itineraries = itineraryRepository.findAll();
+        if (!itineraries.isEmpty()) {
+            Itinerary iti1 = itineraries.get(0);
+            Review revIti = new Review();
+            revIti.setAuthor(reviewer);
+            revIti.setItinerary(iti1);
+            revIti.setRating(5);
+            revIti.setComment("L'itinerario nel complesso è stato indimenticabile. Consigliatissimo!");
+            reviewRepository.save(revIti);
+        }
     }
 }

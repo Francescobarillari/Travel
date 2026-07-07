@@ -6,6 +6,7 @@ import com.travel.app.data.repository.UserRepositoryImpl
 import com.travel.app.data.repository.ActivityRepositoryImpl
 import com.travel.app.data.repository.ItineraryRepositoryImpl
 import com.travel.app.data.repository.LocalitaRepositoryImpl
+import com.travel.app.data.remote.ReviewApiService
 import com.travel.app.data.session.AuthInterceptor
 import com.travel.app.data.session.SessionManager
 import com.travel.app.data.session.TokenAuthenticator
@@ -13,6 +14,7 @@ import com.travel.app.domain.repository.UserRepository
 import com.travel.app.domain.repository.ActivityRepository
 import com.travel.app.domain.repository.ItineraryRepository
 import com.travel.app.domain.repository.LocalitaRepository
+import com.travel.app.domain.repository.ReviewRepository
 import com.travel.app.service.ApiService
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -76,7 +78,15 @@ object AppContainer {
         .addConverterFactory(GsonConverterFactory.create(gson))
         .build()
 
-    val apiService: ApiService = retrofit.create(ApiService::class.java)
+    val reviewApiService: ReviewApiService by lazy {
+        retrofit.create(ReviewApiService::class.java)
+    }
+
+    val reviewRepository: ReviewRepository by lazy {
+        ReviewRepository(reviewApiService)
+    }
+
+    val apiService: ApiService by lazy { retrofit.create(ApiService::class.java) }
 
     val userRepository: UserRepository = UserRepositoryImpl(apiService, { sessionManager })
     val activityRepository: ActivityRepository = ActivityRepositoryImpl(apiService)

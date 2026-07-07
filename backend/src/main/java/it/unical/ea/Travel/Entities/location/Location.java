@@ -22,7 +22,7 @@ import java.util.UUID;
 @Table(name = "location", indexes = {
     @Index(name = "idx_location_name", columnList = "name")
 })
-@SQLDelete(sql = "UPDATE location SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?")
+@SQLDelete(sql = "UPDATE location SET deleted_at = CURRENT_TIMESTAMP WHERE id = ? AND version = ?")
 @SQLRestriction("deleted_at IS NULL")
 public class Location {
 

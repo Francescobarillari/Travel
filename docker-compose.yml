@@ -14,7 +14,7 @@ services:
   keycloak:
     image: quay.io/keycloak/keycloak:latest
     container_name: keycloak
-    command: start-dev --import-realm --hostname=http://${HOST_IP}:8081 --hostname-backchannel-dynamic=true
+    command: start-dev --import-realm --hostname=http://${HOST_IP:-localhost}:8081 --hostname-backchannel-dynamic=true
     depends_on:
       - db
     environment:
@@ -55,7 +55,7 @@ services:
     command: >
       sh -c "
         cd /in_common && mvn clean install -DskipTests -q &&
-        cd /app && mvn clean spring-boot:run -Dmaven.test.skip=true
+        cd /app && mvn clean compile spring-boot:run -Dmaven.test.skip=true
       "
     ports:
       - "8080:8080"
@@ -73,7 +73,7 @@ services:
       - SPRING_DATASOURCE_USERNAME=myuser
       - SPRING_DATASOURCE_PASSWORD=mypassword
       - SPRING_JPA_HIBERNATE_DDL_AUTO=update
-      - KEYCLOAK_ISSUER_URI=http://${HOST_IP}:8081/realms/ae-realm
+      - KEYCLOAK_ISSUER_URI=http://${HOST_IP:-localhost}:8081/realms/ae-realm
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/realms/ae-realm/protocol/openid-connect/certs
       - KEYCLOAK_SERVER_URL=http://keycloak:8080
       - KEYCLOAK_REALM=ae-realm
@@ -85,6 +85,12 @@ services:
       - PAYMENT_MOCK=${PAYMENT_MOCK}
       - PAYPAL_CLIENT_ID=${PAYPAL_CLIENT_ID}
       - PAYPAL_CLIENT_SECRET=${PAYPAL_CLIENT_SECRET}
+      - SPRING_MAIL_HOST=smtp.gmail.com
+      - SPRING_MAIL_PORT=587
+      - SPRING_MAIL_USERNAME=eaderive@gmail.com
+      - SPRING_MAIL_PASSWORD=jpktjwpfqabylofb
+      - SPRING_MAIL_AUTH=true
+      - SPRING_MAIL_STARTTLS=true
 
 volumes:
   postgres_data:

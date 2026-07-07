@@ -1,7 +1,6 @@
 package com.travel.app.presentation.auth
 
 import androidx.compose.animation.Crossfade
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -15,9 +14,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
@@ -36,6 +37,8 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.ui.platform.LocalContext
 import android.content.Context
+import androidx.compose.ui.unit.sp
+import com.travel.app.presentation.components.auth.TypewriterText
 
 @Composable
 fun RegisterScreen(
@@ -44,6 +47,7 @@ fun RegisterScreen(
     onRegisterSuccess: (User) -> Unit,
 ) {
     var showCaptcha by remember { mutableStateOf(false) }
+    val focusManager = LocalFocusManager.current
     val context = LocalContext.current
     val filePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -63,25 +67,43 @@ fun RegisterScreen(
         }
     }
 
+    val scrollState = rememberScrollState()
+
+    LaunchedEffect(scrollState.isScrollInProgress) {
+        if (scrollState.isScrollInProgress) {
+            focusManager.clearFocus()
+        }
+    }
+
     TravelTheme(darkTheme = false) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Brush.verticalGradient(listOf(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f), MaterialTheme.colorScheme.background))),
+                .background(Brush.verticalGradient(listOf(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f), MaterialTheme.colorScheme.background)))
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null
+                ) {
+                    focusManager.clearFocus()
+                },
             contentAlignment = Alignment.Center
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(24.dp)
-                    .verticalScroll(rememberScrollState()),
+                    .verticalScroll(scrollState),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
-                Image(
-                    painter = painterResource(id = R.drawable.logo),
-                    contentDescription = "Logo",
-                    modifier = Modifier.size(200.dp).clip(RoundedCornerShape(16.dp))
+                TypewriterText(
+                    text = "Dèrive",
+                    modifier = Modifier.padding(vertical = 30.dp),
+                    style = MaterialTheme.typography.displayLarge.copy(
+                        fontWeight = FontWeight.ExtraBold,
+                        color = MaterialTheme.colorScheme.primary,
+                        letterSpacing = 4.sp
+                    )
                 )
 
                 Card(
@@ -148,8 +170,8 @@ fun RegisterScreen(
                                     viewModel.registerError = "Le password non coincidono"
                                 } else if (viewModel.registerUserType == UserType.VIAGGIATORE && (viewModel.registerFirstName.isBlank() || viewModel.registerLastName.isBlank())) {
                                     viewModel.registerError = "Nome e cognome sono obbligatori"
-                                } else if (viewModel.registerUserType == UserType.SOCIETA && (viewModel.registerCompanyName.isBlank() || viewModel.registerVatNumber.isBlank())) {
-                                    viewModel.registerError = "Ragione sociale e Partita IVA sono obbligatorie"
+                                } else if (viewModel.registerUserType == UserType.SOCIETA && viewModel.registerVatNumber.isBlank()) {
+                                    viewModel.registerError = "La Partita IVA è obbligatoria"
                                 } else if (viewModel.registerUserType == UserType.SOCIETA && viewModel.registerDocumentPhotos.isEmpty()) {
                                     viewModel.registerError = "È necessario caricare almeno un documento per la verifica"
                                 } else {
@@ -191,7 +213,7 @@ fun RegisterScreen(
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun RegisterScreenPreview() {
-    val mockApiService = object : ApiService {
+    val mockApiService = object : com.travel.app.service.MockApiService() {
         override suspend fun login(request: it.unical.ea.dtos.authDto.LoginRequest) = it.unical.ea.dtos.authDto.JwtResponse("mock_token", "mock_refresh")
         override suspend fun register(request: it.unical.ea.dtos.authDto.SignupRequest) = "mock_user_id"
         override suspend fun getMe() = it.unical.ea.dtos.user.UserDTO().apply { email = "test@travel.com" }
@@ -199,7 +221,7 @@ fun RegisterScreenPreview() {
         override suspend fun createActivity(request: it.unical.ea.dtos.activity.ActivityDto) = request
         override suspend fun getActivities() = emptyList<it.unical.ea.dtos.activity.ActivityDto>()
         override suspend fun searchActivities(query: String, minPrice: Double?, maxPrice: Double?, page: Int, size: Int) = it.unical.ea.dtos.common.PageDto<it.unical.ea.dtos.activity.ActivityDto>()
-        override suspend fun searchLocalita(query: String, page: Int, size: Int) = it.unical.ea.dtos.common.PageDto<it.unical.ea.dtos.location.LocationDto>()
+        override suspend fun searchLocalita(query: String, includeExternal: Boolean, page: Int, size: Int) = it.unical.ea.dtos.common.PageDto<it.unical.ea.dtos.location.LocationDto>()
         override suspend fun getLocalitaById(id: String) = it.unical.ea.dtos.location.LocationDto()
         override suspend fun getActivityById(id: String) = it.unical.ea.dtos.activity.ActivityDto()
         override suspend fun getItineraries() = emptyList<it.unical.ea.dtos.itinerary.ItineraryDto>()
@@ -231,7 +253,7 @@ fun RegisterScreenPreview() {
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun RegisterSocietaScreenPreview() {
-    val mockApiService = object : ApiService {
+    val mockApiService = object : com.travel.app.service.MockApiService() {
         override suspend fun login(request: it.unical.ea.dtos.authDto.LoginRequest) = it.unical.ea.dtos.authDto.JwtResponse("mock_token", "mock_refresh")
         override suspend fun register(request: it.unical.ea.dtos.authDto.SignupRequest) = "mock_user_id"
         override suspend fun getMe() = it.unical.ea.dtos.user.UserDTO().apply { email = "test@travel.com" }
@@ -239,7 +261,7 @@ fun RegisterSocietaScreenPreview() {
         override suspend fun createActivity(request: it.unical.ea.dtos.activity.ActivityDto) = request
         override suspend fun getActivities() = emptyList<it.unical.ea.dtos.activity.ActivityDto>()
         override suspend fun searchActivities(query: String, minPrice: Double?, maxPrice: Double?, page: Int, size: Int) = it.unical.ea.dtos.common.PageDto<it.unical.ea.dtos.activity.ActivityDto>()
-        override suspend fun searchLocalita(query: String, page: Int, size: Int) = it.unical.ea.dtos.common.PageDto<it.unical.ea.dtos.location.LocationDto>()
+        override suspend fun searchLocalita(query: String, includeExternal: Boolean, page: Int, size: Int) = it.unical.ea.dtos.common.PageDto<it.unical.ea.dtos.location.LocationDto>()
         override suspend fun getLocalitaById(id: String) = it.unical.ea.dtos.location.LocationDto()
         override suspend fun getActivityById(id: String) = it.unical.ea.dtos.activity.ActivityDto()
         override suspend fun getItineraries() = emptyList<it.unical.ea.dtos.itinerary.ItineraryDto>()

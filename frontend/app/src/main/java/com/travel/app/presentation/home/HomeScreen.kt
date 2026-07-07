@@ -20,7 +20,12 @@ import com.travel.app.presentation.profile.SecurityViewModel
 import com.travel.app.presentation.components.home.FloatingBottomNavBar
 import com.travel.app.presentation.theme.TravelTheme
 import com.travel.app.presentation.components.itinerary.ItineraryDetailScreen
+import com.travel.app.presentation.components.activity.ActivityDetailScreen
 import it.unical.ea.dtos.itinerary.ItineraryDto
+import androidx.compose.ui.platform.LocalContext
+import android.widget.Toast
+import com.travel.app.domain.model.review.ReviewDto
+import kotlinx.coroutines.launch
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -30,14 +35,21 @@ fun HomeScreen(
     onDarkModeChange: (Boolean) -> Unit = {},
     onLogout: () -> Unit = {}
 ) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     var selectedTab by remember { mutableStateOf(HomeTab.ESPLORA) }
     var selectedItemId by remember { mutableStateOf<String?>(null) }
     var selectedItemIsTrip by remember { mutableStateOf(true) }
     var selectedActivityIdForBookings by remember { mutableStateOf<String?>(null) }
     var selectedItinerary by remember { mutableStateOf<ItineraryDto?>(null) }
+    var personalizingItinerary by remember { mutableStateOf<ItineraryDto?>(null) }
+    var selectedProfileUser by remember { mutableStateOf<User?>(null) }
+    var itinerariesRefreshTrigger by remember { mutableStateOf(0) }
+    var favoritesTrigger by remember { mutableStateOf(0) }
 
     var currentUser by remember(user) { 
         mutableStateOf(user ?: User(
+            id = "550e8400-e29b-41d4-a716-446655440000",
             email = "johnkinggraphics@gmail.com", 
             userType = "VIAGGIATORE",
             phone = "6895312",
@@ -51,13 +63,13 @@ fun HomeScreen(
     val companyAddOfferViewModel = remember {
         CompanyAddOfferViewModel(
             activityRepository = AppContainer.activityRepository,
-            userRepository = AppContainer.userRepository
+            userRepository = AppContainer.userRepository,
+            localitaRepository = AppContainer.localitaRepository
         )
     }
 
     val companyDashboardViewModel = remember {
         CompanyDashboardViewModel(
-            itineraryRepository = AppContainer.itineraryRepository,
             activityRepository = AppContainer.activityRepository,
             userRepository = AppContainer.userRepository
         )
@@ -66,7 +78,9 @@ fun HomeScreen(
     val esploraViewModel = remember {
         EsploraViewModel(
             activityRepository = AppContainer.activityRepository,
-            localitaRepository = AppContainer.localitaRepository
+            localitaRepository = AppContainer.localitaRepository,
+            userRepository = AppContainer.userRepository,
+            itineraryRepository = AppContainer.itineraryRepository
         )
     }
 
@@ -87,116 +101,222 @@ fun HomeScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        if (selectedItinerary != null) {
-            ItineraryDetailScreen(
-                itinerary = selectedItinerary!!,
-                onNavigateBack = { selectedItinerary = null }
-            )
-        } else {
-            Box(modifier = Modifier.fillMaxSize()) {
-                when (selectedTab) {
-            HomeTab.ESPLORA -> {
-                if (isSocieta) {
-                    if (selectedActivityIdForBookings != null) {
-                        CompanyActivityBookingsScreen(
-                            viewModel = remember(selectedActivityIdForBookings) {
-                                CompanyActivityBookingsViewModel(
-                                    activityRepository = AppContainer.activityRepository,
-                                    activityId = selectedActivityIdForBookings!!
-                                )
+        // Always compose the main content to preserve state (like scroll position)
+        Box(modifier = Modifier.fillMaxSize()) {
+            when (selectedTab) {
+                HomeTab.ESPLORA -> {
+                    if (isSocieta) {
+                        if (selectedActivityIdForBookings != null) {
+                            CompanyActivityBookingsScreen(
+                                viewModel = remember(selectedActivityIdForBookings) {
+                                    CompanyActivityBookingsViewModel(
+                                        activityRepository = AppContainer.activityRepository,
+                                        activityId = selectedActivityIdForBookings!!
+                                    )
+                                },
+                                onBackClick = { selectedActivityIdForBookings = null }
+                            )
+                        } else {
+                            CompanyDashboardScreen(
+                                viewModel = companyDashboardViewModel,
+                                onEditActivityClick = { activityId ->
+                                    companyAddOfferViewModel.loadActivity(activityId)
+                                    selectedTab = HomeTab.PREFERITI
+                                },
+                                onViewBookingsClick = { activityId ->
+                                    selectedActivityIdForBookings = activityId
+                                }
+                            )
+                        }
+                    } else {
+                        EsploraScreen(
+                            viewModel = esploraViewModel,
+                            favoritesTrigger = favoritesTrigger,
+                            onItemClick = { id, isTrip ->
+                                selectedItemId = id
+                                selectedItemIsTrip = isTrip
+                                if (isTrip) {
+                                    val found = esploraViewModel.filteredItineraries.find { it.id?.toString() == id }
+                                    if (found != null) {
+                                        selectedItinerary = found
+                                    }
+                                }
                             },
-                            onBackClick = { selectedActivityIdForBookings = null }
+                            onUserClick = { user ->
+                                selectedProfileUser = user
+                            }
+                        )
+                    }
+                }
+
+                HomeTab.PREFERITI -> {
+                    if (isSocieta) {
+                        CompanyAddOfferScreen(
+                            viewModel = companyAddOfferViewModel,
+                            onNavigateBack = { selectedTab = HomeTab.ESPLORA }
                         )
                     } else {
-                        CompanyDashboardScreen(
-                            viewModel = companyDashboardViewModel,
-                            onEditActivityClick = { activityId ->
-                                companyAddOfferViewModel.loadActivity(activityId)
-                                selectedTab = HomeTab.PREFERITI
-                            },
-                            onViewBookingsClick = { activityId ->
-                                selectedActivityIdForBookings = activityId
+                        PreferitiScreen(
+                            onActivityClick = { activityId -> 
+                                selectedItemId = activityId
+                                selectedItemIsTrip = false
                             },
                             onItineraryClick = { selectedItinerary = it }
                         )
                     }
-                } else {
-                    EsploraScreen(
-                        viewModel = esploraViewModel,
-                        onItemClick = { id, isTrip ->
-                            // TODO: In attesa della pagina di dettaglio realizzata dall'altro collega
-                            selectedItemId = id
-                            selectedItemIsTrip = isTrip
+                }
+                HomeTab.PROFILO -> {
+                    EditProfileScreen(
+                        user = currentUser,
+                        viewModel = editProfileViewModel,
+                        onBack = { selectedTab = HomeTab.MENU },
+                        onSaveSuccess = { savedUser ->
+                            currentUser = savedUser
+                            selectedTab = HomeTab.MENU
+                        },
+                        onDeactivated = onLogout
+                    )
+                }
+                HomeTab.MENU -> MenuScreen(
+                    user = currentUser,
+                    isDarkMode = isDarkMode,
+                    onDarkModeChange = onDarkModeChange,
+                    onBack = { selectedTab = HomeTab.ESPLORA },
+                    onNavigateToProfile = { selectedTab = HomeTab.PROFILO },
+                    onNavigateToSecurity = { selectedTab = HomeTab.SICUREZZA },
+                    onLogout = onLogout,
+                    onNavigateToMyItineraries = { selectedTab = HomeTab.I_MIEI_ITINERARI }
+                )
+                HomeTab.SICUREZZA -> {
+                    SecurityScreen(
+                        user = currentUser,
+                        viewModel = securityViewModel,
+                        onBack = { selectedTab = HomeTab.MENU },
+                        onSaveSuccess = { savedUser ->
+                            currentUser = savedUser
+                            selectedTab = HomeTab.MENU
                         }
+                    )
+                }
+                HomeTab.I_MIEI_ITINERARI -> {
+                    MyItinerariesScreen(
+                        user = currentUser,
+                        onBack = { selectedTab = HomeTab.MENU },
+                        onItineraryClick = { itinerary ->
+                            selectedItinerary = itinerary
+                        },
+                        refreshTrigger = itinerariesRefreshTrigger
                     )
                 }
             }
 
-            HomeTab.PREFERITI -> {
-                if (isSocieta) {
-                    CompanyAddOfferScreen(
-                        viewModel = companyAddOfferViewModel,
-                        onNavigateBack = { selectedTab = HomeTab.ESPLORA }
-                    )
-                } else {
-                    CompanyDashboardScreen(
-                        viewModel = companyDashboardViewModel,
-                        onEditActivityClick = {},
-                        onViewBookingsClick = {},
-                        onItineraryClick = { selectedItinerary = it }
-                    )
-                }
-            }
-            HomeTab.PROFILO -> {
-                EditProfileScreen(
-                    user = currentUser,
-                    viewModel = editProfileViewModel,
-                    onBack = { selectedTab = HomeTab.MENU },
-                    onSaveSuccess = { savedUser ->
-                        currentUser = savedUser
-                        selectedTab = HomeTab.MENU
-                    }
-                )
-            }
-            HomeTab.MENU -> MenuScreen(
-                user = currentUser,
-                isDarkMode = isDarkMode,
-                onDarkModeChange = onDarkModeChange,
-                onBack = { selectedTab = HomeTab.ESPLORA },
-                onNavigateToProfile = { selectedTab = HomeTab.PROFILO },
-                onNavigateToSecurity = { selectedTab = HomeTab.SICUREZZA },
-                onLogout = onLogout
-            )
-            HomeTab.SICUREZZA -> {
-                SecurityScreen(
-                    user = currentUser,
-                    viewModel = securityViewModel,
-                    onBack = { selectedTab = HomeTab.MENU },
-                    onSaveSuccess = { savedUser ->
-                        currentUser = savedUser
-                        selectedTab = HomeTab.MENU
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+            ) {
+                FloatingBottomNavBar(
+                    selectedTab = selectedTab,
+                    isSocieta = isSocieta,
+                    onTabSelected = { 
+                        if (it == HomeTab.PREFERITI && isSocieta) {
+                            companyAddOfferViewModel.resetForm()
+                        }
+                        selectedTab = it 
                     }
                 )
             }
         }
 
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .fillMaxWidth()
-                ) {
-                    FloatingBottomNavBar(
-                        selectedTab = selectedTab,
-                        isSocieta = isSocieta,
-                        onTabSelected = { 
-                            if (it == HomeTab.PREFERITI && isSocieta) {
-                                companyAddOfferViewModel.resetForm()
-                            }
-                            selectedTab = it 
+        // Overlay detail screens on top of the main content
+        
+        // 1. User Profile Overlay (composed first, so details render on top of it)
+        if (selectedProfileUser != null) {
+            UserProfileScreen(
+                user = selectedProfileUser!!,
+                onBack = { selectedProfileUser = null },
+                onItineraryClick = { itinerary ->
+                    selectedItinerary = itinerary
+                },
+                onReviewClick = { review ->
+                    if (review.itineraryId != null) {
+                        scope.launch {
+                            val res = AppContainer.itineraryRepository.getItineraryById(review.itineraryId.toString())
+                            res.fold(
+                                onSuccess = { itinerary ->
+                                    selectedItinerary = itinerary
+                                },
+                                onFailure = { err ->
+                                    Toast.makeText(context, "Errore: ${err.message}", Toast.LENGTH_SHORT).show()
+                                }
+                            )
                         }
-                    )
+                    } else if (review.activityId != null) {
+                        selectedItemId = review.activityId.toString()
+                        selectedItemIsTrip = false
+                    }
                 }
+            )
+        }
+
+        // 2. Itinerary Detail Overlay
+        if (selectedItinerary != null) {
+            val itineraryId = selectedItinerary!!.id?.toString() ?: ""
+            var isFav by remember(itineraryId, favoritesTrigger) { 
+                mutableStateOf(AppContainer.sessionManager.isFavoriteItinerary(itineraryId)) 
             }
+            ItineraryDetailScreen(
+                itinerary = selectedItinerary!!,
+                onNavigateBack = { selectedItinerary = null },
+                onActivityClick = { activityId ->
+                    selectedItinerary = null
+                    selectedItemId = activityId
+                    selectedItemIsTrip = false
+                },
+                isFavorite = isFav,
+                onFavoriteClick = {
+                    AppContainer.sessionManager.toggleFavoriteItinerary(itineraryId)
+                    isFav = !isFav
+                    favoritesTrigger++
+                },
+                onPersonalizeClick = { itinerary ->
+                    personalizingItinerary = itinerary
+                },
+                onDeleteSuccess = {
+                    selectedItinerary = null
+                    itinerariesRefreshTrigger++
+                }
+            )
+        }
+
+        // 3. Activity Detail Overlay
+        if (selectedItemId != null && !selectedItemIsTrip) {
+            val activityId = selectedItemId!!
+            var isFav by remember(activityId, favoritesTrigger) { 
+                mutableStateOf(AppContainer.sessionManager.isFavoriteActivity(activityId)) 
+            }
+            ActivityDetailScreen(
+                activityId = activityId,
+                onNavigateBack = { selectedItemId = null },
+                isFavorite = isFav,
+                onFavoriteClick = {
+                    AppContainer.sessionManager.toggleFavoriteActivity(activityId)
+                    isFav = !isFav
+                    favoritesTrigger++
+                }
+            )
+        }
+
+        // 4. Personalize Overlay
+        if (personalizingItinerary != null) {
+            PersonalizeItineraryScreen(
+                itinerary = personalizingItinerary!!,
+                onNavigateBack = { personalizingItinerary = null },
+                onPersonalizeSuccess = {
+                    personalizingItinerary = null
+                    selectedItinerary = null
+                }
+            )
         }
     }
 }
@@ -239,7 +359,7 @@ fun HomeScreenSocietaPreview() {
             user = User(
                 email = "societa@travel.com",
                 userType = "SOCIETA",
-                name = "Travel Agency S.r.l."
+                name = "Dèrive Agenzia S.r.l."
             )
         )
     }

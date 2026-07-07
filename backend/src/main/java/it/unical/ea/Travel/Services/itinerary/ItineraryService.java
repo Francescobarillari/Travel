@@ -300,5 +300,12 @@ public class ItineraryService {
         Optional<ItineraryBooking> existingBookingOpt = itineraryBookingRepository.findByUserIdAndItineraryId(user.getId(), UUID.fromString(itineraryId));
         return existingBookingOpt.isPresent() && existingBookingOpt.get().getStatus() == BookingStatus.CONFIRMED;
     }
-}
 
+    public Itinerary updateVisibility(String stringId, String visibility) {
+        Itinerary itinerary = getItinerary(stringId);
+        itinerary.setVisibility(visibility);
+        Itinerary saved = itineraryRepository.save(itinerary);
+        auditLogService.log("UPDATE_ITINERARY_VISIBILITY", "Itinerary", stringId, "Updated visibility to: " + visibility);
+        return saved;
+    }
+}

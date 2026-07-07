@@ -45,14 +45,14 @@ public class AdminController {
     private final ActivityMapper activityMapper;
     private final AuditLogService auditLogService;
 
-    @Operation(summary = "Ottieni società in attesa di approvazione")
+    @Operation(summary = "Ottieni agenzie in attesa di approvazione")
     @GetMapping("/companies/pending")
     public List<UserDTO> getPendingCompanies() {
         List<User> pending = userRepository.findByUserTypeAndApproved(UserType.SOCIETA, false);
         return pending.stream().map(userMapper::toDTO).toList();
     }
 
-    @Operation(summary = "Approva una società")
+    @Operation(summary = "Approva un'agenzia")
     @PostMapping("/companies/{id}/approve")
     public ResponseEntity<Void> approveCompany(@PathVariable String id) {
         User user = userRepository.findById(UUID.fromString(id))
@@ -63,7 +63,7 @@ public class AdminController {
         return ResponseEntity.ok().build();
     }
 
-    @Operation(summary = "Rifiuta ed elimina una società")
+    @Operation(summary = "Rifiuta ed elimina un'agenzia")
     @PostMapping("/companies/{id}/reject")
     public ResponseEntity<Void> rejectCompany(@PathVariable String id) {
         User user = userRepository.findById(UUID.fromString(id))
@@ -110,7 +110,7 @@ public class AdminController {
         return ResponseEntity.ok().build();
     }
 
-    @Operation(summary = "Scarica un documento di registrazione della società", description = "Restituisce l'immagine inline. Endpoint protetto dell'admin.")
+    @Operation(summary = "Scarica un documento di registrazione dell'agenzia", description = "Restituisce l'immagine inline. Endpoint protetto dell'admin.")
     @GetMapping("/documents/{filename}")
     public ResponseEntity<Resource> getDocument(@PathVariable String filename) throws IOException {
         Resource resource = fileStorageService.load("companies/documents/" + filename);
@@ -126,14 +126,14 @@ public class AdminController {
                 .body(resource);
     }
 
-    @Operation(summary = "Ottieni tutte le società")
+    @Operation(summary = "Ottieni tutte le agenzie")
     @GetMapping("/companies")
     public List<UserDTO> getAllCompanies() {
         List<User> companies = userRepository.findByUserType(UserType.SOCIETA);
         return companies.stream().map(userMapper::toDTO).toList();
     }
 
-    @Operation(summary = "Blocca una società")
+    @Operation(summary = "Blocca un'agenzia")
     @PostMapping("/companies/{id}/block")
     public ResponseEntity<Void> blockCompany(@PathVariable String id) {
         User user = userRepository.findById(UUID.fromString(id))
@@ -144,7 +144,7 @@ public class AdminController {
         return ResponseEntity.ok().build();
     }
 
-    @Operation(summary = "Sblocca una società")
+    @Operation(summary = "Sblocca un'agenzia")
     @PostMapping("/companies/{id}/unblock")
     public ResponseEntity<Void> unblockCompany(@PathVariable String id) {
         User user = userRepository.findById(UUID.fromString(id))

@@ -130,6 +130,26 @@
   ],
   "users": [
     {
+      "username": "a",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "a@a.com",
+      "firstName": "A",
+      "lastName": "A",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "a",
+          "temporary": false
+        }
+      ],
+      "clientRoles": {
+        "ae-client": [
+          "BASIC"
+        ]
+      }
+    },
+    {
       "username": "basic-user",
       "enabled": true,
       "emailVerified": true,

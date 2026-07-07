@@ -31,8 +31,14 @@ interface UserRepository {
 
     suspend fun getMe(): Result<User>
     suspend fun updateMe(user: User): Result<User>
+    suspend fun deleteAccount(userId: String): Result<Unit>
+    suspend fun uploadAvatar(userId: String, imageBytes: ByteArray, mimeType: String, fileName: String): Result<User>
     suspend fun uploadDocument(fileBytes: ByteArray, filename: String): Result<String>
     suspend fun getAllCompanies(): Result<List<User>>
     suspend fun blockCompany(id: String): Result<Unit>
     suspend fun unblockCompany(id: String): Result<Unit>
+    suspend fun forgotPassword(email: String): Result<String> = Result.failure(NotImplementedError("Non implementato nei mock"))
+    suspend fun resetPassword(email: String, otp: String, newPassword: String): Result<String> = Result.failure(NotImplementedError("Non implementato nei mock"))
+    suspend fun getAllUsers(): Result<List<User>> = Result.success(emptyList())
+    suspend fun getUserById(id: String): Result<User> = Result.failure(Exception("Not implemented"))
 }

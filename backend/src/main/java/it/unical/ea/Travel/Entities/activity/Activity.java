@@ -1,5 +1,6 @@
 package it.unical.ea.Travel.Entities.activity;
 
+import it.unical.ea.enums.TravelTag;
 import it.unical.ea.Travel.Entities.audit.AuditBaseEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -9,7 +10,7 @@ import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-import it.unical.ea.enums.TravelTag;
+
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -26,7 +27,7 @@ import java.util.UUID;
     @Index(name = "idx_activity_location", columnList = "location"),
     @Index(name = "idx_activity_name", columnList = "name")
 })
-@SQLDelete(sql = "UPDATE activities SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?")
+@SQLDelete(sql = "UPDATE activities SET deleted_at = CURRENT_TIMESTAMP WHERE id = ? AND version = ?")
 @SQLRestriction("deleted_at IS NULL")
 public class Activity extends AuditBaseEntity {
 

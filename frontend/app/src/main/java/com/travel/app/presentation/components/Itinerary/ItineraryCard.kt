@@ -28,11 +28,19 @@ import java.math.BigDecimal
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.background
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Delete
+
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun ItineraryCard(
     itinerary: ItineraryDto,
     modifier: Modifier = Modifier,
+    isFavorite: Boolean = false,
+    onFavoriteClick: () -> Unit = {},
     onClick: () -> Unit = {},
     actions: @Composable RowScope.() -> Unit = {}
 ) {
@@ -60,6 +68,23 @@ fun ItineraryCard(
                         .clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)),
                     contentScale = ContentScale.Crop
                 )
+
+                // Heart icon in top-right corner
+                IconButton(
+                    onClick = onFavoriteClick,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(12.dp)
+                        .size(36.dp)
+                        .background(Color.Black.copy(alpha = 0.4f), CircleShape)
+                ) {
+                    Icon(
+                        imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                        contentDescription = "Preferiti",
+                        tint = if (isFavorite) Color.Red else Color.White,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
             }
 
             Column(

@@ -3,6 +3,7 @@ package com.travel.app.presentation.components
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -20,27 +21,18 @@ fun HeaderBackButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true
 ) {
-    Card(
+    IconButton(
         onClick = onClick,
-        modifier = modifier.size(40.dp),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-            contentColor = MaterialTheme.colorScheme.onSurface
-        ),
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+        modifier = modifier
+            .size(44.dp)
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), androidx.compose.foundation.shape.CircleShape),
         enabled = enabled
     ) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Indietro",
-                modifier = Modifier.size(20.dp)
-            )
-        }
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+            contentDescription = "Indietro",
+            tint = MaterialTheme.colorScheme.onSurface
+        )
     }
 }
 
@@ -52,34 +44,25 @@ fun HeaderConfirmButton(
     isLoading: Boolean = false,
     iconColor: Color = MaterialTheme.colorScheme.primary
 ) {
-    Card(
+    IconButton(
         onClick = onClick,
-        modifier = modifier.size(40.dp),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-            contentColor = iconColor
-        ),
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+        modifier = modifier
+            .size(44.dp)
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), androidx.compose.foundation.shape.CircleShape),
         enabled = enabled && !isLoading
     ) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            if (isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(20.dp),
-                    color = iconColor,
-                    strokeWidth = 2.dp
-                )
-            } else {
-                Icon(
-                    imageVector = Icons.Default.Check,
-                    contentDescription = "Conferma",
-                    modifier = Modifier.size(20.dp)
-                )
-            }
+        if (isLoading) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(24.dp),
+                color = iconColor,
+                strokeWidth = 2.dp
+            )
+        } else {
+            Icon(
+                imageVector = Icons.Default.Check,
+                contentDescription = "Conferma",
+                tint = iconColor
+            )
         }
     }
 }

@@ -21,7 +21,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Travel"
+rootProject.name = "Dèrive"
 include(":app")
 include(":common-dtos")
 project(":common-dtos").projectDir = file("../in_common")

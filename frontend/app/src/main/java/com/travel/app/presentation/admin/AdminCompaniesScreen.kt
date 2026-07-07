@@ -28,13 +28,16 @@ import com.travel.app.data.AppContainer
 import com.travel.app.domain.model.User
 import com.travel.app.presentation.admin.components.EmptyPlaceholder
 import com.travel.app.presentation.admin.components.CompanyManagementCard
+import com.travel.app.presentation.admin.components.ZoomableImageDialog
 
 @Composable
 fun AdminCompaniesScreen(
     viewModel: AdminViewModel
 ) {
-    var filterState by remember { mutableStateOf(0) } // 0 = Approvate, 1 = In Attesa, 2 = Bloccate
+    var filterState by remember { mutableStateOf(0) } // 0 = Approvate, 1 = Bloccate
     var activeImageForZoom by remember { mutableStateOf<String?>(null) }
+    var companyToBlock by remember { mutableStateOf<User?>(null) }
+    var companyToUnblock by remember { mutableStateOf<User?>(null) }
 
     val isPreview = androidx.compose.ui.platform.LocalInspectionMode.current
     LaunchedEffect(Unit) {
@@ -47,8 +50,7 @@ fun AdminCompaniesScreen(
         viewModel.allCompanies.filter { company ->
             when (filterState) {
                 0 -> company.approved && !company.blocked
-                1 -> !company.approved && !company.blocked
-                2 -> company.blocked
+                1 -> company.blocked
                 else -> true
             }
         }
@@ -69,7 +71,7 @@ fun AdminCompaniesScreen(
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(
-                    text = "Gestione Società",
+                    text = "Gestione Agenzie",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -80,7 +82,7 @@ fun AdminCompaniesScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    val segments = listOf("Approvate", "In Attesa", "Bloccate")
+                    val segments = listOf("Approvate", "Bloccate")
                     segments.forEachIndexed { index, text ->
                         val isSelected = filterState == index
                         val bg = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
@@ -116,14 +118,13 @@ fun AdminCompaniesScreen(
                 )
             } else if (filteredList.isEmpty()) {
                 val subtitleText = when (filterState) {
-                    0 -> "Nessuna società è ancora stata approvata."
-                    1 -> "Tutte le richieste sono state verificate."
-                    2 -> "Nessuna società risulta bloccata."
+                    0 -> "Nessuna agenzia è ancora stata approvata."
+                    1 -> "Nessuna agenzia risulta bloccata."
                     else -> ""
                 }
                 EmptyPlaceholder(
                     icon = Icons.Default.Business,
-                    title = "Nessuna società trovata",
+                    title = "Nessuna agenzia trovata",
                     subtitle = subtitleText
                 )
             } else {
@@ -137,9 +138,9 @@ fun AdminCompaniesScreen(
                             company = company,
                             onApprove = { company.id?.let { viewModel.approveCompany(it) } },
                             onReject = { company.id?.let { viewModel.rejectCompany(it) } },
-                            onBlock = { company.id?.let { viewModel.blockCompany(it) } },
-                            onUnblock = { company.id?.let { viewModel.unblockCompany(it) } },
-                            onImageClick = { activeImageForZoom = it }
+                             onBlock = { companyToBlock = company },
+                             onUnblock = { companyToUnblock = company },
+                             onImageClick = { activeImageForZoom = it }
                         )
                     }
                 }
@@ -149,42 +150,58 @@ fun AdminCompaniesScreen(
 
     // Zoom Dialog per visualizzare i documenti a schermo intero
     activeImageForZoom?.let { path ->
-        val token = if (AppContainer.isInitialized) AppContainer.sessionManager.getSessionToken().orEmpty() else ""
-        val imgUrl = "${BuildConfig.BACKEND_URL}api/admin/documents/${path.substringAfterLast("/")}"
-        val request = ImageRequest.Builder(LocalContext.current)
-            .data(imgUrl)
-            .addHeader("Authorization", "Bearer $token")
-            .crossfade(true)
-            .build()
+        ZoomableImageDialog(
+            imagePath = path,
+            onDismiss = { activeImageForZoom = null }
+        )
+    }
 
-        Dialog(onDismissRequest = { activeImageForZoom = null }) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(1f)
-                    .background(Color.Black, RoundedCornerShape(16.dp))
-                    .padding(8.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                AsyncImage(
-                    model = request,
-                    contentDescription = "Zoom Documento",
-                    modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(8.dp)),
-                    contentScale = ContentScale.Fit
-                )
-                IconButton(
-                    onClick = { activeImageForZoom = null },
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+    // Dialog di conferma blocco
+    companyToBlock?.let { company ->
+        AlertDialog(
+            onDismissRequest = { companyToBlock = null },
+            title = { Text("Conferma Blocco") },
+            text = { Text("Sei sicuro di voler bloccare l'agenzia \"${company.name ?: "agenzia"}\"? Non potrà più accedere all'applicazione o pubblicare attività.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        company.id?.let { viewModel.blockCompany(it) }
+                        companyToBlock = null
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = "Chiudi",
-                        tint = Color.White
-                    )
+                    Text("Blocca")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { companyToBlock = null }) {
+                    Text("Annulla")
                 }
             }
-        }
+        )
+    }
+
+    // Dialog di conferma sblocco
+    companyToUnblock?.let { company ->
+        AlertDialog(
+            onDismissRequest = { companyToUnblock = null },
+            title = { Text("Conferma Sblocco") },
+            text = { Text("Sei sicuro di voler sbloccare l'agenzia \"${company.name ?: "agenzia"}\"? Verrà ripristinato il suo accesso e la visibilità delle sue attività.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        company.id?.let { viewModel.unblockCompany(it) }
+                        companyToUnblock = null
+                    }
+                ) {
+                    Text("Sblocca")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { companyToUnblock = null }) {
+                    Text("Annulla")
+                }
+            }
+        )
     }
 }

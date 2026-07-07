@@ -68,10 +68,17 @@ class RegisterViewModel(
                 return
             }
         } else {
-            if (registerCompanyName.isBlank() || registerVatNumber.isBlank()) {
-                registerError = "Ragione sociale e Partita IVA sono obbligatorie"
+            if (registerVatNumber.isBlank()) {
+                registerError = "La Partita IVA è obbligatoria"
                 return
             }
+            val cleanedVat = registerVatNumber.trim().uppercase().replace("\\s".toRegex(), "")
+            if (!cleanedVat.matches(Regex("^(IT)?[0-9]{11}$"))) {
+                registerError = "La Partita IVA deve essere di 11 cifre (es. IT12345678901 o 12345678901)"
+                return
+            }
+            registerVatNumber = cleanedVat
+            registerCompanyName = cleanedVat
         }
 
         viewModelScope.launch {

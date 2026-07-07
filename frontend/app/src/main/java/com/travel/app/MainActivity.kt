@@ -38,7 +38,7 @@ class MainActivity : ComponentActivity() {
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun LoginScreenPreview() {
-    val mockApiService = object : ApiService {
+    val mockApiService = object : com.travel.app.service.MockApiService() {
         override suspend fun login(request: it.unical.ea.dtos.authDto.LoginRequest) = it.unical.ea.dtos.authDto.JwtResponse("mock_token", "mock_refresh")
         override suspend fun register(request: it.unical.ea.dtos.authDto.SignupRequest) = "mock_user_id"
         override suspend fun getMe() = it.unical.ea.dtos.user.UserDTO().apply { email = "test@travel.com" }
@@ -49,7 +49,7 @@ fun LoginScreenPreview() {
             query: String, minPrice: Double?, maxPrice: Double?, page: Int, size: Int
         ) = it.unical.ea.dtos.common.PageDto<it.unical.ea.dtos.activity.ActivityDto>()
         override suspend fun searchLocalita(
-            query: String, page: Int, size: Int
+            query: String, includeExternal: Boolean, page: Int, size: Int
         ) = it.unical.ea.dtos.common.PageDto<it.unical.ea.dtos.location.LocationDto>()
         override suspend fun getLocalitaById(id: String) = it.unical.ea.dtos.location.LocationDto()
         override suspend fun getActivityById(id: String) = it.unical.ea.dtos.activity.ActivityDto()
@@ -79,6 +79,6 @@ fun LoginScreenPreview() {
     val mockRepo = UserRepositoryImpl(mockApiService) { error("Not used in preview") }
     val mockViewModel = LoginViewModel(mockRepo)
     TravelTheme {
-        LoginScreen(viewModel = mockViewModel, onNavigateToRegister = {}, onLoginSuccess = {})
+        LoginScreen(viewModel = mockViewModel, onNavigateToRegister = {}, onNavigateToForgotPassword = {}, onLoginSuccess = {})
     }
 }

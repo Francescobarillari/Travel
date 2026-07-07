@@ -33,11 +33,17 @@ import com.travel.app.service.ApiService
 import com.travel.app.presentation.theme.TravelTheme
 import it.unical.ea.dtos.activity.ActivityDto
 import it.unical.ea.dtos.user.UserDTO
+import com.travel.app.presentation.admin.components.ZoomableImageDialog
 import java.time.format.DateTimeFormatter
 import com.travel.app.domain.model.User
 import com.travel.app.presentation.admin.components.EmptyPlaceholder
 import com.travel.app.presentation.admin.components.CompanyCard
 import com.travel.app.presentation.admin.components.ActivityModerationCard
+import com.travel.app.presentation.admin.components.KpiCard
+import com.travel.app.presentation.admin.components.CompanyStatusDonutChart
+import com.travel.app.presentation.admin.components.ActivityStatusDonutChart
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -77,10 +83,26 @@ fun AdminDashboardScreen(
                             )
                         }
                         Text(
-                            text = "Admin Dashboard",
+                            text = when(selectedTab) {
+                                0 -> "Admin Dashboard"
+                                1 -> "Agenzie da approvare"
+                                2 -> "Attività da moderare"
+                                else -> "Admin Dashboard"
+                            },
                             fontWeight = FontWeight.Bold,
                             style = MaterialTheme.typography.titleMedium
                         )
+                    }
+                },
+                navigationIcon = {
+                    if (selectedTab != 0) {
+                        IconButton(onClick = { selectedTab = 0 }) {
+                            Icon(
+                                imageVector = Icons.Default.ArrowBack,
+                                contentDescription = "Indietro",
+                                tint = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
                     }
                 },
                 actions = {
@@ -89,13 +111,6 @@ fun AdminDashboardScreen(
                             imageVector = Icons.Default.Refresh,
                             contentDescription = "Aggiorna",
                             tint = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                    IconButton(onClick = onLogout) {
-                        Icon(
-                            imageVector = Icons.Default.ExitToApp,
-                            contentDescription = "Logout",
-                            tint = MaterialTheme.colorScheme.error
                         )
                     }
                 },
@@ -112,40 +127,6 @@ fun AdminDashboardScreen(
                 .padding(innerPadding)
                 .background(MaterialTheme.colorScheme.background)
         ) {
-            // Tabs
-            TabRow(
-                selectedTabIndex = selectedTab,
-                containerColor = MaterialTheme.colorScheme.surface,
-                contentColor = MaterialTheme.colorScheme.primary
-            ) {
-                Tab(
-                    selected = selectedTab == 0,
-                    onClick = { selectedTab = 0 },
-                    text = {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Icon(Icons.Default.Business, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Text("Società (${viewModel.pendingCompanies.size})", fontWeight = FontWeight.SemiBold)
-                        }
-                    }
-                )
-                Tab(
-                    selected = selectedTab == 1,
-                    onClick = { selectedTab = 1 },
-                    text = {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Icon(Icons.Default.Explore, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Text("Attività (${viewModel.pendingActivities.size})", fontWeight = FontWeight.SemiBold)
-                        }
-                    }
-                )
-            }
-
             // Error Banner
             viewModel.errorMessage?.let { msg ->
                 Card(
@@ -171,13 +152,18 @@ fun AdminDashboardScreen(
                     )
                 } else {
                     when (selectedTab) {
-                        0 -> PendingCompaniesList(
+                        0 -> OverviewTabContent(
+                            viewModel = viewModel,
+                            onNavigateToCompaniesTab = { selectedTab = 1 },
+                            onNavigateToActivitiesTab = { selectedTab = 2 }
+                        )
+                        1 -> PendingCompaniesList(
                             companies = viewModel.pendingCompanies,
                             onApprove = { viewModel.approveCompany(it) },
                             onReject = { viewModel.rejectCompany(it) },
                             onImageClick = { activeImageForZoom = it }
                         )
-                        1 -> PendingActivitiesList(
+                        2 -> PendingActivitiesList(
                             activities = viewModel.pendingActivities,
                             onApprove = { viewModel.approveActivity(it) },
                             onReject = { viewModel.rejectActivity(it) }
@@ -190,41 +176,112 @@ fun AdminDashboardScreen(
 
     // Zoom Dialog per visualizzare i documenti a schermo intero
     activeImageForZoom?.let { path ->
-        val token = if (AppContainer.isInitialized) AppContainer.sessionManager.getSessionToken().orEmpty() else ""
-        val imgUrl = "${BuildConfig.BACKEND_URL}api/admin/documents/${path.substringAfterLast("/")}"
-        val request = ImageRequest.Builder(LocalContext.current)
-            .data(imgUrl)
-            .addHeader("Authorization", "Bearer $token")
-            .crossfade(true)
-            .build()
+        ZoomableImageDialog(
+            imagePath = path,
+            onDismiss = { activeImageForZoom = null }
+        )
+    }
+}
 
-        Dialog(onDismissRequest = { activeImageForZoom = null }) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(1f)
-                    .background(Color.Black, RoundedCornerShape(16.dp))
-                    .padding(8.dp),
-                contentAlignment = Alignment.Center
+@Composable
+fun OverviewTabContent(
+    viewModel: AdminViewModel,
+    onNavigateToCompaniesTab: () -> Unit,
+    onNavigateToActivitiesTab: () -> Unit
+) {
+    val totalCompanies = viewModel.allCompanies.size
+    val approvedCompanies = viewModel.allCompanies.count { it.approved && !it.blocked }
+    val pendingCompanies = viewModel.allCompanies.count { !it.approved && !it.blocked }
+    val blockedCompanies = viewModel.allCompanies.count { it.blocked }
+
+    val approvedActivities = viewModel.approvedActivitiesCount
+    val pendingActivities = viewModel.pendingActivities.size
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // KPI Cards Row
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            KpiCard(
+                title = "Agenzie Totali",
+                value = "$totalCompanies",
+                icon = Icons.Default.Business,
+                iconColor = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.weight(1f)
+            )
+            KpiCard(
+                title = "Agenzie Pending",
+                value = "${viewModel.pendingCompanies.size}",
+                icon = Icons.Default.PendingActions,
+                iconColor = Color(0xFFE65100),
+                modifier = Modifier.weight(1f),
+                onClick = onNavigateToCompaniesTab
+            )
+            KpiCard(
+                title = "Attività Pending",
+                value = "$pendingActivities",
+                icon = Icons.Default.Explore,
+                iconColor = Color(0xFFC62828),
+                modifier = Modifier.weight(1f),
+                onClick = onNavigateToActivitiesTab
+            )
+        }
+
+        // Donut Chart Card - Società
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                AsyncImage(
-                    model = request,
-                    contentDescription = "Zoom Documento",
-                    modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(8.dp)),
-                    contentScale = ContentScale.Fit
+                Text(
+                    text = "Stato di approvazione Agenzie",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
-                IconButton(
-                    onClick = { activeImageForZoom = null },
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .background(Color.Black.copy(alpha = 0.5f), CircleShape)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = "Chiudi",
-                        tint = Color.White
-                    )
-                }
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                CompanyStatusDonutChart(
+                    approvedCount = approvedCompanies,
+                    pendingCount = pendingCompanies,
+                    blockedCount = blockedCompanies
+                )
+            }
+        }
+
+        // Donut Chart Card - Attività
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    text = "Stato di approvazione Attività",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                ActivityStatusDonutChart(
+                    approvedCount = approvedActivities,
+                    pendingCount = pendingActivities
+                )
             }
         }
     }
@@ -240,8 +297,8 @@ fun PendingCompaniesList(
     if (companies.isEmpty()) {
         EmptyPlaceholder(
             icon = Icons.Default.CheckCircle,
-            title = "Nessuna società in attesa",
-            subtitle = "Tutte le registrazioni societarie sono state elaborate."
+            title = "Nessuna agenzia in attesa",
+            subtitle = "Tutte le registrazioni delle agenzie sono state elaborate."
         )
     } else {
         LazyColumn(
@@ -271,7 +328,7 @@ fun PendingActivitiesList(
         EmptyPlaceholder(
             icon = Icons.Default.CheckCircle,
             title = "Nessuna attività in attesa",
-            subtitle = "Tutte le proposte delle società sono state moderate."
+            subtitle = "Tutte le proposte delle agenzie sono state moderate."
         )
     } else {
         LazyColumn(
@@ -293,7 +350,7 @@ fun PendingActivitiesList(
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun AdminDashboardScreenPreview() {
-    val mockApiService = object : ApiService {
+    val mockApiService = object : com.travel.app.service.MockApiService() {
         override suspend fun login(request: it.unical.ea.dtos.authDto.LoginRequest) = it.unical.ea.dtos.authDto.JwtResponse("mock", "mock_refresh")
         override suspend fun register(request: it.unical.ea.dtos.authDto.SignupRequest) = "mock"
         override suspend fun getMe() = it.unical.ea.dtos.user.UserDTO()
@@ -301,7 +358,7 @@ fun AdminDashboardScreenPreview() {
         override suspend fun createActivity(request: it.unical.ea.dtos.activity.ActivityDto) = request
         override suspend fun getActivities() = emptyList<it.unical.ea.dtos.activity.ActivityDto>()
         override suspend fun searchActivities(query: String, minPrice: Double?, maxPrice: Double?, page: Int, size: Int) = it.unical.ea.dtos.common.PageDto<it.unical.ea.dtos.activity.ActivityDto>()
-        override suspend fun searchLocalita(query: String, page: Int, size: Int) = it.unical.ea.dtos.common.PageDto<it.unical.ea.dtos.location.LocationDto>()
+        override suspend fun searchLocalita(query: String, includeExternal: Boolean, page: Int, size: Int) = it.unical.ea.dtos.common.PageDto<it.unical.ea.dtos.location.LocationDto>()
         override suspend fun getLocalitaById(id: String) = it.unical.ea.dtos.location.LocationDto()
         override suspend fun getActivityById(id: String) = it.unical.ea.dtos.activity.ActivityDto()
         override suspend fun getItineraries() = emptyList<it.unical.ea.dtos.itinerary.ItineraryDto>()

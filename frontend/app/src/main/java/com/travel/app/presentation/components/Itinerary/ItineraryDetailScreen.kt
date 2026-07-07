@@ -4,6 +4,7 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -12,6 +13,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.*
@@ -39,6 +43,14 @@ import android.widget.Toast
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
 import com.travel.app.BuildConfig
+import com.travel.app.data.AppContainer
+import com.travel.app.domain.model.review.ReviewDto
+import com.travel.app.domain.model.review.CreateReviewDto
+import com.travel.app.presentation.components.review.ReviewCard
+import com.travel.app.presentation.components.review.AddReviewInline
+import kotlinx.coroutines.launch
+import com.travel.app.utils.CalendarExportUtil
+import androidx.compose.material.icons.filled.Handyman
 
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -46,14 +58,36 @@ import com.travel.app.BuildConfig
 fun ItineraryDetailScreen(
     itinerary: ItineraryDto,
     onNavigateBack: () -> Unit,
-    modifier: Modifier = Modifier,
-    viewModel: ItineraryDetailViewModel = viewModel(key = itinerary.getId()?.toString())
+    viewModel: ItineraryDetailViewModel = viewModel(key = itinerary.getId()?.toString()),
+    onActivityClick: (String) -> Unit = {},
+    isFavorite: Boolean = false,
+    onFavoriteClick: () -> Unit = {},
+    onPersonalizeClick: (ItineraryDto) -> Unit = {},
+    onDeleteSuccess: () -> Unit = {},
+    modifier: Modifier = Modifier
 ) {
     val scrollState = rememberScrollState()
     val context = LocalContext.current
     val totalPrice = itinerary.getActivities()?.sumOf { it.getPrice()?.toDouble() ?: 0.0 } ?: 0.0
     val uniqueTags = itinerary.getActivities()?.flatMap { it.getTags() ?: emptySet() }?.toSet() ?: emptySet()
     val uniqueLocations = itinerary.getActivities()?.map { it.getLocation() }?.filter { !it.isNullOrBlank() }?.distinct() ?: emptyList()
+    val context = androidx.compose.ui.platform.LocalContext.current
+
+    var reviews by remember { mutableStateOf<List<ReviewDto>>(emptyList()) }
+    val scope = rememberCoroutineScope()
+
+    val currentUser = remember { AppContainer.sessionManager.getSessionUser() }
+    val isViaggiatore = currentUser?.userType == "VIAGGIATORE"
+
+    LaunchedEffect(itinerary.id) {
+        val id = itinerary.id?.toString()
+        if (id != null) {
+            val reviewsResult = AppContainer.reviewRepository.getReviewsForItinerary(id)
+            if (reviewsResult.isSuccess) {
+                reviews = reviewsResult.getOrNull() ?: emptyList()
+            }
+        }
+    }
 
     val clientSecret by viewModel.paymentClientSecret.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -124,6 +158,22 @@ fun ItineraryDetailScreen(
     }
 
     Scaffold(
+        floatingActionButton = {
+            if (isViaggiatore && itinerary.creatorId?.toString() != currentUser?.id) {
+                FloatingActionButton(
+                    onClick = { onPersonalizeClick(itinerary) },
+                    shape = CircleShape,
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.padding(bottom = 12.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Handyman,
+                        contentDescription = "Personalizza itinerario"
+                    )
+                }
+            }
+        },
         bottomBar = {
             Surface(
                 shadowElevation = 12.dp,
@@ -234,9 +284,87 @@ fun ItineraryDetailScreen(
                 ) {
                     Icon(
                         imageVector = Icons.Default.ArrowBack,
-                        contentDescription = "PRENOTA",
+                        contentDescription = "Indietro",
                         tint = Color.White
                     )
+                }
+
+                // Top Right Action Buttons
+                Row(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(top = 16.dp, end = 16.dp)
+                        .statusBarsPadding(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Delete Button (only if current user is creator)
+                    if (currentUser != null && itinerary.creatorId?.toString() == currentUser.id) {
+                        IconButton(
+                            onClick = {
+                                scope.launch {
+                                    val idStr = itinerary.id?.toString() ?: ""
+                                    val res = AppContainer.itineraryRepository.deleteItinerary(idStr)
+                                    res.fold(
+                                        onSuccess = {
+                                            android.widget.Toast.makeText(context, "Itinerario eliminato con successo", android.widget.Toast.LENGTH_SHORT).show()
+                                            onDeleteSuccess()
+                                        },
+                                        onFailure = { err ->
+                                            android.widget.Toast.makeText(context, "Errore: ${err.message}", android.widget.Toast.LENGTH_LONG).show()
+                                        }
+                                    )
+                                }
+                            },
+                            modifier = Modifier
+                                .size(44.dp)
+                                .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = "Elimina Itinerario",
+                                tint = Color.White
+                            )
+                        }
+                    }
+
+                    // Calendar Export Button
+                    IconButton(
+                        onClick = {
+                            val locs = itinerary.getActivities()?.mapNotNull { it.getLocation() }?.filter { it.isNotBlank() }?.distinct()?.joinToString(", ")
+                            CalendarExportUtil.addToCalendar(
+                                context = context,
+                                title = itinerary.getTitle() ?: "Itinerario",
+                                description = itinerary.getDescription(),
+                                location = locs,
+                                startTime = itinerary.getStartDateTime(),
+                                endTime = itinerary.getEndDateTime()
+                            )
+                        },
+                        modifier = Modifier
+                            .size(44.dp)
+                            .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CalendarToday,
+                            contentDescription = "Esporta Calendario",
+                            tint = Color.White
+                        )
+                    }
+
+                    // Floating Circular Favorite Button
+                    IconButton(
+                        onClick = onFavoriteClick,
+                        modifier = Modifier
+                            .size(44.dp)
+                            .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                    ) {
+                        Icon(
+                            imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                            contentDescription = "Preferito",
+                            tint = if (isFavorite) Color.Red else Color.White
+                        )
+                    }
                 }
 
                 // Title Overlay at Bottom of Image
@@ -438,8 +566,107 @@ fun ItineraryDetailScreen(
                         ActivityTimelineRow(
                             index = index + 1,
                             activity = activity,
-                            isLast = index == activitiesList.lastIndex
+                            isLast = index == activitiesList.lastIndex,
+                            onClick = { activity.id?.toString()?.let(onActivityClick) }
                         )
+                    }
+                }
+
+                // REVIEWS SECTION
+                HorizontalDivider(
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                    modifier = Modifier.padding(vertical = 16.dp)
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Recensioni",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                }
+
+                // Form inline per aggiungere una nuova recensione
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        AddReviewInline(
+                            onSubmit = { rating, comment ->
+                                scope.launch {
+                                    val id = itinerary.id?.toString()
+                                    if (id != null) {
+                                        val newReview = CreateReviewDto(
+                                            itineraryId = id,
+                                            rating = rating,
+                                            comment = comment
+                                        )
+                                        AppContainer.reviewRepository.createReview(newReview)
+                                        val reviewsResult = AppContainer.reviewRepository.getReviewsForItinerary(id)
+                                        if (reviewsResult.isSuccess) {
+                                            reviews = reviewsResult.getOrNull() ?: emptyList()
+                                        }
+                                    }
+                                }
+                            }
+                        )
+                    }
+                }
+                
+                if (reviews.isEmpty()) {
+                    Text(
+                        text = "Ancora nessuna recensione. Sii il primo!",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
+                } else {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        reviews.forEach { review ->
+                            // Here showActivityName is true to distinguish which activity the review is for
+                            ReviewCard(
+                                review = review, 
+                                showActivityName = true,
+                                onUpdate = { updatedRating, updatedComment ->
+                                    scope.launch {
+                                        val id = itinerary.id?.toString()
+                                        if (id != null) {
+                                            val updateDto = CreateReviewDto(
+                                                itineraryId = id,
+                                                rating = updatedRating,
+                                                comment = updatedComment
+                                            )
+                                            review.id?.let { reviewId ->
+                                                AppContainer.reviewRepository.updateReview(reviewId, updateDto)
+                                                val reviewsResult = AppContainer.reviewRepository.getReviewsForItinerary(id)
+                                                if (reviewsResult.isSuccess) {
+                                                    reviews = reviewsResult.getOrNull() ?: emptyList()
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                onDelete = {
+                                    scope.launch {
+                                        val id = itinerary.id?.toString()
+                                        if (id != null) {
+                                            review.id?.let { reviewId ->
+                                                AppContainer.reviewRepository.deleteReview(reviewId)
+                                                val reviewsResult = AppContainer.reviewRepository.getReviewsForItinerary(id)
+                                                if (reviewsResult.isSuccess) {
+                                                    reviews = reviewsResult.getOrNull() ?: emptyList()
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            )
+                        }
                     }
                 }
             }
@@ -452,7 +679,8 @@ fun ItineraryDetailScreen(
 private fun ActivityTimelineRow(
     index: Int,
     activity: ActivityDto,
-    isLast: Boolean
+    isLast: Boolean,
+    onClick: () -> Unit = {}
 ) {
     Row(
         modifier = Modifier
@@ -496,6 +724,7 @@ private fun ActivityTimelineRow(
 
         // Activity detail card on right
         Card(
+            onClick = onClick,
             modifier = Modifier
                 .weight(1f)
                 .padding(bottom = 16.dp),

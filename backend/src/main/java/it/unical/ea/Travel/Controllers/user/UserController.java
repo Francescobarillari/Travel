@@ -184,15 +184,6 @@ public class UserController {
     // --- Helpers per arricchire URL ---
 
     private UserDTO toDTO(User user) {
-        UserDTO dto = userMapper.toDTO(user);
-        if (user.getAvatarUrl() != null) {
-            String avatarUrl = ServletUriComponentsBuilder.fromCurrentContextPath()
-                    .path("/user/")
-                    .path(user.getId().toString())
-                    .path("/avatar")
-                    .toUriString();
-            dto.setAvatarUrl(avatarUrl);
-        }
-        return dto;
+        return userMapper.toDTO(user);
     }
 }

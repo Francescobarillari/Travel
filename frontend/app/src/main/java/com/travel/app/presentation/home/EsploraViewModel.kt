@@ -7,8 +7,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.travel.app.domain.repository.ActivityRepository
 import com.travel.app.domain.repository.LocalitaRepository
+import com.travel.app.domain.repository.UserRepository
+import com.travel.app.domain.repository.ItineraryRepository
+import com.travel.app.domain.model.User
 import it.unical.ea.dtos.activity.ActivityDto
 import it.unical.ea.dtos.location.LocationDto as LocalitaDto
+import it.unical.ea.dtos.itinerary.ItineraryDto
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -16,12 +20,16 @@ import kotlinx.coroutines.launch
 enum class EsploraTab {
     TUTTI,
     LOCALITA,
-    ATTIVITA
+    UTENTI,
+    ATTIVITA,
+    ITINERARI
 }
 
 class EsploraViewModel(
     private val activityRepository: ActivityRepository,
-    private val localitaRepository: LocalitaRepository
+    private val localitaRepository: LocalitaRepository,
+    private val userRepository: UserRepository,
+    private val itineraryRepository: ItineraryRepository
 ) : ViewModel() {
 
     var selectedTab by mutableStateOf(EsploraTab.TUTTI)
@@ -31,6 +39,7 @@ class EsploraViewModel(
     
     fun onSearchQueryChanged(query: String) {
         searchQuery = query
+        filterItinerariesLocally()
         debouncedSearch()
     }
     var minPrice by mutableStateOf<Double?>(null)
@@ -42,11 +51,15 @@ class EsploraViewModel(
     fun onPriceRangeChanged(min: Double?, max: Double?) {
         minPrice = min
         maxPrice = max
+        filterItinerariesLocally()
         performSearch()
     }
     
     var activities by mutableStateOf<List<ActivityDto>>(emptyList())
     var localitaList by mutableStateOf<List<LocalitaDto>>(emptyList())
+    var userList by mutableStateOf<List<User>>(emptyList())
+    var allItineraries by mutableStateOf<List<ItineraryDto>>(emptyList())
+    var filteredItineraries by mutableStateOf<List<ItineraryDto>>(emptyList())
 
     var isLoading by mutableStateOf(false)
     var isLoadingMore by mutableStateOf(false)
@@ -100,7 +113,12 @@ class EsploraViewModel(
                 }
                 
                 val localitaDeferred = viewModelScope.launch {
-                    val result = localitaRepository.searchLocalita(searchQuery, currentLocalitaPage, PAGE_SIZE)
+                    val result = localitaRepository.searchLocalita(
+                        query = searchQuery,
+                        includeExternal = false,
+                        page = currentLocalitaPage,
+                        size = PAGE_SIZE
+                    )
                     result.fold(
                         onSuccess = { page -> 
                             localitaList = page.content ?: emptyList()
@@ -109,15 +127,71 @@ class EsploraViewModel(
                         onFailure = { errorMessage = it.message }
                     )
                 }
+
+                val usersDeferred = viewModelScope.launch {
+                    val result = userRepository.getAllUsers()
+                    result.fold(
+                        onSuccess = { list -> 
+                            userList = if (searchQuery.isBlank()) {
+                                list
+                            } else {
+                                list.filter { 
+                                    it.name?.contains(searchQuery, ignoreCase = true) == true || 
+                                    it.email.contains(searchQuery, ignoreCase = true)
+                                }
+                            }
+                        },
+                        onFailure = { errorMessage = it.message }
+                    )
+                }
+
+                val itineraryDeferred = viewModelScope.launch {
+                    val result = itineraryRepository.getItineraries()
+                    result.fold(
+                        onSuccess = { list ->
+                            allItineraries = list
+                            filterItinerariesLocally()
+                        },
+                        onFailure = { errorMessage = it.message }
+                    )
+                }
                 
                 activityDeferred.join()
                 localitaDeferred.join()
+                usersDeferred.join()
+                itineraryDeferred.join()
                 
             } catch (e: Exception) {
                 errorMessage = e.message ?: "Errore imprevisto durante la ricerca"
             } finally {
                 isLoading = false
             }
+        }
+    }
+
+    fun filterItinerariesLocally() {
+        val query = searchQuery.trim()
+        val minP = minPrice
+        val maxP = maxPrice
+        
+        filteredItineraries = allItineraries.filter { itinerary ->
+            val queryMatch = if (query.isEmpty()) {
+                true
+            } else {
+                val titleMatch = itinerary.getTitle()?.contains(query, ignoreCase = true) == true
+                val descMatch = itinerary.getDescription()?.contains(query, ignoreCase = true) == true
+                val activityMatch = itinerary.getActivities()?.any { activity ->
+                    activity.name?.contains(query, ignoreCase = true) == true ||
+                    activity.location?.contains(query, ignoreCase = true) == true
+                } == true
+                titleMatch || descMatch || activityMatch
+            }
+
+            val totalPrice = itinerary.getActivities()?.sumOf { it.getPrice()?.toDouble() ?: 0.0 } ?: 0.0
+            val minMatch = if (minP == null) true else totalPrice >= minP
+            val maxMatch = if (maxP == null) true else totalPrice <= maxP
+
+            queryMatch && minMatch && maxMatch
         }
     }
 
@@ -137,7 +211,12 @@ class EsploraViewModel(
         isLoadingMore = true
         currentLocalitaPage++
         viewModelScope.launch {
-            val result = localitaRepository.searchLocalita(searchQuery, currentLocalitaPage, PAGE_SIZE)
+            val result = localitaRepository.searchLocalita(
+                query = searchQuery,
+                includeExternal = false,
+                page = currentLocalitaPage,
+                size = PAGE_SIZE
+            )
             result.fold(
                 onSuccess = { page -> 
                     localitaList = localitaList + (page.content ?: emptyList())

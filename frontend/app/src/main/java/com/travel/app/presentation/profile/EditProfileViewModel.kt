@@ -8,6 +8,9 @@ import androidx.lifecycle.viewModelScope
 import com.travel.app.domain.model.User
 import com.travel.app.domain.repository.UserRepository
 import kotlinx.coroutines.launch
+import android.content.Context
+import android.net.Uri
+import java.io.File
 
 class EditProfileViewModel(
     private val userRepository: UserRepository
@@ -39,7 +42,7 @@ class EditProfileViewModel(
         val isMockUser = currentUser.email in listOf("test@travel.com", "societa@travel.com", "johnkinggraphics@gmail.com")
 
         val updatedUser = currentUser.copy(
-            name = name,
+            name = if (isSocieta) vatNumber else name,
             vatNumber = if (isSocieta) vatNumber else null
         )
 
@@ -66,6 +69,76 @@ class EditProfileViewModel(
                 },
                 onFailure = { throwable ->
                     errorMessage = throwable.message ?: "Errore di salvataggio"
+                }
+            )
+        }
+    }
+
+    fun uploadAvatar(context: Context, uri: Uri, onSuccess: (User) -> Unit) {
+        val currentUser = initialUser ?: return
+        val isMockUser = currentUser.email in listOf("test@travel.com", "societa@travel.com", "johnkinggraphics@gmail.com")
+
+        if (isMockUser) {
+            errorMessage = "Impossibile caricare l'avatar per l'utente di test."
+            return
+        }
+
+        viewModelScope.launch {
+            isLoading = true
+            errorMessage = null
+            successMessage = null
+
+            try {
+                // Leggi i byte dall'URI
+                val inputStream = context.contentResolver.openInputStream(uri)
+                val bytes = inputStream?.readBytes()
+                inputStream?.close()
+
+                if (bytes != null) {
+                    val mimeType = context.contentResolver.getType(uri) ?: "image/jpeg"
+                    val result = userRepository.uploadAvatar(currentUser.id.orEmpty(), bytes, mimeType, "avatar.jpg")
+                    
+                    if (result.isSuccess) {
+                        val updatedUser = result.getOrThrow()
+                        initialUser = updatedUser
+                        successMessage = "Foto profilo aggiornata con successo"
+                        onSuccess(updatedUser)
+                    } else {
+                        errorMessage = result.exceptionOrNull()?.message ?: "Errore durante il caricamento della foto"
+                    }
+                } else {
+                    errorMessage = "Impossibile leggere l'immagine"
+                }
+            } catch (e: Exception) {
+                errorMessage = e.message ?: "Errore sconosciuto"
+            } finally {
+                isLoading = false
+            }
+        }
+    }
+
+    fun deactivateAccount(onSuccess: () -> Unit) {
+        val currentUser = initialUser ?: return
+        val isMockUser = currentUser.email in listOf("test@travel.com", "societa@travel.com", "johnkinggraphics@gmail.com")
+        
+        if (isMockUser) {
+            errorMessage = "Impossibile disattivare l'account di test."
+            return
+        }
+
+        viewModelScope.launch {
+            isLoading = true
+            errorMessage = null
+            
+            val result = userRepository.deleteAccount(currentUser.id.orEmpty())
+            isLoading = false
+            
+            result.fold(
+                onSuccess = {
+                    onSuccess()
+                },
+                onFailure = { throwable ->
+                    errorMessage = throwable.message ?: "Errore durante la disattivazione"
                 }
             )
         }

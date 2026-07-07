@@ -30,6 +30,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.travel.app.domain.model.User
 import com.travel.app.presentation.theme.TravelTheme
+import coil.compose.AsyncImage
+import androidx.compose.ui.layout.ContentScale
 
 @Composable
 fun MenuScreen(
@@ -40,6 +42,7 @@ fun MenuScreen(
     onNavigateToProfile: () -> Unit,
     onNavigateToSecurity: () -> Unit,
     onLogout: () -> Unit,
+    onNavigateToMyItineraries: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val scrollState = rememberScrollState()
@@ -84,29 +87,40 @@ fun MenuScreen(
 
                 Spacer(modifier = Modifier.width(16.dp))
 
-                // Initials Avatar
-                Box(
-                    modifier = Modifier
-                        .size(64.dp)
-                        .background(
-                            brush = Brush.radialGradient(
-                                colors = listOf(Color(0xFF8FA4A6), Color(0xFF6B7F82))
-                            ),
-                            shape = CircleShape
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = initials,
-                        color = Color.White,
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold
+                // Avatar rendering: use AsyncImage if URL exists, else fallback to initials
+                if (!user?.avatarUrl.isNullOrEmpty()) {
+                    AsyncImage(
+                        model = user?.avatarUrl,
+                        contentDescription = "User Avatar",
+                        modifier = Modifier
+                            .size(64.dp)
+                            .clip(CircleShape),
+                        contentScale = ContentScale.Crop
                     )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .size(64.dp)
+                            .background(
+                                brush = Brush.radialGradient(
+                                    colors = listOf(Color(0xFF8FA4A6), Color(0xFF6B7F82))
+                                ),
+                                shape = CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = initials,
+                            color = Color.White,
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
 
             Text(
-                text = if (isSocieta) "Account Società Partner" else "Account Viaggiatore",
+                text = if (isSocieta) "Account Agenzia Partner" else "Account Viaggiatore",
                 style = MaterialTheme.typography.bodyMedium.copy(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontWeight = FontWeight.Medium
@@ -185,12 +199,12 @@ fun MenuScreen(
                     onClick = onNavigateToProfile
                 )
                 MenuGridCard(
-                    title = "I Miei Viaggi",
-                    icon = Icons.Default.CardTravel,
-                    iconColor = Color(0xFF059669),
-                    iconBg = Color(0xFFECFDF5),
+                    title = "I miei itinerari",
+                    icon = Icons.Default.Handyman,
+                    iconColor = Color(0xFF8B5CF6),
+                    iconBg = Color(0xFFEDE9FE),
                     modifier = Modifier.weight(1f),
-                    onClick = { Toast.makeText(context, "I Miei Viaggi: Funzionalità in arrivo!", Toast.LENGTH_SHORT).show() }
+                    onClick = onNavigateToMyItineraries
                 )
             }
             Spacer(modifier = Modifier.height(16.dp))
@@ -405,7 +419,7 @@ fun MenuScreenViaggiatorePreview() {
 fun MenuScreenSocietaPreview() {
     TravelTheme {
         MenuScreen(
-            user = User(email = "societa@travel.com", name = "Travel Agenzia S.p.A.", userType = "SOCIETA"),
+            user = User(email = "societa@travel.com", name = "Dèrive Agenzia S.p.A.", userType = "SOCIETA"),
             isDarkMode = false,
             onDarkModeChange = {},
             onBack = {},

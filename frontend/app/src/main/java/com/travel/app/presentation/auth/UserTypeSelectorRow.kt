@@ -28,7 +28,7 @@ fun UserTypeSelectorRow(
     ) {
         listOf(
             UserType.VIAGGIATORE to "Viaggiatore",
-            UserType.SOCIETA     to "Società"
+            UserType.SOCIETA     to "Agenzia"
         ).forEach { (type, label) ->
             val isSelected = selected == type
             Button(

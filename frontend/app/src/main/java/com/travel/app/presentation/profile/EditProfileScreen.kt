@@ -9,6 +9,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
@@ -19,15 +21,25 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.travel.app.domain.model.User
 import com.travel.app.presentation.components.HeaderBackButton
 import com.travel.app.presentation.components.HeaderConfirmButton
 import com.travel.app.presentation.theme.TravelTheme
+import android.net.Uri
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
+import java.io.File
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -37,6 +49,7 @@ fun EditProfileScreen(
     viewModel: EditProfileViewModel,
     onBack: () -> Unit,
     onSaveSuccess: (User) -> Unit,
+    onDeactivated: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val initialUser = user ?: User(
@@ -53,6 +66,11 @@ fun EditProfileScreen(
 
     val isSocieta = initialUser.userType == "SOCIETA"
     var showConfirmationDialog by remember { mutableStateOf(false) }
+    var showDeactivateDialog by remember { mutableStateOf(false) }
+    var showAvatarBottomSheet by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    var cameraUri by remember { mutableStateOf<Uri?>(null) }
+    
     val isNameChanged = remember(initialUser.name, viewModel.name) {
         viewModel.name.trim() != initialUser.name.orEmpty().trim()
     }
@@ -61,7 +79,96 @@ fun EditProfileScreen(
     val phoneNum = initialUser.phone.orEmpty()
     val selectedCountryPrefix = "+39" 
 
-    Box(modifier = modifier) {
+    val galleryLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+        uri?.let { viewModel.uploadAvatar(context, it, onSaveSuccess) }
+    }
+
+    val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
+        if (success) {
+            cameraUri?.let { viewModel.uploadAvatar(context, it, onSaveSuccess) }
+        }
+    }
+
+    val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+        if (isGranted) {
+            val file = File(context.cacheDir, "images")
+            file.mkdirs()
+            val tempFile = File.createTempFile("avatar_", ".jpg", file)
+            val uri = FileProvider.getUriForFile(context, "${context.packageName}.provider", tempFile)
+            cameraUri = uri
+            cameraLauncher.launch(uri)
+        } else {
+            Toast.makeText(context, "Permesso fotocamera negato", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    if (showAvatarBottomSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showAvatarBottomSheet = false },
+            sheetState = sheetState
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text("Cambia foto profilo", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            showAvatarBottomSheet = false
+                            galleryLauncher.launch("image/*")
+                        }
+                        .padding(vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.PhotoLibrary, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Text("Scegli dalla galleria")
+                }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            showAvatarBottomSheet = false
+                            if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+                                val file = File(context.cacheDir, "images")
+                                file.mkdirs()
+                                val tempFile = File.createTempFile("avatar_", ".jpg", file)
+                                val uri = FileProvider.getUriForFile(context, "${context.packageName}.provider", tempFile)
+                                cameraUri = uri
+                                cameraLauncher.launch(uri)
+                            } else {
+                                permissionLauncher.launch(Manifest.permission.CAMERA)
+                            }
+                        }
+                        .padding(vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.PhotoCamera, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Text("Scatta foto")
+                }
+                Spacer(modifier = Modifier.height(24.dp))
+            }
+        }
+    }
+
+    val focusManager = LocalFocusManager.current
+
+    Box(
+        modifier = modifier
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+            ) {
+                focusManager.clearFocus()
+            }
+    ) {
         EditProfileForm(
             initialUser = initialUser,
             name = viewModel.name,
@@ -80,7 +187,9 @@ fun EditProfileScreen(
                 } else {
                     viewModel.saveProfile(onSaveSuccess)
                 }
-            }
+            },
+            onAvatarClick = { showAvatarBottomSheet = true },
+            onDeactivateClick = { showDeactivateDialog = true }
         )
 
         if (showConfirmationDialog) {
@@ -117,6 +226,36 @@ fun EditProfileScreen(
                 tonalElevation = 6.dp
             )
         }
+
+        if (showDeactivateDialog) {
+            AlertDialog(
+                onDismissRequest = { showDeactivateDialog = false },
+                title = { Text(text = "Disattiva account") },
+                text = {
+                    Text(text = "Sei sicuro di voler disattivare il tuo account? Questa azione è irreversibile.")
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            showDeactivateDialog = false
+                            viewModel.deactivateAccount(onDeactivated)
+                        }
+                    ) {
+                        Text(text = "Disattiva", color = Color(0xFFDC2626))
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = { showDeactivateDialog = false }
+                    ) {
+                        Text(text = "Annulla", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                },
+                shape = RoundedCornerShape(28.dp),
+                containerColor = MaterialTheme.colorScheme.surface,
+                tonalElevation = 6.dp
+            )
+        }
     }
 }
 
@@ -135,10 +274,20 @@ fun EditProfileForm(
     errorMessage: String?,
     onBack: () -> Unit,
     onSaveClick: () -> Unit,
+    onAvatarClick: () -> Unit,
+    onDeactivateClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val isSocieta = initialUser.userType == "SOCIETA"
     val context = LocalContext.current
+    val focusManager = LocalFocusManager.current
+    val scrollState = rememberScrollState()
+
+    LaunchedEffect(scrollState.isScrollInProgress) {
+        if (scrollState.isScrollInProgress) {
+            focusManager.clearFocus()
+        }
+    }
 
     Column(
         modifier = modifier
@@ -177,7 +326,7 @@ fun EditProfileForm(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(scrollState)
                 .padding(horizontal = 24.dp, vertical = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(20.dp)
@@ -204,27 +353,39 @@ fun EditProfileForm(
             Box(
                 modifier = Modifier
                     .size(110.dp)
-                    .padding(bottom = 8.dp),
+                    .padding(bottom = 8.dp)
+                    .clickable { onAvatarClick() },
                 contentAlignment = Alignment.BottomEnd
             ) {
-                // Main profile initials container (cohesive gradient)
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clip(CircleShape)
-                        .background(
-                            brush = Brush.radialGradient(
-                                colors = listOf(Color(0xFF8FA4A6), Color(0xFF6B7F82))
-                            )
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = initials,
-                        color = Color.White,
-                        fontSize = 36.sp,
-                        fontWeight = FontWeight.Bold
+                // Main profile avatar container
+                if (!initialUser.avatarUrl.isNullOrEmpty()) {
+                    AsyncImage(
+                        model = initialUser.avatarUrl,
+                        contentDescription = "User Avatar",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(CircleShape),
+                        contentScale = ContentScale.Crop
                     )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(CircleShape)
+                            .background(
+                                brush = Brush.radialGradient(
+                                    colors = listOf(Color(0xFF8FA4A6), Color(0xFF6B7F82))
+                                )
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = initials,
+                            color = Color.White,
+                            fontSize = 36.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
 
                 // Camera icon overlay
@@ -233,8 +394,7 @@ fun EditProfileForm(
                         .size(36.dp)
                         .clip(CircleShape)
                         .background(Color.White)
-                        .border(1.dp, Color(0xFFE2E8F0), CircleShape)
-                        .clickable { /* Photo upload logic */ },
+                        .border(1.dp, Color(0xFFE2E8F0), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -255,11 +415,13 @@ fun EditProfileForm(
                 modifier = Modifier.align(Alignment.Start).padding(top = 8.dp)
             )
 
-            ProfileInputField(
-                label = if (isSocieta) "Nome Società" else "Nome e Cognome",
-                value = name,
-                onValueChange = onNameChange
-            )
+            if (!isSocieta) {
+                ProfileInputField(
+                    label = "Nome e Cognome",
+                    value = name,
+                    onValueChange = onNameChange
+                )
+            }
 
             // Username field removed
 
@@ -339,9 +501,9 @@ fun EditProfileForm(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Action: Deactivate Account (outlined button style)
+            // SECTION 4: ACTION DISATTIVA
             OutlinedButton(
-                onClick = { Toast.makeText(context, "Funzionalità non attiva", Toast.LENGTH_SHORT).show() },
+                onClick = onDeactivateClick,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp),
@@ -429,6 +591,8 @@ fun EditProfileScreenViaggiatorePreview() {
                     override suspend fun registerSocietaUser(email: String, companyName: String, vatNumber: String, password: String, phone: String?, captchaToken: String?, documentPhotos: List<String>) = Result.failure<User>(Exception())
                     override suspend fun getMe() = Result.failure<User>(Exception())
                     override suspend fun updateMe(user: User) = Result.success(user)
+                    override suspend fun deleteAccount(userId: String) = Result.success(Unit)
+                    override suspend fun uploadAvatar(userId: String, imageBytes: ByteArray, mimeType: String, fileName: String) = Result.success(User(email="mock@travel.com"))
                     override suspend fun uploadDocument(fileBytes: ByteArray, filename: String) = Result.success("mock")
                     override suspend fun getAllCompanies() = Result.success(emptyList<User>())
                     override suspend fun blockCompany(id: String) = Result.success(Unit)
@@ -465,6 +629,8 @@ fun EditProfileScreenSocietaPreview() {
                     override suspend fun registerSocietaUser(email: String, companyName: String, vatNumber: String, password: String, phone: String?, captchaToken: String?, documentPhotos: List<String>) = Result.failure<User>(Exception())
                     override suspend fun getMe() = Result.failure<User>(Exception())
                     override suspend fun updateMe(user: User) = Result.success(user)
+                    override suspend fun deleteAccount(userId: String) = Result.success(Unit)
+                    override suspend fun uploadAvatar(userId: String, imageBytes: ByteArray, mimeType: String, fileName: String) = Result.success(User(email="mock@travel.com"))
                     override suspend fun uploadDocument(fileBytes: ByteArray, filename: String) = Result.success("mock")
                     override suspend fun getAllCompanies() = Result.success(emptyList<User>())
                     override suspend fun blockCompany(id: String) = Result.success(Unit)

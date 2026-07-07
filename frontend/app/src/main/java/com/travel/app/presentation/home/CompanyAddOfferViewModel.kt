@@ -9,7 +9,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.travel.app.domain.repository.ActivityRepository
 import com.travel.app.domain.repository.UserRepository
+import com.travel.app.domain.repository.LocalitaRepository
 import it.unical.ea.dtos.activity.ActivityDto
+import it.unical.ea.dtos.location.LocationDto
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.math.BigDecimal
 import java.time.LocalDateTime
@@ -17,8 +21,32 @@ import java.util.Calendar
 
 class CompanyAddOfferViewModel(
     private val activityRepository: ActivityRepository,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val localitaRepository: LocalitaRepository
 ) : ViewModel() {
+
+    val locationSuggestions = mutableStateListOf<LocationDto>()
+    private var searchJob: Job? = null
+
+    fun fetchLocationSuggestions(query: String) {
+        searchJob?.cancel()
+        if (query.trim().length < 2) {
+            locationSuggestions.clear()
+            return
+        }
+        searchJob = viewModelScope.launch {
+            delay(500)
+            localitaRepository.searchLocalita(query.trim(), includeExternal = true).fold(
+                onSuccess = { pageDto ->
+                    locationSuggestions.clear()
+                    locationSuggestions.addAll(pageDto.content)
+                },
+                onFailure = {
+                    locationSuggestions.clear()
+                }
+            )
+        }
+    }
 
     val defaultOrganizer: String by lazy {
         try {
@@ -33,6 +61,7 @@ class CompanyAddOfferViewModel(
         get() = activityId != null
 
     // Form fields state
+    var title by mutableStateOf("")
     var description by mutableStateOf("")
     var location by mutableStateOf("")
     
@@ -61,6 +90,7 @@ class CompanyAddOfferViewModel(
 
     fun resetForm() {
         activityId = null
+        title = ""
         description = ""
         location = ""
         startYear = 0
@@ -81,6 +111,10 @@ class CompanyAddOfferViewModel(
 
     fun submitActivity() {
         // Validation
+        if (title.isBlank()) {
+            errorMessage = "Il titolo dell'attività è obbligatorio"
+            return
+        }
         if (location.isBlank()) {
             errorMessage = "La posizione dell'attività è obbligatoria"
             return
@@ -127,10 +161,8 @@ class CompanyAddOfferViewModel(
                 val startLdt = LocalDateTime.of(startYear, startMonth, startDay, startHour, startMinute)
                 val endLdt = LocalDateTime.of(endYear, endMonth, endDay, endHour, endMinute)
 
-                val activityName = if (defaultOrganizer.isNotBlank()) defaultOrganizer else "Attività"
-
                 val activityDto = ActivityDto()
-                activityDto.setName(activityName)
+                activityDto.setName(title.trim())
                 activityDto.setDescription(if (description.isNotBlank()) description else null)
                 activityDto.setLocation(location)
                 activityDto.setStartTime(startLdt)
@@ -166,6 +198,7 @@ class CompanyAddOfferViewModel(
             try {
                 val result = activityRepository.getActivityById(id)
                 result.onSuccess { activity ->
+                    title = activity.name ?: ""
                     description = activity.description ?: ""
                     location = activity.location ?: ""
                     

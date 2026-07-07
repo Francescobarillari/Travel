@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -20,26 +21,53 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.travel.app.presentation.theme.TravelTheme
 import it.unical.ea.dtos.activity.ActivityDto
-import it.unical.ea.dtos.location.LocationDto as LocalitaDto
-import com.travel.app.presentation.components.localita.LocalitaCard
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.ui.tooling.preview.Preview
+import com.travel.app.presentation.components.activity.ActivityCard
+import com.travel.app.presentation.components.itinerary.ItineraryCard
 import androidx.compose.foundation.lazy.items
 import it.unical.ea.enums.TravelTag
+import androidx.compose.ui.text.style.TextOverflow
+import coil.compose.AsyncImage
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
 
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.gestures.detectTapGestures
+import com.travel.app.domain.model.User
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun EsploraScreen(
     viewModel: EsploraViewModel,
     onItemClick: (String, Boolean) -> Unit = { _, _ -> },
+    onUserClick: (User) -> Unit = {},
+    favoritesTrigger: Int = 0,
     modifier: Modifier = Modifier
 ) {
-    val scrollState = rememberScrollState()
     val focusManager = LocalFocusManager.current
-    var isSearchFocused by remember { mutableStateOf(false) }
+    var isSearchActive by remember { mutableStateOf(false) }
+
+    val favoriteActivities = remember { mutableStateMapOf<String, Boolean>() }
+    val favoriteItineraries = remember { mutableStateMapOf<String, Boolean>() }
+
+    LaunchedEffect(viewModel.activities, viewModel.filteredItineraries, favoritesTrigger) {
+        val favActIds = com.travel.app.data.AppContainer.sessionManager.getFavoriteActivityIds()
+        viewModel.activities.forEach { act ->
+            val idStr = act.id?.toString() ?: ""
+            favoriteActivities[idStr] = favActIds.contains(idStr)
+        }
+        
+        val favItIds = com.travel.app.data.AppContainer.sessionManager.getFavoriteItineraryIds()
+        viewModel.filteredItineraries.forEach { itin ->
+            val idStr = itin.id?.toString() ?: ""
+            favoriteItineraries[idStr] = favItIds.contains(idStr)
+        }
+    }
 
     var sliderPosition by remember(viewModel.minPrice, viewModel.maxPrice) {
         val min = viewModel.minPrice?.toFloat() ?: 0f
@@ -83,23 +111,41 @@ fun EsploraScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp, vertical = 8.dp)
-                .onFocusChanged { isSearchFocused = it.isFocused },
+                .onFocusChanged { 
+                    if (it.isFocused) {
+                        isSearchActive = true
+                    }
+                },
             placeholder = { 
                 Text(
-                    text = "Cerca per località, nome...",
+                    text = "Cerca per utenti, itinerari, attività...",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 ) 
             },
             leadingIcon = { 
-                Icon(
-                    imageVector = Icons.Default.Search, 
-                    contentDescription = "Cerca", 
-                    tint = MaterialTheme.colorScheme.primary 
-                ) 
+                if (isSearchActive) {
+                    IconButton(onClick = {
+                        focusManager.clearFocus()
+                        viewModel.onSearchQueryChanged("")
+                        isSearchActive = false
+                    }) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack, 
+                            contentDescription = "Indietro",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.Search, 
+                        contentDescription = "Cerca", 
+                        tint = MaterialTheme.colorScheme.primary 
+                    )
+                }
             },
             trailingIcon = {
-                if (isSearchFocused || viewModel.searchQuery.isNotEmpty()) {
+                if (isSearchActive || viewModel.searchQuery.isNotEmpty()) {
                     IconButton(onClick = { isFilterPanelVisible = !isFilterPanelVisible }) {
                         Icon(
                             imageVector = Icons.Default.FilterList,
@@ -120,7 +166,7 @@ fun EsploraScreen(
             )
         )
 
-        androidx.compose.animation.AnimatedVisibility(visible = isFilterPanelVisible && (isSearchFocused || viewModel.searchQuery.isNotEmpty())) {
+        androidx.compose.animation.AnimatedVisibility(visible = isFilterPanelVisible && (isSearchActive || viewModel.searchQuery.isNotEmpty())) {
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -152,7 +198,7 @@ fun EsploraScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        androidx.compose.animation.AnimatedVisibility(visible = isSearchFocused || viewModel.searchQuery.isNotEmpty()) {
+        androidx.compose.animation.AnimatedVisibility(visible = isSearchActive || viewModel.searchQuery.isNotEmpty()) {
             TabRow(
                 selectedTabIndex = viewModel.selectedTab.ordinal,
                 containerColor = Color.Transparent,
@@ -165,14 +211,19 @@ fun EsploraScreen(
                     text = { Text("Tutti") }
                 )
                 Tab(
-                    selected = viewModel.selectedTab == EsploraTab.LOCALITA,
-                    onClick = { viewModel.onTabSelected(EsploraTab.LOCALITA) },
-                    text = { Text("Località") }
+                    selected = viewModel.selectedTab == EsploraTab.UTENTI,
+                    onClick = { viewModel.onTabSelected(EsploraTab.UTENTI) },
+                    text = { Text("Utenti") }
                 )
                 Tab(
                     selected = viewModel.selectedTab == EsploraTab.ATTIVITA,
                     onClick = { viewModel.onTabSelected(EsploraTab.ATTIVITA) },
                     text = { Text("Attività") }
+                )
+                Tab(
+                    selected = viewModel.selectedTab == EsploraTab.ITINERARI,
+                    onClick = { viewModel.onTabSelected(EsploraTab.ITINERARI) },
+                    text = { Text("Itinerari") }
                 )
             }
         }
@@ -180,6 +231,12 @@ fun EsploraScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+
+        LaunchedEffect(listState.isScrollInProgress) {
+            if (listState.isScrollInProgress) {
+                focusManager.clearFocus()
+            }
+        }
 
         LaunchedEffect(listState) {
             snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index }
@@ -200,7 +257,7 @@ fun EsploraScreen(
         ) {
             
             item {
-                androidx.compose.animation.AnimatedVisibility(visible = !isSearchFocused && viewModel.searchQuery.isEmpty()) {
+                androidx.compose.animation.AnimatedVisibility(visible = !isSearchActive && viewModel.searchQuery.isEmpty()) {
                     Column(modifier = Modifier.padding(20.dp)) {
                         Text(
                             text = "Ispirazioni di Viaggio",
@@ -243,7 +300,7 @@ fun EsploraScreen(
                 }
             }
             
-            if (isSearchFocused || viewModel.searchQuery.isNotEmpty()) {
+            if (isSearchActive || viewModel.searchQuery.isNotEmpty()) {
                 
                 if (viewModel.errorMessage != null) {
                     item {
@@ -272,7 +329,7 @@ fun EsploraScreen(
                             }
                         }
                     }
-                } else if (!viewModel.isLoading && viewModel.activities.isEmpty() && viewModel.localitaList.isEmpty()) {
+                } else if (!viewModel.isLoading && viewModel.activities.isEmpty() && viewModel.userList.isEmpty() && viewModel.filteredItineraries.isEmpty()) {
                     item {
                         Box(
                             modifier = Modifier
@@ -288,24 +345,21 @@ fun EsploraScreen(
                         }
                     }
                 } else {
-                    if (viewModel.selectedTab == EsploraTab.TUTTI || viewModel.selectedTab == EsploraTab.LOCALITA) {
-                        if (viewModel.localitaList.isNotEmpty()) {
+                    if (viewModel.selectedTab == EsploraTab.TUTTI || viewModel.selectedTab == EsploraTab.UTENTI) {
+                        if (viewModel.userList.isNotEmpty()) {
                             item {
                                 Text(
-                                    text = "Località",
+                                    text = "Utenti",
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
                                     modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
                                 )
                             }
-                            items(viewModel.localitaList.size) { index ->
-                                val localita = viewModel.localitaList[index]
-                                LocalitaCard(
-                                    localita = localita,
-                                    onClick = {
-                                        viewModel.onSearchQueryChanged(localita.name ?: "")
-                                        viewModel.performSearch()
-                                    }
+                            items(viewModel.userList.size) { index ->
+                                val user = viewModel.userList[index]
+                                UserCard(
+                                    user = user,
+                                    onClick = { onUserClick(user) }
                                 )
                             }
                         }
@@ -323,7 +377,44 @@ fun EsploraScreen(
                             }
                             items(viewModel.activities.size) { index ->
                                 val activity = viewModel.activities[index]
-                                ActivityCard(activity = activity, onClick = { onItemClick(activity.id.toString(), false) })
+                                val actId = activity.id?.toString() ?: ""
+                                val isFav = favoriteActivities[actId] == true
+                                ActivityCard(
+                                    activity = activity,
+                                    isFavorite = isFav,
+                                    onFavoriteClick = {
+                                        com.travel.app.data.AppContainer.sessionManager.toggleFavoriteActivity(actId)
+                                        favoriteActivities[actId] = !isFav
+                                    },
+                                    onClick = { onItemClick(actId, false) }
+                                )
+                            }
+                        }
+                    }
+
+                    if (viewModel.selectedTab == EsploraTab.TUTTI || viewModel.selectedTab == EsploraTab.ITINERARI) {
+                        if (viewModel.filteredItineraries.isNotEmpty()) {
+                            item {
+                                Text(
+                                    text = "Itinerari di Viaggio",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
+                                )
+                            }
+                            items(viewModel.filteredItineraries.size) { index ->
+                                val itinerary = viewModel.filteredItineraries[index]
+                                val itinId = itinerary.id?.toString() ?: ""
+                                val isFav = favoriteItineraries[itinId] == true
+                                ItineraryCard(
+                                    itinerary = itinerary,
+                                    isFavorite = isFav,
+                                    onFavoriteClick = {
+                                        com.travel.app.data.AppContainer.sessionManager.toggleFavoriteItinerary(itinId)
+                                        favoriteItineraries[itinId] = !isFav
+                                    },
+                                    onClick = { onItemClick(itinId, true) }
+                                )
                             }
                         }
                     }
@@ -346,166 +437,74 @@ fun EsploraScreen(
     } 
 } 
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ActivityCard(activity: ActivityDto, onClick: () -> Unit = {}) {
+fun UserCard(
+    user: User,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     Card(
         onClick = onClick,
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 20.dp, vertical = 8.dp),
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
+            Box(
+                modifier = Modifier
+                    .size(50.dp)
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), CircleShape),
+                contentAlignment = Alignment.Center
             ) {
-                Column(modifier = Modifier.weight(1f)) {
+                if (!user.avatarUrl.isNullOrBlank()) {
+                    AsyncImage(
+                        model = user.avatarUrl,
+                        contentDescription = "Avatar",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(CircleShape),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
                     Text(
-                        text = activity.name,
+                        text = user.name?.firstOrNull()?.uppercase() ?: "?",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        text = "Organizzato da: ${activity.organizer ?: "N/D"}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                    )
-                }
-                
-                val priceDouble = activity.price?.toDouble() ?: 0.0
-                val priceText = if (priceDouble <= 0.0) "Gratuito" else "€${String.format("%.2f", priceDouble)}"
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = if (priceDouble <= 0.0) Color(0xFFDCFCE7) else MaterialTheme.colorScheme.primaryContainer
-                    ),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text(
-                        text = priceText,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = if (priceDouble <= 0.0) Color(0xFF15803D) else MaterialTheme.colorScheme.onPrimaryContainer
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
             }
-
-            if (!activity.description.isNullOrBlank()) {
+            
+            Spacer(modifier = Modifier.width(16.dp))
+            
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = activity.description ?: "",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
-                    maxLines = 3
+                    text = user.name ?: "Utente",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
-            }
-
-            if (!activity.tags.isNullOrEmpty()) {
                 Spacer(modifier = Modifier.height(4.dp))
-                androidx.compose.foundation.lazy.LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    items(activity.tags.toList()) { tag ->
-                        val formattedTag = tag.name.lowercase().replaceFirstChar { 
-                            if (it.isLowerCase()) it.titlecase(java.util.Locale.getDefault()) else it.toString() 
-                        }
-                        val bgColor = try {
-                            Color(android.graphics.Color.parseColor(tag.bgColorHex))
-                        } catch (e: Exception) {
-                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
-                        }
-                        val textColor = try {
-                            Color(android.graphics.Color.parseColor(tag.textColorHex))
-                        } catch (e: Exception) {
-                            MaterialTheme.colorScheme.primary
-                        }
-                        Surface(
-                            color = bgColor,
-                            shape = RoundedCornerShape(8.dp),
-                            border = androidx.compose.foundation.BorderStroke(
-                                1.dp,
-                                textColor.copy(alpha = 0.2f)
-                            )
-                        ) {
-                            Text(
-                                text = formattedTag,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = textColor,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
-                    }
-                }
-            }
-
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.LocationOn,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.secondary,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Text(
-                        text = activity.location ?: "N/D",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                    )
-                }
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.CalendarToday,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.secondary,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Text(
-                        text = formatDateTime(activity.startTime),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                    )
-                }
+                Text(
+                    text = if (user.userType == "SOCIETA") "Società/Agenzia" else "Viaggiatore",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
     }
 }
 
-
-fun formatDateTime(dateTime: java.time.LocalDateTime?): String {
-    if (dateTime == null) return ""
-    return try {
-        val formatter = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
-        dateTime.format(formatter)
-    } catch (e: Exception) {
-        dateTime.toString()
-    }
-}
-
+@RequiresApi(Build.VERSION_CODES.O)
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun EsploraScreenPreview() {
@@ -519,8 +518,34 @@ fun EsploraScreenPreview() {
                     override suspend fun searchActivities(query: String, minPrice: Double?, maxPrice: Double?, page: Int, size: Int) = Result.success(it.unical.ea.dtos.common.PageDto<ActivityDto>(emptyList<ActivityDto>(), 0L, 0, 10, 0))
                 },
                 localitaRepository = object : com.travel.app.domain.repository.LocalitaRepository {
-                    override suspend fun getLocalitaById(id: String) = Result.failure<LocalitaDto>(Exception("Not implemented"))
-                    override suspend fun searchLocalita(query: String, page: Int, size: Int) = Result.success(it.unical.ea.dtos.common.PageDto<LocalitaDto>(emptyList<LocalitaDto>(), 0L, 0, 10, 0))
+                    override suspend fun getLocalitaById(id: String) = Result.failure<it.unical.ea.dtos.location.LocationDto>(Exception("Not implemented"))
+                    override suspend fun searchLocalita(query: String, includeExternal: Boolean, page: Int, size: Int) = Result.success(it.unical.ea.dtos.common.PageDto<it.unical.ea.dtos.location.LocationDto>(emptyList(), 0L, 0, 10, 0))
+                },
+                userRepository = object : com.travel.app.domain.repository.UserRepository {
+                    override suspend fun login(email: String, password: String, captchaToken: String?) = Result.failure<User>(Exception("Not implemented"))
+                    override suspend fun registerViaggiatoreUser(email: String, firstName: String, lastName: String, password: String, phone: String?, captchaToken: String?) = Result.failure<User>(Exception("Not implemented"))
+                    override suspend fun registerSocietaUser(email: String, companyName: String, vatNumber: String, password: String, phone: String?, captchaToken: String?, documentPhotos: List<String>) = Result.failure<User>(Exception("Not implemented"))
+                    override fun getSessionUser() = null
+                    override fun saveSession(user: User, token: String) {}
+                    override fun saveSession(user: User, accessToken: String, refreshToken: String) {}
+                    override fun logout() {}
+                    override suspend fun getMe() = Result.failure<User>(Exception("Not implemented"))
+                    override suspend fun updateMe(user: User) = Result.failure<User>(Exception("Not implemented"))
+                    override suspend fun uploadDocument(fileBytes: ByteArray, filename: String) = Result.failure<String>(Exception("Not implemented"))
+                    override suspend fun getAllCompanies() = Result.success(emptyList<User>())
+                    override suspend fun blockCompany(id: String) = Result.success(Unit)
+                    override suspend fun unblockCompany(id: String) = Result.success(Unit)
+                    override suspend fun getAllUsers() = Result.success(emptyList<User>())
+                    override suspend fun getUserById(id: String) = Result.failure<User>(Exception("Not implemented"))
+                    override suspend fun deleteAccount(userId: String) = Result.success(Unit)
+                    override suspend fun uploadAvatar(userId: String, imageBytes: ByteArray, mimeType: String, fileName: String) = Result.failure<User>(Exception("Not implemented"))
+                },
+                itineraryRepository = object : com.travel.app.domain.repository.ItineraryRepository {
+                    override suspend fun getItineraries() = Result.success(emptyList<it.unical.ea.dtos.itinerary.ItineraryDto>())
+                    override suspend fun getItinerariesByCreator(creatorId: String) = Result.success(emptyList<it.unical.ea.dtos.itinerary.ItineraryDto>())
+                    override suspend fun createItinerary(request: it.unical.ea.dtos.itinerary.CreateItineraryRequest) = Result.failure<it.unical.ea.dtos.itinerary.ItineraryDto>(Exception("Not implemented"))
+                    override suspend fun updateItineraryVisibility(id: String, visibility: String) = Result.failure<it.unical.ea.dtos.itinerary.ItineraryDto>(Exception("Not implemented"))
+                    override suspend fun deleteItinerary(id: String) = Result.success(Unit)
                 }
             )
         }
