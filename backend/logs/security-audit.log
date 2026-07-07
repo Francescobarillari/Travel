@@ -1,1 +1,0 @@
-2026-07-08 00:02:32.101 INFO  [main] security-audit - AUDIT_EVENT: actor=SYSTEM, action=CREATE_ACTIVITY, entityName=Activity, entityId=123, details=Created test activity
