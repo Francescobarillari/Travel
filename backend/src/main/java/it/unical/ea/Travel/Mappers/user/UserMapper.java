@@ -30,4 +30,40 @@ public interface UserMapper {
             return (firstName + " " + lastName).trim();
         }
     }
+
+    @org.mapstruct.AfterMapping
+    default void mapAvatarUrl(User user, @org.mapstruct.MappingTarget UserDTO dto) {
+        if (user.getAvatarUrl() != null) {
+            String avatarUrl;
+            try {
+                if (org.springframework.web.context.request.RequestContextHolder.getRequestAttributes() != null) {
+                    avatarUrl = org.springframework.web.servlet.support.ServletUriComponentsBuilder.fromCurrentContextPath()
+                            .path("/user/")
+                            .path(user.getId().toString())
+                            .path("/avatar")
+                            .toUriString();
+                } else {
+                    avatarUrl = "/api/user/" + user.getId() + "/avatar";
+                }
+            } catch (Exception e) {
+                avatarUrl = "/api/user/" + user.getId() + "/avatar";
+            }
+            dto.setAvatarUrl(avatarUrl);
+        } else {
+            String seed;
+            String style;
+            if (user.getUserType() == UserType.SOCIETA) {
+                seed = user.getCompanyName() != null ? user.getCompanyName() : (user.getId() != null ? user.getId().toString() : "default");
+                style = "shape-grid";
+            } else {
+                seed = mapFullName(user);
+                if (seed == null || seed.trim().isEmpty()) {
+                    seed = user.getId() != null ? user.getId().toString() : "default";
+                }
+                style = "glyphs";
+            }
+            String encodedSeed = java.net.URLEncoder.encode(seed, java.nio.charset.StandardCharsets.UTF_8).replace("+", "%20");
+            dto.setAvatarUrl("https://api.dicebear.com/10.x/" + style + "/png?seed=" + encodedSeed);
+        }
+    }
 }

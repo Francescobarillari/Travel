@@ -19,11 +19,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.travel.app.domain.model.User
 import com.travel.app.presentation.components.HeaderBackButton
 import com.travel.app.presentation.components.HeaderConfirmButton
@@ -207,24 +209,35 @@ fun EditProfileForm(
                     .padding(bottom = 8.dp),
                 contentAlignment = Alignment.BottomEnd
             ) {
-                // Main profile initials container (cohesive gradient)
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clip(CircleShape)
-                        .background(
-                            brush = Brush.radialGradient(
-                                colors = listOf(Color(0xFF8FA4A6), Color(0xFF6B7F82))
-                            )
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = initials,
-                        color = Color.White,
-                        fontSize = 36.sp,
-                        fontWeight = FontWeight.Bold
+                // Main profile avatar container
+                if (!initialUser.avatarUrl.isNullOrEmpty()) {
+                    AsyncImage(
+                        model = initialUser.avatarUrl,
+                        contentDescription = "User Avatar",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(CircleShape),
+                        contentScale = ContentScale.Crop
                     )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(CircleShape)
+                            .background(
+                                brush = Brush.radialGradient(
+                                    colors = listOf(Color(0xFF8FA4A6), Color(0xFF6B7F82))
+                                )
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = initials,
+                            color = Color.White,
+                            fontSize = 36.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
 
                 // Camera icon overlay
