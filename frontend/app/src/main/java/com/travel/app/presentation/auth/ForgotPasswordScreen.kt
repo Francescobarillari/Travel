@@ -1,6 +1,5 @@
 package com.travel.app.presentation.auth
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -17,7 +16,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -27,6 +25,8 @@ import com.travel.app.presentation.components.auth.ErrorBanner
 import com.travel.app.presentation.components.auth.PasswordField
 import com.travel.app.presentation.components.auth.TravelTextField
 import com.travel.app.presentation.theme.TravelTheme
+
+import com.travel.app.presentation.components.auth.TypewriterText
 
 @Composable
 fun ForgotPasswordScreen(
@@ -55,12 +55,14 @@ fun ForgotPasswordScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
-                Image(
-                    painter = painterResource(id = R.drawable.logo),
-                    contentDescription = "Logo",
-                    modifier = Modifier
-                        .size(200.dp)
-                        .clip(RoundedCornerShape(16.dp))
+                TypewriterText(
+                    text = "Dèrive",
+                    modifier = Modifier.padding(vertical = 30.dp),
+                    style = MaterialTheme.typography.displayLarge.copy(
+                        fontWeight = FontWeight.ExtraBold,
+                        color = MaterialTheme.colorScheme.primary,
+                        letterSpacing = 4.sp
+                    )
                 )
 
                 Card(
