@@ -61,7 +61,7 @@ fun CompanyDashboardScreen(
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Text(
-                text = "Dashboard Società",
+                text = "Dashboard Agenzia",
                 style = MaterialTheme.typography.headlineMedium.copy(
                     fontWeight = FontWeight.ExtraBold,
                     color = Color(0xFF0F172A)

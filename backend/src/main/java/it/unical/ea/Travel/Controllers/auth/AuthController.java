@@ -104,7 +104,7 @@ public class AuthController {
         }
     }
 
-    @Operation(summary = "Registrazione utente", description = "Registra un nuovo utente (Viaggiatore o Società) e lo crea anche su Keycloak")
+    @Operation(summary = "Registrazione utente", description = "Registra un nuovo utente (Viaggiatore o Agenzia) e lo crea anche su Keycloak")
     @PostMapping("/signup")
     public ResponseEntity<String> signup(@Valid @RequestBody SignupRequest request) {
         // La registrazione richiede sempre un CAPTCHA valido
@@ -126,7 +126,7 @@ public class AuthController {
         }
     }
 
-    @Operation(summary = "Carica un documento di registrazione per la società", description = "Accetta un file immagine (JPEG, PNG, WebP)")
+    @Operation(summary = "Carica un documento di registrazione per l'agenzia", description = "Accetta un file immagine (JPEG, PNG, WebP)")
     @PostMapping(value = "/upload-document", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<String> uploadDocument(@RequestPart("file") MultipartFile file) {
         String filePath = fileStorageService.store(file, "companies/documents");

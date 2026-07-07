@@ -112,7 +112,7 @@ fun AdminBottomNavBar(
             )
             AdminTabItem(
                 icon = Icons.Default.Business,
-                label = "Società",
+                label = "Agenzie",
                 isSelected = selectedTab == AdminTab.SOCIETA,
                 onClick = { onTabSelected(AdminTab.SOCIETA) },
                 modifier = Modifier.weight(1f)

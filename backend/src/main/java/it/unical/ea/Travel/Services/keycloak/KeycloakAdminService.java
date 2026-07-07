@@ -51,7 +51,7 @@ public class KeycloakAdminService {
             firstName = request.getFirstName() != null ? request.getFirstName() : "";
             lastName = request.getLastName() != null ? request.getLastName() : "";
         } else if (request.getUserType() == UserType.SOCIETA) {
-            firstName = "Società";
+            firstName = "Agenzia";
             lastName = request.getCompanyName() != null ? request.getCompanyName() : "";
         }
 

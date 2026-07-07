@@ -39,7 +39,7 @@ class EditProfileViewModel(
         val isMockUser = currentUser.email in listOf("test@travel.com", "societa@travel.com", "johnkinggraphics@gmail.com")
 
         val updatedUser = currentUser.copy(
-            name = name,
+            name = if (isSocieta) vatNumber else name,
             vatNumber = if (isSocieta) vatNumber else null
         )
 

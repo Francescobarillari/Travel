@@ -68,8 +68,8 @@ class RegisterViewModel(
                 return
             }
         } else {
-            if (registerCompanyName.isBlank() || registerVatNumber.isBlank()) {
-                registerError = "Ragione sociale e Partita IVA sono obbligatorie"
+            if (registerVatNumber.isBlank()) {
+                registerError = "La Partita IVA è obbligatoria"
                 return
             }
             val cleanedVat = registerVatNumber.trim().uppercase().replace("\\s".toRegex(), "")
@@ -78,6 +78,7 @@ class RegisterViewModel(
                 return
             }
             registerVatNumber = cleanedVat
+            registerCompanyName = cleanedVat
         }
 
         viewModelScope.launch {

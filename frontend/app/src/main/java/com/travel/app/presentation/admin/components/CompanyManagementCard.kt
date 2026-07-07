@@ -145,7 +145,7 @@ fun CompanyManagementCard(
                         ) {
                             Icon(Icons.Default.LockOpen, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("Sblocca Società", style = MaterialTheme.typography.labelMedium)
+                            Text("Sblocca Agenzia", style = MaterialTheme.typography.labelMedium)
                         }
                     }
                     !company.approved -> {
@@ -187,7 +187,7 @@ fun CompanyManagementCard(
                         ) {
                             Icon(Icons.Default.Block, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("Blocca Società", style = MaterialTheme.typography.labelMedium)
+                            Text("Blocca Agenzia", style = MaterialTheme.typography.labelMedium)
                         }
                     }
                 }

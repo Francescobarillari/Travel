@@ -54,20 +54,18 @@ public class UserService {
                 throw new ApiException(HttpStatus.BAD_REQUEST, "Il cognome è obbligatorio per i viaggiatori");
             }
         } else if (request.getUserType() == UserType.SOCIETA) {
-            if (request.getCompanyName() == null || request.getCompanyName().strip().isEmpty()) {
-                throw new ApiException(HttpStatus.BAD_REQUEST, "La ragione sociale è obbligatoria per le società");
-            }
             if (request.getVatNumber() == null || request.getVatNumber().strip().isEmpty()) {
-                throw new ApiException(HttpStatus.BAD_REQUEST, "La Partita IVA è obbligatoria per le società");
+                throw new ApiException(HttpStatus.BAD_REQUEST, "La Partita IVA è obbligatoria per le agenzie");
             }
             normalizedVat = request.getVatNumber().strip().toUpperCase().replaceAll("\\s+", "");
             if (!normalizedVat.matches("^(IT)?[0-9]{11}$")) {
                 throw new ApiException(HttpStatus.BAD_REQUEST, "Il formato della Partita IVA non è valido. Deve essere di 11 cifre numeriche (es. IT12345678901 o 12345678901)");
             }
             if (userRepository.existsByVatNumber(normalizedVat)) {
-                throw new ApiException(HttpStatus.BAD_REQUEST, "La Partita IVA inserita è già associata ad un'altra società registrata");
+                throw new ApiException(HttpStatus.BAD_REQUEST, "La Partita IVA inserita è già associata ad un'altra agenzia registrata");
             }
             request.setVatNumber(normalizedVat);
+            request.setCompanyName(normalizedVat);
         }
 
         String keycloakUserId = keycloakAdminService.createUser(request);

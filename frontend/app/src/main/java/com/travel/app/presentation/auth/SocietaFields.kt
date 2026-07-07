@@ -30,12 +30,6 @@ fun SocietaFields(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
         TravelTextField(
-            value = companyName,
-            onValueChange = onCompanyNameChange,
-            label = "Nome Società *",
-            leadingIcon = Icons.Default.Business,
-        )
-        TravelTextField(
             value = vatNumber,
             onValueChange = onVatNumberChange,
             label = "Partita IVA *",

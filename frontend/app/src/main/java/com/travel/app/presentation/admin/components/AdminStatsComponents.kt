@@ -88,7 +88,7 @@ fun CompanyStatusDonutChart(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "Nessuna società registrata nel sistema",
+                text = "Nessuna agenzia registrata nel sistema",
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color.Gray
             )

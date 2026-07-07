@@ -148,8 +148,8 @@ fun RegisterScreen(
                                     viewModel.registerError = "Le password non coincidono"
                                 } else if (viewModel.registerUserType == UserType.VIAGGIATORE && (viewModel.registerFirstName.isBlank() || viewModel.registerLastName.isBlank())) {
                                     viewModel.registerError = "Nome e cognome sono obbligatori"
-                                } else if (viewModel.registerUserType == UserType.SOCIETA && (viewModel.registerCompanyName.isBlank() || viewModel.registerVatNumber.isBlank())) {
-                                    viewModel.registerError = "Ragione sociale e Partita IVA sono obbligatorie"
+                                } else if (viewModel.registerUserType == UserType.SOCIETA && viewModel.registerVatNumber.isBlank()) {
+                                    viewModel.registerError = "La Partita IVA è obbligatoria"
                                 } else if (viewModel.registerUserType == UserType.SOCIETA && viewModel.registerDocumentPhotos.isEmpty()) {
                                     viewModel.registerError = "È necessario caricare almeno un documento per la verifica"
                                 } else {

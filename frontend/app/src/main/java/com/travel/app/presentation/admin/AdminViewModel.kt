@@ -74,7 +74,7 @@ class AdminViewModel(
                 apiService.approveCompany(id)
                 loadData()
             } catch (e: Exception) {
-                errorMessage = e.localizedMessage ?: "Impossibile approvare la società"
+                errorMessage = e.localizedMessage ?: "Impossibile approvare l'agenzia"
                 isLoading = false
             }
         }
@@ -88,7 +88,7 @@ class AdminViewModel(
                 apiService.rejectCompany(id)
                 loadData()
             } catch (e: Exception) {
-                errorMessage = e.localizedMessage ?: "Impossibile rifiutare la società"
+                errorMessage = e.localizedMessage ?: "Impossibile rifiutare l'agenzia"
                 isLoading = false
             }
         }
@@ -101,7 +101,7 @@ class AdminViewModel(
             userRepository.blockCompany(id).fold(
                 onSuccess = { loadData() },
                 onFailure = {
-                    errorMessage = it.localizedMessage ?: "Impossibile bloccare la società"
+                    errorMessage = it.localizedMessage ?: "Impossibile bloccare l'agenzia"
                     isLoading = false
                 }
             )
@@ -115,7 +115,7 @@ class AdminViewModel(
             userRepository.unblockCompany(id).fold(
                 onSuccess = { loadData() },
                 onFailure = {
-                    errorMessage = it.localizedMessage ?: "Impossibile sbloccare la società"
+                    errorMessage = it.localizedMessage ?: "Impossibile sbloccare l'agenzia"
                     isLoading = false
                 }
             )

@@ -71,7 +71,7 @@ fun AdminCompaniesScreen(
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(
-                    text = "Gestione Società",
+                    text = "Gestione Agenzie",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -118,13 +118,13 @@ fun AdminCompaniesScreen(
                 )
             } else if (filteredList.isEmpty()) {
                 val subtitleText = when (filterState) {
-                    0 -> "Nessuna società è ancora stata approvata."
-                    1 -> "Nessuna società risulta bloccata."
+                    0 -> "Nessuna agenzia è ancora stata approvata."
+                    1 -> "Nessuna agenzia risulta bloccata."
                     else -> ""
                 }
                 EmptyPlaceholder(
                     icon = Icons.Default.Business,
-                    title = "Nessuna società trovata",
+                    title = "Nessuna agenzia trovata",
                     subtitle = subtitleText
                 )
             } else {
@@ -161,7 +161,7 @@ fun AdminCompaniesScreen(
         AlertDialog(
             onDismissRequest = { companyToBlock = null },
             title = { Text("Conferma Blocco") },
-            text = { Text("Sei sicuro di voler bloccare la società \"${company.name ?: "società"}\"? Non potrà più accedere all'applicazione o pubblicare attività.") },
+            text = { Text("Sei sicuro di voler bloccare l'agenzia \"${company.name ?: "agenzia"}\"? Non potrà più accedere all'applicazione o pubblicare attività.") },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -186,7 +186,7 @@ fun AdminCompaniesScreen(
         AlertDialog(
             onDismissRequest = { companyToUnblock = null },
             title = { Text("Conferma Sblocco") },
-            text = { Text("Sei sicuro di voler sbloccare la società \"${company.name ?: "società"}\"? Verrà ripristinato il suo accesso e la visibilità delle sue attività.") },
+            text = { Text("Sei sicuro di voler sbloccare l'agenzia \"${company.name ?: "agenzia"}\"? Verrà ripristinato il suo accesso e la visibilità delle sue attività.") },
             confirmButton = {
                 TextButton(
                     onClick = {

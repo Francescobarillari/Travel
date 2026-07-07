@@ -255,11 +255,13 @@ fun EditProfileForm(
                 modifier = Modifier.align(Alignment.Start).padding(top = 8.dp)
             )
 
-            ProfileInputField(
-                label = if (isSocieta) "Nome Società" else "Nome e Cognome",
-                value = name,
-                onValueChange = onNameChange
-            )
+            if (!isSocieta) {
+                ProfileInputField(
+                    label = "Nome e Cognome",
+                    value = name,
+                    onValueChange = onNameChange
+                )
+            }
 
             // Username field removed
 

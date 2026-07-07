@@ -85,7 +85,7 @@ fun AdminDashboardScreen(
                         Text(
                             text = when(selectedTab) {
                                 0 -> "Admin Dashboard"
-                                1 -> "Società da approvare"
+                                1 -> "Agenzie da approvare"
                                 2 -> "Attività da moderare"
                                 else -> "Admin Dashboard"
                             },
@@ -210,14 +210,14 @@ fun OverviewTabContent(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             KpiCard(
-                title = "Società Totali",
+                title = "Agenzie Totali",
                 value = "$totalCompanies",
                 icon = Icons.Default.Business,
                 iconColor = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.weight(1f)
             )
             KpiCard(
-                title = "Società Pending",
+                title = "Agenzie Pending",
                 value = "${viewModel.pendingCompanies.size}",
                 icon = Icons.Default.PendingActions,
                 iconColor = Color(0xFFE65100),
@@ -246,7 +246,7 @@ fun OverviewTabContent(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
-                    text = "Stato di approvazione Società",
+                    text = "Stato di approvazione Agenzie",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -297,8 +297,8 @@ fun PendingCompaniesList(
     if (companies.isEmpty()) {
         EmptyPlaceholder(
             icon = Icons.Default.CheckCircle,
-            title = "Nessuna società in attesa",
-            subtitle = "Tutte le registrazioni societarie sono state elaborate."
+            title = "Nessuna agenzia in attesa",
+            subtitle = "Tutte le registrazioni delle agenzie sono state elaborate."
         )
     } else {
         LazyColumn(
@@ -328,7 +328,7 @@ fun PendingActivitiesList(
         EmptyPlaceholder(
             icon = Icons.Default.CheckCircle,
             title = "Nessuna attività in attesa",
-            subtitle = "Tutte le proposte delle società sono state moderate."
+            subtitle = "Tutte le proposte delle agenzie sono state moderate."
         )
     } else {
         LazyColumn(

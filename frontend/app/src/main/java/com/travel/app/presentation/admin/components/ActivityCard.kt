@@ -52,7 +52,7 @@ fun ActivityModerationCard(
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = "Organizzato da: ${activity.organizer ?: "Società"}",
+                        text = "Organizzato da: ${activity.organizer ?: "Agenzia"}",
                         style = MaterialTheme.typography.bodySmall,
                         color = Color.Gray
                     )

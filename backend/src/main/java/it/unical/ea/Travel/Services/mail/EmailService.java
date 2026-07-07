@@ -29,7 +29,7 @@ public class EmailService {
             if (isCompany) {
                 content = "<h1>Benvenuto su Travel!</h1>" +
                           "<p>Ciao <strong>" + name + "</strong>,</p>" +
-                          "<p>Grazie per esserti registrato come Società sulla nostra piattaforma.</p>" +
+                          "<p>Grazie per esserti registrato come Agenzia sulla nostra piattaforma.</p>" +
                           "<p>La tua richiesta è in attesa di approvazione da parte di un amministratore. Ti invieremo un'ulteriore conferma non appena l'account sarà attivo.</p>" +
                           "<br><p>Il team di Travel</p>";
             } else {
