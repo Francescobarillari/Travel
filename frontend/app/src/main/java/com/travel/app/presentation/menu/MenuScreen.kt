@@ -406,7 +406,7 @@ fun MenuScreenViaggiatorePreview() {
 fun MenuScreenSocietaPreview() {
     TravelTheme {
         MenuScreen(
-            user = User(email = "societa@travel.com", name = "Travel Agenzia S.p.A.", userType = "SOCIETA"),
+            user = User(email = "societa@travel.com", name = "Dèrive Agenzia S.p.A.", userType = "SOCIETA"),
             isDarkMode = false,
             onDarkModeChange = {},
             onBack = {},

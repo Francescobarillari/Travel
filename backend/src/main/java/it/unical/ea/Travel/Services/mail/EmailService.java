@@ -21,23 +21,23 @@ public class EmailService {
         MimeMessage message = mailSender.createMimeMessage();
         try {
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setFrom(fromEmail != null && !fromEmail.isBlank() ? fromEmail : "noreply@travel.com");
+            helper.setFrom(fromEmail != null && !fromEmail.isBlank() ? fromEmail : "noreply@derive.com");
             helper.setTo(toEmail);
-            helper.setSubject("Benvenuto su Travel!");
+            helper.setSubject("Benvenuto su Dèrive!");
             
             String content;
             if (isCompany) {
-                content = "<h1>Benvenuto su Travel!</h1>" +
+                content = "<h1>Benvenuto su Dèrive!</h1>" +
                           "<p>Ciao <strong>" + name + "</strong>,</p>" +
                           "<p>Grazie per esserti registrato come Agenzia sulla nostra piattaforma.</p>" +
                           "<p>La tua richiesta è in attesa di approvazione da parte di un amministratore. Ti invieremo un'ulteriore conferma non appena l'account sarà attivo.</p>" +
-                          "<br><p>Il team di Travel</p>";
+                          "<br><p>Il team di Dèrive</p>";
             } else {
-                content = "<h1>Benvenuto su Travel!</h1>" +
+                content = "<h1>Benvenuto su Dèrive!</h1>" +
                           "<p>Ciao <strong>" + name + "</strong>,</p>" +
                           "<p>Siamo felici di averti a bordo! Il tuo account è ora attivo ed è pronto per essere utilizzato.</p>" +
                           "<p>Inizia subito a esplorare nuovi itinerari e attività.</p>" +
-                          "<br><p>Il team di Travel</p>";
+                          "<br><p>Il team di Dèrive</p>";
             }
             
             helper.setText(content, true);

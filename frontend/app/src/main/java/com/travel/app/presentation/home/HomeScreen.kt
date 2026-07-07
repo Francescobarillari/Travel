@@ -280,7 +280,7 @@ fun HomeScreenSocietaPreview() {
             user = User(
                 email = "societa@travel.com",
                 userType = "SOCIETA",
-                name = "Travel Agency S.r.l."
+                name = "Dèrive Agenzia S.r.l."
             )
         )
     }
