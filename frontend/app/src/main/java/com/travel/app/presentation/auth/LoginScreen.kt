@@ -90,23 +90,6 @@ fun LoginScreen(
                             label = "Password",
                         )
 
-                        Box(
-                            modifier = Modifier.fillMaxWidth(),
-                            contentAlignment = Alignment.CenterEnd
-                        ) {
-                            TextButton(
-                                onClick = onNavigateToForgotPassword,
-                                contentPadding = PaddingValues(0.dp)
-                            ) {
-                                Text(
-                                    "Password dimenticata?",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.secondary,
-                                    fontWeight = FontWeight.Medium
-                                )
-                            }
-                        }
-
                         viewModel.loginError?.let { ErrorBanner(message = it) }
 
                         Button(
@@ -124,6 +107,23 @@ fun LoginScreen(
                         ) {
                             if (viewModel.isLoading) CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
                             else Text("Accedi", style = MaterialTheme.typography.labelLarge)
+                        }
+
+                        Box(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            TextButton(
+                                onClick = onNavigateToForgotPassword,
+                                contentPadding = PaddingValues(0.dp)
+                            ) {
+                                Text(
+                                    "Password dimenticata?",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.secondary,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
                         }
                     }
                 }

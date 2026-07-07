@@ -1,5 +1,6 @@
 package com.travel.app.presentation.app
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
@@ -29,6 +30,7 @@ fun TravelApp(
     onDarkModeChange: (Boolean) -> Unit
 ) {
     val userRepository = AppContainer.userRepository
+    var isCheckingSession by remember { mutableStateOf(true) }
     var currentScreen by remember { mutableStateOf(Screen.LOGIN) }
     var currentUser by remember { mutableStateOf<User?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
@@ -40,6 +42,7 @@ fun TravelApp(
         if (cachedUser != null) {
             currentUser = cachedUser
             currentScreen = if (cachedUser.userType == "ADMIN") Screen.ADMIN else Screen.HOME
+            isCheckingSession = false // Mostra subito la schermata corretta se abbiamo la sessione in cache
 
             // Sicurezza: Rinfresca i dati dal backend in background per verificare la validità del token
             userRepository.getMe().fold(
@@ -54,6 +57,8 @@ fun TravelApp(
                     currentScreen = Screen.LOGIN
                 }
             )
+        } else {
+            isCheckingSession = false
         }
     }
 
@@ -64,7 +69,15 @@ fun TravelApp(
             modifier = Modifier.fillMaxSize().padding(innerPadding),
             color = MaterialTheme.colorScheme.background
         ) {
-            when (currentScreen) {
+            if (isCheckingSession) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = androidx.compose.ui.Alignment.Center
+                ) {
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                }
+            } else {
+                when (currentScreen) {
                 Screen.LOGIN -> {
                     // Scoped alla schermata, viene distrutto quando l'utente cambia screen (previene memorizzazione email/password passati)
                     val loginViewModel = remember { LoginViewModel(userRepository) }
@@ -131,6 +144,7 @@ fun TravelApp(
                     )
                 }
             }
+        }
         }
     }
 }
