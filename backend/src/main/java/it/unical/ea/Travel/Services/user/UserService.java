@@ -19,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 
 import it.unical.ea.Travel.Services.storage.FileStorageService;
 import it.unical.ea.Travel.Services.audit.AuditLogService;
+import it.unical.ea.Travel.Services.mail.EmailService;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.core.io.Resource;
 
@@ -31,6 +32,7 @@ public class UserService {
     private final KeycloakAdminService keycloakAdminService;
     private final FileStorageService fileStorageService;
     private final AuditLogService auditLogService;
+    private final EmailService emailService;
 
     @Transactional
     public User saveUser(SignupRequest request) {
@@ -83,6 +85,16 @@ public class UserService {
         try {
             User savedUser = userRepository.save(user);
             auditLogService.log("USER_REGISTER", "User", savedUser.getId().toString(), "Registered user with email: " + savedUser.getEmail() + " of type " + savedUser.getUserType());
+            
+            // Invia mail di benvenuto in modo non bloccante
+            try {
+                String name = savedUser.getUserType() == UserType.VIAGGIATORE ? savedUser.getFirstName() : savedUser.getCompanyName();
+                boolean isCompany = savedUser.getUserType() == UserType.SOCIETA;
+                emailService.sendWelcomeEmail(savedUser.getEmail(), name, isCompany);
+            } catch (Exception e) {
+                System.err.println("Errore durante l'invio della mail di benvenuto: " + e.getMessage());
+            }
+
             return savedUser;
         } catch (RuntimeException exception) {
             keycloakAdminService.deleteUser(keycloakUserId);

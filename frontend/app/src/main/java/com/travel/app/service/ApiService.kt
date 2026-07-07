@@ -7,6 +7,8 @@ import retrofit2.http.PUT
 import it.unical.ea.dtos.authDto.LoginRequest
 import it.unical.ea.dtos.authDto.SignupRequest
 import it.unical.ea.dtos.authDto.JwtResponse
+import it.unical.ea.dtos.authDto.ForgotPasswordRequest
+import it.unical.ea.dtos.authDto.ResetPasswordRequest
 import it.unical.ea.dtos.user.UserDTO
 import retrofit2.http.DELETE
 import retrofit2.http.Path
@@ -23,6 +25,12 @@ interface ApiService {
     // Chiamata per la Registrazione - Restituisce un messaggio o token come Stringa
     @POST("api/auth/signup")
     suspend fun register(@Body request: SignupRequest): String
+
+    @POST("api/auth/forgot-password")
+    suspend fun forgotPassword(@Body request: ForgotPasswordRequest): String
+
+    @POST("api/auth/reset-password")
+    suspend fun resetPassword(@Body request: ResetPasswordRequest): String
 
     // Chiamata per recuperare il profilo dell'utente autenticato
     @GET("user/me")
@@ -125,6 +133,8 @@ interface ApiService {
 open class MockApiService : ApiService {
     override suspend fun login(request: LoginRequest): JwtResponse = throw NotImplementedError()
     override suspend fun register(request: SignupRequest): String = throw NotImplementedError()
+    override suspend fun forgotPassword(request: ForgotPasswordRequest): String = throw NotImplementedError()
+    override suspend fun resetPassword(request: ResetPasswordRequest): String = throw NotImplementedError()
     override suspend fun getMe(): UserDTO = throw NotImplementedError()
     override suspend fun updateMe(request: UserDTO): UserDTO = throw NotImplementedError()
     override suspend fun createActivity(request: ActivityDto): ActivityDto = throw NotImplementedError()
