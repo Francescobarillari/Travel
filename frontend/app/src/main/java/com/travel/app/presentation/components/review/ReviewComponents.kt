@@ -120,12 +120,19 @@ fun ReviewCard(
                     }
                 }
 
-                if (showActivityName && review.activityName != null) {
-                    Text(
-                        text = "Per: ${review.activityName}",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary
-                    )
+                if (showActivityName) {
+                    val targetText = when {
+                        review.activityName != null -> "Per Attività: ${review.activityName}"
+                        review.itineraryName != null -> "Per Itinerario: ${review.itineraryName}"
+                        else -> null
+                    }
+                    if (targetText != null) {
+                        Text(
+                            text = targetText,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 }
 
                 if (!review.comment.isNullOrBlank()) {

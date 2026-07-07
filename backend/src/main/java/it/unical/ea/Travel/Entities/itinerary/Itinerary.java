@@ -57,6 +57,9 @@ public class Itinerary extends AuditBaseEntity {
     @Column(name = "image_path", length = 500)
     private String imagePath;
 
+    @Column(name = "visibility", length = 50)
+    private String visibility = "PRIVATE";
+
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
@@ -65,6 +68,10 @@ public class Itinerary extends AuditBaseEntity {
 
     public boolean isDeleted() {
         return deletedAt != null;
+    }
+
+    public String getVisibility() {
+        return visibility == null ? "PRIVATE" : visibility;
     }
 }
 

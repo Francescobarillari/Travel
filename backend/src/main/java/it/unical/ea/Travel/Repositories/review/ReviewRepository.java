@@ -19,4 +19,5 @@ public interface ReviewRepository extends JpaRepository<Review, UUID> {
     @Query("SELECT r FROM Review r WHERE r.activity.id IN :activityIds ORDER BY r.createdAt DESC")
     List<Review> findByActivityIdInOrderByCreatedAtDesc(@Param("activityIds") List<UUID> activityIds);
 
+    List<Review> findByAuthorIdOrderByCreatedAtDesc(UUID authorId);
 }

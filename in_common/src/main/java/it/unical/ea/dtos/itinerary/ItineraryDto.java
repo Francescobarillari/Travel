@@ -31,4 +31,6 @@ public class ItineraryDto {
     private LocalDateTime createdAt;
     @Schema(format = "uri", example = "http://localhost:8080/itinerary/550e8400-e29b-41d4-a716-446655440000/image")
     private String imageUrl;
+    @Schema(example = "PRIVATE")
+    private String visibility = "PRIVATE";
 }

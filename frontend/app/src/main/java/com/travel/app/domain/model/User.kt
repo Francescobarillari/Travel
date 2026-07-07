@@ -13,7 +13,8 @@ data class User(
     val vatNumber: String? = null,
     val approved: Boolean = true,
     val blocked: Boolean = false,
-    val documentPhotos: List<String> = emptyList()
+    val documentPhotos: List<String> = emptyList(),
+    val avatarUrl: String? = null
 )
 
 fun User.toDto(): UserDTO {
@@ -36,6 +37,7 @@ fun User.toDto(): UserDTO {
         this.approved = this@toDto.approved
         this.blocked = this@toDto.blocked
         this.documentPhotos = this@toDto.documentPhotos
+        this.avatarUrl = this@toDto.avatarUrl
     }
 }
 
@@ -58,7 +60,8 @@ fun UserDTO.toDomain(): User {
         vatNumber = vatNumber,
         approved = approved ?: true,
         blocked = blocked ?: false,
-        documentPhotos = documentPhotos ?: emptyList()
+        documentPhotos = documentPhotos ?: emptyList(),
+        avatarUrl = avatarUrl
     )
 }
 

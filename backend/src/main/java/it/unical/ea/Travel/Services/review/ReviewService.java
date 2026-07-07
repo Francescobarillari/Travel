@@ -121,6 +121,14 @@ public class ReviewService {
         reviewRepository.delete(review);
     }
 
+    @Transactional(readOnly = true)
+    public List<ReviewDto> getReviewsByUser(UUID userId) {
+        return reviewRepository.findByAuthorIdOrderByCreatedAtDesc(userId)
+                .stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
+    }
+
     private ReviewDto toDto(Review review) {
         ReviewDto dto = new ReviewDto();
         dto.setId(review.getId());
@@ -134,12 +142,21 @@ public class ReviewService {
         dto.setCreatedAt(review.getCreatedAt());
         
         if (review.getActivity() != null) {
-            dto.setActivityId(review.getActivity().getId());
-            dto.setActivityName(review.getActivity().getName());
+            try {
+                dto.setActivityId(review.getActivity().getId());
+                dto.setActivityName(review.getActivity().getName());
+            } catch (Exception e) {
+                dto.setActivityName("Attività Eliminata");
+            }
         }
         
         if (review.getItinerary() != null) {
-            dto.setItineraryId(review.getItinerary().getId());
+            try {
+                dto.setItineraryId(review.getItinerary().getId());
+                dto.setItineraryName(review.getItinerary().getTitle());
+            } catch (Exception e) {
+                dto.setItineraryName("Itinerario Eliminato");
+            }
         }
         
         return dto;

@@ -22,4 +22,5 @@ public class ReviewDto {
     private String activityName; // Populated when returning aggregated reviews for an itinerary
 
     private UUID itineraryId;
+    private String itineraryName;
 }

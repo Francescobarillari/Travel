@@ -7,7 +7,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.travel.app.domain.repository.ActivityRepository
 import com.travel.app.domain.repository.LocalitaRepository
+import com.travel.app.domain.repository.UserRepository
 import com.travel.app.domain.repository.ItineraryRepository
+import com.travel.app.domain.model.User
 import it.unical.ea.dtos.activity.ActivityDto
 import it.unical.ea.dtos.location.LocationDto as LocalitaDto
 import it.unical.ea.dtos.itinerary.ItineraryDto
@@ -18,6 +20,7 @@ import kotlinx.coroutines.launch
 enum class EsploraTab {
     TUTTI,
     LOCALITA,
+    UTENTI,
     ATTIVITA,
     ITINERARI
 }
@@ -25,6 +28,7 @@ enum class EsploraTab {
 class EsploraViewModel(
     private val activityRepository: ActivityRepository,
     private val localitaRepository: LocalitaRepository,
+    private val userRepository: UserRepository,
     private val itineraryRepository: ItineraryRepository
 ) : ViewModel() {
 
@@ -53,6 +57,7 @@ class EsploraViewModel(
     
     var activities by mutableStateOf<List<ActivityDto>>(emptyList())
     var localitaList by mutableStateOf<List<LocalitaDto>>(emptyList())
+    var userList by mutableStateOf<List<User>>(emptyList())
     var allItineraries by mutableStateOf<List<ItineraryDto>>(emptyList())
     var filteredItineraries by mutableStateOf<List<ItineraryDto>>(emptyList())
 
@@ -123,6 +128,23 @@ class EsploraViewModel(
                     )
                 }
 
+                val usersDeferred = viewModelScope.launch {
+                    val result = userRepository.getAllUsers()
+                    result.fold(
+                        onSuccess = { list -> 
+                            userList = if (searchQuery.isBlank()) {
+                                list
+                            } else {
+                                list.filter { 
+                                    it.name?.contains(searchQuery, ignoreCase = true) == true || 
+                                    it.email.contains(searchQuery, ignoreCase = true)
+                                }
+                            }
+                        },
+                        onFailure = { errorMessage = it.message }
+                    )
+                }
+
                 val itineraryDeferred = viewModelScope.launch {
                     val result = itineraryRepository.getItineraries()
                     result.fold(
@@ -136,6 +158,7 @@ class EsploraViewModel(
                 
                 activityDeferred.join()
                 localitaDeferred.join()
+                usersDeferred.join()
                 itineraryDeferred.join()
                 
             } catch (e: Exception) {

@@ -23,9 +23,9 @@ class UserRepositoryImpl(
 ) : UserRepository {
 
     override suspend fun login(email: String, password: String, captchaToken: String?): Result<User> {
-        // Credenziali hardcoded per test offline/sviluppo locale
         if (email == "test@travel.com" && password == "travel") {
             val user = User(
+                id = "550e8400-e29b-41d4-a716-446655440000",
                 email = email,
                 userType = "VIAGGIATORE",
                 phone = "6895312",
@@ -37,6 +37,7 @@ class UserRepositoryImpl(
         }
         if (email == "societa@travel.com" && password == "travel") {
             val user = User(
+                id = "6e8bc430-9c3a-11d9-9669-0800200c9a66",
                 email = email,
                 userType = "SOCIETA",
                 phone = "0984123456",
@@ -245,6 +246,15 @@ class UserRepositoryImpl(
         }
     }
 
+    override suspend fun getAllUsers(): Result<List<User>> {
+        return try {
+            val list = apiService.getUsers().map { it.toDomain() }
+            Result.success(list)
+        } catch (e: Exception) {
+            Result.failure(Exception(handleError(e)))
+        }
+    }
+
     override suspend fun resetPassword(email: String, otp: String, newPassword: String): Result<String> {
         return try {
             val response = apiService.resetPassword(ResetPasswordRequest().apply {
@@ -253,6 +263,15 @@ class UserRepositoryImpl(
                 this.newPassword = newPassword
             })
             Result.success(response)
+        } catch (e: Exception) {
+            Result.failure(Exception(handleError(e)))
+        }
+    }
+
+    override suspend fun getUserById(id: String): Result<User> {
+        return try {
+            val userDto = apiService.getUser(id)
+            Result.success(userDto.toDomain())
         } catch (e: Exception) {
             Result.failure(Exception(handleError(e)))
         }

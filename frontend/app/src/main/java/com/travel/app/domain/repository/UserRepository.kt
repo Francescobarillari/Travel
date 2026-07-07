@@ -37,4 +37,6 @@ interface UserRepository {
     suspend fun unblockCompany(id: String): Result<Unit>
     suspend fun forgotPassword(email: String): Result<String> = Result.failure(NotImplementedError("Non implementato nei mock"))
     suspend fun resetPassword(email: String, otp: String, newPassword: String): Result<String> = Result.failure(NotImplementedError("Non implementato nei mock"))
+    suspend fun getAllUsers(): Result<List<User>> = Result.success(emptyList())
+    suspend fun getUserById(id: String): Result<User> = Result.failure(Exception("Not implemented"))
 }

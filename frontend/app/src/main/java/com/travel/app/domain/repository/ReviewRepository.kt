@@ -71,4 +71,17 @@ class ReviewRepository(
             Result.failure(e)
         }
     }
+
+    suspend fun getReviewsByUser(userId: String): Result<List<ReviewDto>> {
+        return try {
+            val response = apiService.getReviewsByUser(userId)
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!)
+            } else {
+                Result.failure(Exception("Failed to fetch reviews: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

@@ -4,6 +4,7 @@ import retrofit2.http.Body
 import retrofit2.http.POST
 import retrofit2.http.GET
 import retrofit2.http.PUT
+import retrofit2.http.Query
 import it.unical.ea.dtos.authDto.LoginRequest
 import it.unical.ea.dtos.authDto.SignupRequest
 import it.unical.ea.dtos.authDto.JwtResponse
@@ -39,6 +40,12 @@ interface ApiService {
     // Chiamata per aggiornare il profilo dell'utente autenticato
     @PUT("user/me")
     suspend fun updateMe(@Body request: UserDTO): UserDTO
+
+    @GET("user")
+    suspend fun getUsers(): List<UserDTO>
+
+    @GET("user/{id}")
+    suspend fun getUser(@Path("id") id: String): UserDTO
 
     // Chiamata per creare una nuova attività
     @POST("activity")
@@ -84,6 +91,13 @@ interface ApiService {
     @GET("itinerary")
     suspend fun getItineraries(): List<ItineraryDto>
 
+    // Chiamata per recuperare gli itinerari creati da uno specifico utente
+    @GET("itinerary/creator/{creatorId}")
+    suspend fun getItinerariesByCreator(@Path("creatorId") creatorId: String): List<ItineraryDto>
+
+    @GET("itinerary/{id}")
+    suspend fun getItineraryById(@Path("id") id: String): ItineraryDto
+
     // Chiamata per creare un itinerario
     @POST("itinerary")
     suspend fun createItinerary(@Body request: CreateItineraryRequest): ItineraryDto
@@ -91,6 +105,13 @@ interface ApiService {
     // Chiamata per eliminare un itinerario
     @DELETE("itinerary/{id}")
     suspend fun deleteItinerary(@Path("id") id: String)
+
+    // Chiamata per aggiornare la visibilità di un itinerario
+    @PUT("itinerary/{id}/visibility")
+    suspend fun updateItineraryVisibility(
+        @Path("id") id: String, 
+        @Query("visibility") visibility: String
+    ): ItineraryDto
 
     @DELETE("activity/{id}")
     suspend fun deleteActivity(@Path("id") id: String) { throw NotImplementedError() }
@@ -152,7 +173,9 @@ open class MockApiService : ApiService {
     override suspend fun getActivityById(id: String): ActivityDto = throw NotImplementedError()
     override suspend fun getPersonalizedFeed(): List<it.unical.ea.dtos.location.LocationDto> = throw NotImplementedError()
     override suspend fun getItineraries(): List<ItineraryDto> = throw NotImplementedError()
+    override suspend fun getItinerariesByCreator(creatorId: String): List<ItineraryDto> = throw NotImplementedError()
     override suspend fun createItinerary(request: CreateItineraryRequest): ItineraryDto = throw NotImplementedError()
+    override suspend fun updateItineraryVisibility(id: String, visibility: String): ItineraryDto = throw NotImplementedError()
     override suspend fun deleteItinerary(id: String) {}
     override suspend fun deleteActivity(id: String) {}
     override suspend fun uploadDocument(file: okhttp3.MultipartBody.Part): String = throw NotImplementedError()
@@ -165,4 +188,7 @@ open class MockApiService : ApiService {
     override suspend fun getAllCompanies(): List<UserDTO> = throw NotImplementedError()
     override suspend fun blockCompany(id: String) {}
     override suspend fun unblockCompany(id: String) {}
+    override suspend fun getUsers(): List<UserDTO> = throw NotImplementedError()
+    override suspend fun getUser(id: String): UserDTO = throw NotImplementedError()
+    override suspend fun getItineraryById(id: String): ItineraryDto = throw NotImplementedError()
 }
