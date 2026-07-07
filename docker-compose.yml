@@ -14,7 +14,7 @@ services:
   keycloak:
     image: quay.io/keycloak/keycloak:latest
     container_name: keycloak
-    command: start-dev --import-realm --hostname=http://${HOST_IP}:8081 --hostname-backchannel-dynamic=true
+    command: start-dev --import-realm --hostname=http://${HOST_IP:-localhost}:8081 --hostname-backchannel-dynamic=true
     depends_on:
       - db
     environment:
@@ -73,7 +73,7 @@ services:
       - SPRING_DATASOURCE_USERNAME=myuser
       - SPRING_DATASOURCE_PASSWORD=mypassword
       - SPRING_JPA_HIBERNATE_DDL_AUTO=update
-      - KEYCLOAK_ISSUER_URI=http://${HOST_IP}:8081/realms/ae-realm
+      - KEYCLOAK_ISSUER_URI=http://${HOST_IP:-localhost}:8081/realms/ae-realm
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/realms/ae-realm/protocol/openid-connect/certs
       - KEYCLOAK_SERVER_URL=http://keycloak:8080
       - KEYCLOAK_REALM=ae-realm
@@ -83,6 +83,12 @@ services:
       - KEYCLOAK_ADMIN_CLIENT_SECRET=travel-backend-admin-secret
       - KEYCLOAK_DEFAULT_CLIENT_ROLE=BASIC
       - UNSPLASH_ACCESS_KEY=${UNSPLASH_ACCESS_KEY}
+      - SPRING_MAIL_HOST=smtp.gmail.com
+      - SPRING_MAIL_PORT=587
+      - SPRING_MAIL_USERNAME=eaderive@gmail.com
+      - SPRING_MAIL_PASSWORD=jpktjwpfqabylofb
+      - SPRING_MAIL_AUTH=true
+      - SPRING_MAIL_STARTTLS=true
 
 volumes:
   postgres_data:

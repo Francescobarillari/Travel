@@ -34,6 +34,7 @@ import com.travel.app.service.ApiService
 fun LoginScreen(
     viewModel: LoginViewModel,
     onNavigateToRegister: () -> Unit,
+    onNavigateToForgotPassword: () -> Unit,
     onLoginSuccess: (User) -> Unit,
 ) {
     var showCaptcha by remember { mutableStateOf(false) }
@@ -84,6 +85,23 @@ fun LoginScreen(
                             onValueChange = { viewModel.loginPassword = it },
                             label = "Password",
                         )
+
+                        Box(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentAlignment = Alignment.CenterEnd
+                        ) {
+                            TextButton(
+                                onClick = onNavigateToForgotPassword,
+                                contentPadding = PaddingValues(0.dp)
+                            ) {
+                                Text(
+                                    "Password dimenticata?",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.secondary,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
 
                         viewModel.loginError?.let { ErrorBanner(message = it) }
 
@@ -159,6 +177,7 @@ fun LoginScreenPreview() {
         LoginScreen(
             viewModel = LoginViewModel(UserRepositoryImpl(mockApiService) { error("Not used in preview") }),
             onNavigateToRegister = {},
+            onNavigateToForgotPassword = {},
             onLoginSuccess = {}
         )
     }

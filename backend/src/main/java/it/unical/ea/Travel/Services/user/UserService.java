@@ -19,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 
 import it.unical.ea.Travel.Services.storage.FileStorageService;
 import it.unical.ea.Travel.Services.audit.AuditLogService;
+import it.unical.ea.Travel.Services.mail.EmailService;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.core.io.Resource;
 
@@ -31,6 +32,7 @@ public class UserService {
     private final KeycloakAdminService keycloakAdminService;
     private final FileStorageService fileStorageService;
     private final AuditLogService auditLogService;
+    private final EmailService emailService;
 
     @Transactional
     public User saveUser(SignupRequest request) {
@@ -210,5 +212,24 @@ public class UserService {
         }
 
         return user;
+    }
+
+    @Transactional
+    public void markEmailAsVerified(String email) {
+        userRepository.getUserByEmail(email).ifPresent(user -> {
+            if (Boolean.FALSE.equals(user.getEmailVerified())) {
+                user.setEmailVerified(true);
+                userRepository.save(user);
+                
+                // Invia la mail di benvenuto in modo non bloccante dopo la verifica dell'email
+                try {
+                    String name = user.getUserType() == UserType.VIAGGIATORE ? user.getFirstName() : user.getCompanyName();
+                    boolean isCompany = user.getUserType() == UserType.SOCIETA;
+                    emailService.sendWelcomeEmail(user.getEmail(), name, isCompany);
+                } catch (Exception e) {
+                    System.err.println("Errore durante l'invio della mail di benvenuto dopo la verifica: " + e.getMessage());
+                }
+            }
+        });
     }
 }

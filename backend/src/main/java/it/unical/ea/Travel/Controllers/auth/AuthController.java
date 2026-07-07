@@ -3,6 +3,9 @@ package it.unical.ea.Travel.Controllers.auth;
 import it.unical.ea.dtos.authDto.LoginRequest;
 import it.unical.ea.dtos.authDto.SignupRequest;
 import it.unical.ea.dtos.authDto.JwtResponse;
+import it.unical.ea.dtos.authDto.ForgotPasswordRequest;
+import it.unical.ea.dtos.authDto.ResetPasswordRequest;
+import it.unical.ea.dtos.user.UserDTO;
 import it.unical.ea.Travel.Services.AuthService;
 import it.unical.ea.Travel.Services.keycloak.KeycloakUserAlreadyExistsException;
 import it.unical.ea.Travel.Exception.ApiException;
@@ -10,6 +13,8 @@ import it.unical.ea.Travel.Services.user.UserService;
 import it.unical.ea.Travel.Entities.user.User;
 import it.unical.ea.Travel.Services.user.LoginAttemptService;
 import it.unical.ea.Travel.Services.keycloak.CaptchaService;
+import it.unical.ea.Travel.Services.auth.OtpService;
+import it.unical.ea.Travel.Services.mail.EmailService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -42,6 +47,8 @@ public class AuthController {
     private final LoginAttemptService loginAttemptService;
     private final CaptchaService captchaService;
     private final FileStorageService fileStorageService;
+    private final OtpService otpService;
+    private final EmailService emailService;
 
     @Operation(summary = "Login utente", description = "Autentica l'utente e restituisce un token JWT")
     @PostMapping("/login")
@@ -77,6 +84,14 @@ public class AuthController {
 
             // Autenticazione riuscita: azzera i tentativi falliti
             loginAttemptService.loginSucceeded(email);
+
+            // Contrassegna l'email come verificata nel DB locale e invia la mail di benvenuto
+            try {
+                userService.markEmailAsVerified(email);
+            } catch (Exception e) {
+                System.err.println("Impossibile aggiornare lo stato di verifica email in DB locale: " + e.getMessage());
+            }
+
             return ResponseEntity.ok(tokenResponse);
         } catch (ApiException e) {
             throw e;
@@ -122,5 +137,68 @@ public class AuthController {
         String errorMessage = exception.getMostSpecificCause().getMessage();
         return errorMessage != null
                 && (errorMessage.contains("idx_user_email") || errorMessage.contains("Email gia registrata"));
+    }
+
+    @Operation(summary = "Richiesta recupero password", description = "Genera un codice OTP e lo invia via email se l'utente esiste")
+    @PostMapping("/forgot-password")
+    public ResponseEntity<String> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        String email = request.getEmail();
+        
+        try {
+            // Verifica che l'utente esista nel database locale
+            User user = userService.getUserByEmail(email);
+            
+            // Genera codice OTP
+            String otp = otpService.generateOtp(email);
+            
+            // Invia email con codice OTP
+            emailService.sendOtpEmail(email, otp);
+        } catch (ApiException e) {
+            if (e.getStatus() == HttpStatus.NOT_FOUND) {
+                // Per motivi di sicurezza/privacy non riveliamo se la mail non esiste, restituiamo comunque OK
+                return ResponseEntity.ok(messageSource.getMessage("auth.forgot-password.otpSent", null, LocaleContextHolder.getLocale()));
+            }
+            throw e;
+        } catch (Exception e) {
+            throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "error.internalServerError");
+        }
+        
+        return ResponseEntity.ok(messageSource.getMessage("auth.forgot-password.otpSent", null, LocaleContextHolder.getLocale()));
+    }
+
+    @Operation(summary = "Reimpostazione password con OTP", description = "Verifica il codice OTP e reimposta la password in Keycloak")
+    @PostMapping("/reset-password")
+    public ResponseEntity<String> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        String email = request.getEmail();
+        String otp = request.getOtp();
+        String newPassword = request.getNewPassword();
+
+        // 1. Verifica che l'utente esista nel database
+        try {
+            userService.getUserByEmail(email);
+        } catch (ApiException e) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "auth.forgot-password.invalidOtp");
+        }
+
+        // 2. Valida il codice OTP
+        boolean isValid = otpService.validateOtp(email, otp);
+        if (!isValid) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "auth.forgot-password.invalidOtp");
+        }
+
+        // 3. Valida la complessità della nuova password (min 8 caratteri, una maiuscola, una minuscola, un numero)
+        if (newPassword.length() < 8 || !newPassword.matches("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).*$")) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "validation.password.pattern");
+        }
+
+        try {
+            // 4. Aggiorna la password in Keycloak
+            UserDTO userDto = new UserDTO();
+            userDto.setPassword(newPassword);
+            userService.updateUser(email, userDto);
+            return ResponseEntity.ok(messageSource.getMessage("auth.forgot-password.success", null, LocaleContextHolder.getLocale()));
+        } catch (Exception e) {
+            throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "error.internalServerError");
+        }
     }
 }

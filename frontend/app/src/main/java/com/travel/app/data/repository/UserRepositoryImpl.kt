@@ -4,6 +4,8 @@ import com.google.gson.Gson
 import com.travel.app.data.dto.ErrorResponseDto
 import it.unical.ea.dtos.authDto.LoginRequest
 import it.unical.ea.dtos.authDto.SignupRequest
+import it.unical.ea.dtos.authDto.ForgotPasswordRequest
+import it.unical.ea.dtos.authDto.ResetPasswordRequest
 import it.unical.ea.enums.UserType
 import com.travel.app.data.session.SessionManager
 import com.travel.app.domain.model.User
@@ -227,6 +229,30 @@ class UserRepositoryImpl(
         return try {
             apiService.unblockCompany(id)
             Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(Exception(handleError(e)))
+        }
+    }
+
+    override suspend fun forgotPassword(email: String): Result<String> {
+        return try {
+            val response = apiService.forgotPassword(ForgotPasswordRequest().apply {
+                this.email = email
+            })
+            Result.success(response)
+        } catch (e: Exception) {
+            Result.failure(Exception(handleError(e)))
+        }
+    }
+
+    override suspend fun resetPassword(email: String, otp: String, newPassword: String): Result<String> {
+        return try {
+            val response = apiService.resetPassword(ResetPasswordRequest().apply {
+                this.email = email
+                this.otp = otp
+                this.newPassword = newPassword
+            })
+            Result.success(response)
         } catch (e: Exception) {
             Result.failure(Exception(handleError(e)))
         }

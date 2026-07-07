@@ -4,6 +4,8 @@ import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
+import org.springframework.http.HttpStatus;
+import it.unical.ea.Travel.Exception.ApiException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
@@ -56,7 +58,13 @@ public class KeycloakAuthService {
                 return new JwtResponse(aToken, rToken);
             }
             throw new IllegalStateException("Keycloak non ha restituito access_token o refresh_token");
-        } catch (HttpClientErrorException.Unauthorized | HttpClientErrorException.BadRequest exception) {
+        } catch (HttpClientErrorException.BadRequest exception) {
+            String errorBody = exception.getResponseBodyAsString();
+            if (errorBody != null && errorBody.contains("Account is not fully set up")) {
+                throw new ApiException(HttpStatus.FORBIDDEN, "auth.login.emailNotVerified");
+            }
+            throw new BadCredentialsException("Credenziali Keycloak non valide", exception);
+        } catch (HttpClientErrorException.Unauthorized exception) {
             throw new BadCredentialsException("Credenziali Keycloak non valide", exception);
         }
     }

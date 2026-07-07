@@ -4,6 +4,7 @@ enum class Screen {
     LOGIN,
     REGISTER,
     HOME,
-    ADMIN
+    ADMIN,
+    FORGOT_PASSWORD
 }
 
