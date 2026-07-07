@@ -13,6 +13,9 @@ import retrofit2.http.Path
 import it.unical.ea.dtos.activity.ActivityDto
 import it.unical.ea.dtos.itinerary.ItineraryDto
 import it.unical.ea.dtos.itinerary.CreateItineraryRequest
+import okhttp3.MultipartBody
+import retrofit2.http.Multipart
+import retrofit2.http.Part
 
 interface ApiService {
 
@@ -31,6 +34,18 @@ interface ApiService {
     // Chiamata per aggiornare il profilo dell'utente autenticato
     @PUT("user/me")
     suspend fun updateMe(@Body request: UserDTO): UserDTO
+
+    // Chiamata per eliminare l'account
+    @DELETE("user/{id}")
+    suspend fun deleteUser(@Path("id") id: String)
+
+    // Chiamata per caricare l'avatar
+    @Multipart
+    @POST("user/{id}/avatar")
+    suspend fun uploadAvatar(
+        @Path("id") id: String,
+        @Part file: MultipartBody.Part
+    ): UserDTO
 
     // Chiamata per creare una nuova attività
     @POST("activity")
@@ -127,6 +142,8 @@ open class MockApiService : ApiService {
     override suspend fun register(request: SignupRequest): String = throw NotImplementedError()
     override suspend fun getMe(): UserDTO = throw NotImplementedError()
     override suspend fun updateMe(request: UserDTO): UserDTO = throw NotImplementedError()
+    override suspend fun deleteUser(id: String) {}
+    override suspend fun uploadAvatar(id: String, file: MultipartBody.Part): UserDTO = throw NotImplementedError()
     override suspend fun createActivity(request: ActivityDto): ActivityDto = throw NotImplementedError()
     override suspend fun updateActivity(id: String, request: ActivityDto): ActivityDto = throw NotImplementedError()
     override suspend fun getBookedUsers(id: String): List<UserDTO> = throw NotImplementedError()

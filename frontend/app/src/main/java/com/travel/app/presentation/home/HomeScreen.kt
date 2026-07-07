@@ -158,7 +158,8 @@ fun HomeScreen(
                         onSaveSuccess = { savedUser ->
                             currentUser = savedUser
                             selectedTab = HomeTab.MENU
-                        }
+                        },
+                        onDeactivated = onLogout
                     )
                 }
                 HomeTab.MENU -> MenuScreen(
