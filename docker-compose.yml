@@ -83,6 +83,15 @@ services:
       - KEYCLOAK_ADMIN_CLIENT_SECRET=travel-backend-admin-secret
       - KEYCLOAK_DEFAULT_CLIENT_ROLE=BASIC
       - UNSPLASH_ACCESS_KEY=${UNSPLASH_ACCESS_KEY}
+      - SPRING_MAIL_HOST=mailpit
+      - SPRING_MAIL_PORT=1025
+
+  mailpit:
+    image: axllent/mailpit
+    container_name: mailpit
+    ports:
+      - "8025:8025"
+      - "1025:1025"
 
 volumes:
   postgres_data:
