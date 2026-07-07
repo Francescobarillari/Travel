@@ -21,6 +21,9 @@ public class ActivityDto {
     @Schema(format = "uuid", example = "550e8400-e29b-41d4-a716-446655440000")
     private UUID id;
 
+    @Schema(format = "uuid", description = "L'ID del template concettuale associato", example = "550e8400-e29b-41d4-a716-446655440001")
+    private UUID templateId;
+
     @NotBlank(message = "Il nome dell'attività è obbligatorio")
     @Size(max = 150, message = "Il nome non può superare i 150 caratteri")
     @Schema(example = "Visita al Colosseo")

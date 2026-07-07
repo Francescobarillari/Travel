@@ -102,7 +102,26 @@ public class ItineraryService {
                     .map(UUID::fromString)
                     .toList();
             List<Activity> activities = activityRepository.findAllById(activityUuids);
+
+            // Ordinamento cronologico
+            activities.sort(java.util.Comparator.comparing(Activity::getStartTime));
+
+            // Validazione anti-sovrapposizione
+            for (int i = 0; i < activities.size() - 1; i++) {
+                Activity current = activities.get(i);
+                Activity next = activities.get(i + 1);
+                if (current.getEndTime().isAfter(next.getStartTime())) {
+                    throw new ApiException(HttpStatus.BAD_REQUEST, "itinerary.activities.overlap");
+                }
+            }
+
             itinerary.setActivities(activities);
+
+            // Calcolo automatico delle date dell'itinerario
+            if (!activities.isEmpty()) {
+                itinerary.setStartDateTime(activities.get(0).getStartTime());
+                itinerary.setEndDateTime(activities.get(activities.size() - 1).getEndTime());
+            }
         }
 
         Itinerary saved = itineraryRepository.save(itinerary);

@@ -8,6 +8,8 @@ import it.unical.ea.Travel.Exception.ApiException;
 import it.unical.ea.Travel.Mappers.activity.ActivityMapper;
 import it.unical.ea.Travel.Repositories.activity.ActivityBookingRepository;
 import it.unical.ea.Travel.Repositories.activity.ActivityRepository;
+import it.unical.ea.Travel.Repositories.activity.ActivityTemplateRepository;
+import it.unical.ea.Travel.Entities.activity.ActivityTemplate;
 import it.unical.ea.Travel.Repositories.user.UserRepository;
 import it.unical.ea.Travel.Services.storage.FileStorageService;
 import it.unical.ea.Travel.Services.audit.AuditLogService;
@@ -39,6 +41,7 @@ public class ActivityService {
     private static final String ACTIVITIES_SUBDIR = "activities";
 
     private final ActivityRepository activityRepository;
+    private final ActivityTemplateRepository activityTemplateRepository;
     private final ActivityBookingRepository activityBookingRepository;
     private final UserRepository userRepository;
     private final ActivityMapper activityMapper;
@@ -52,7 +55,7 @@ public class ActivityService {
     private boolean paymentMock;
 
     public List<ActivityDto> getAllActivities() {
-        List<Activity> activities = activityRepository.findByApproved(true);
+        List<Activity> activities = activityRepository.findAll();
         List<ActivityDto> dtos = activityMapper.toDTOList(activities);
 
         // Arricchisci ogni DTO con il conteggio dinamico dei partecipanti
@@ -64,10 +67,10 @@ public class ActivityService {
     }
 
     @Transactional(readOnly = true)
-    public org.springframework.data.domain.Page<ActivityDto> searchActivities(String keyword, Double minPrice, Double maxPrice, int page, int size) {
+    public org.springframework.data.domain.Page<ActivityDto> searchActivities(String keyword, Double minPrice, Double maxPrice, java.time.LocalDateTime minStartTime, int page, int size) {
         org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
         String safeKeyword = (keyword == null) ? "" : keyword.trim();
-        org.springframework.data.domain.Page<Activity> activities = activityRepository.searchByKeyword(safeKeyword, minPrice, maxPrice, pageable);
+        org.springframework.data.domain.Page<Activity> activities = activityRepository.searchByKeyword(safeKeyword, minPrice, maxPrice, minStartTime, pageable);
         
         return activities.map(activity -> {
             ActivityDto dto = activityMapper.toDTO(activity);
@@ -79,20 +82,26 @@ public class ActivityService {
     @Transactional
     public ActivityDto createActivity(ActivityDto activityDto) {
         Activity activity = activityMapper.toEntity(activityDto);
-        activity.setApproved(false);
-        
-        // Resolve/Create location automatically
-        it.unical.ea.Travel.Entities.location.Location locationEntity = locationService.getOrCreateLocation(activityDto.getLocation());
-        activity.setLocationEntity(locationEntity);
+        ActivityTemplate template;
 
-        // Imposta l'organizzatore corrente basato sull'utente loggato
-        String email = SecurityUtils.getCurrentUserEmail();
-        User organizer = userRepository.getUserByEmail(email)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "user.notFound"));
-        activity.setOrganizer(organizer);
+        if (activityDto.getTemplateId() != null) {
+            template = activityTemplateRepository.findById(activityDto.getTemplateId())
+                    .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "activity.templateNotFound"));
+        } else {
+            template = activityMapper.toTemplateEntity(activityDto);
+            template.setApproved(false);
+            it.unical.ea.Travel.Entities.location.Location locationEntity = locationService.getOrCreateLocation(activityDto.getLocation());
+            template.setLocationEntity(locationEntity);
+            String email = SecurityUtils.getCurrentUserEmail();
+            User organizer = userRepository.getUserByEmail(email)
+                    .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "user.notFound"));
+            template.setOrganizer(organizer);
+            template = activityTemplateRepository.save(template);
+        }
 
+        activity.setTemplate(template);
         Activity savedActivity = activityRepository.save(activity);
-        auditLogService.log("CREATE_ACTIVITY", "Activity", savedActivity.getId().toString(), "Created activity: " + savedActivity.getName());
+        auditLogService.log("CREATE_ACTIVITY", "Activity", savedActivity.getId().toString(), "Created activity schedule for template: " + template.getName());
         return activityMapper.toDTO(savedActivity);
     }
 
@@ -102,20 +111,24 @@ public class ActivityService {
         Activity activity = activityRepository.findById(uuid)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "activity.notFound"));
 
-        activity.setName(activityDto.getName());
-        activity.setDescription(activityDto.getDescription());
-        activity.setLocation(activityDto.getLocation());
+        // Update schedule fields
         activity.setStartTime(activityDto.getStartTime());
         activity.setEndTime(activityDto.getEndTime());
         activity.setParticipants(activityDto.getParticipants());
         activity.setPrice(activityDto.getPrice());
 
-        // Resolve/Create location automatically
+        // Update template fields
+        ActivityTemplate template = activity.getTemplate();
+        template.setName(activityDto.getName());
+        template.setDescription(activityDto.getDescription());
+        template.setLocation(activityDto.getLocation());
+        
         it.unical.ea.Travel.Entities.location.Location locationEntity = locationService.getOrCreateLocation(activityDto.getLocation());
-        activity.setLocationEntity(locationEntity);
+        template.setLocationEntity(locationEntity);
+        activityTemplateRepository.save(template);
 
         Activity saved = activityRepository.save(activity);
-        auditLogService.log("UPDATE_ACTIVITY", "Activity", saved.getId().toString(), "Updated activity: " + saved.getName());
+        auditLogService.log("UPDATE_ACTIVITY", "Activity", saved.getId().toString(), "Updated activity: " + template.getName());
         return activityMapper.toDTO(saved);
     }
 
@@ -198,7 +211,7 @@ public class ActivityService {
         BookingStatus status = BookingStatus.PENDING;
 
         if (activity.getPrice() != null && activity.getPrice().compareTo(BigDecimal.ZERO) > 0 && !paymentMock) {
-            clientSecret = paymentGateway.createPaymentIntent(activity.getPrice(), "eur", "Booking for Activity: " + activity.getName());
+            clientSecret = paymentGateway.createPaymentIntent(activity.getPrice(), "eur", "Booking for Activity: " + activity.getTemplate().getName());
             if (clientSecret != null && clientSecret.contains("_secret_")) {
                 paymentIntentId = clientSecret.substring(0, clientSecret.indexOf("_secret_"));
             }
@@ -212,7 +225,7 @@ public class ActivityService {
         booking.setStatus(status);
         booking.setPaymentIntentId(paymentIntentId);
         ActivityBooking savedBooking = activityBookingRepository.save(booking);
-        auditLogService.log("BOOK_ACTIVITY", "ActivityBooking", savedBooking.getId().toString(), "User " + userEmail + " booked activity " + activity.getName() + " status: " + status);
+        auditLogService.log("BOOK_ACTIVITY", "ActivityBooking", savedBooking.getId().toString(), "User " + userEmail + " booked activity " + activity.getTemplate().getName() + " status: " + status);
         
         return new PaymentIntentResponseDto(clientSecret, savedBooking.getId().toString());
     }
@@ -235,7 +248,7 @@ public class ActivityService {
 
         activityBookingRepository.delete(booking);
         activityBookingRepository.flush();
-        auditLogService.log("CANCEL_BOOKING", "ActivityBooking", booking.getId().toString(), "User " + userEmail + " cancelled booking for activity: " + activity.getName());
+        auditLogService.log("CANCEL_BOOKING", "ActivityBooking", booking.getId().toString(), "User " + userEmail + " cancelled booking for activity: " + activity.getTemplate().getName());
     }
 
     // Carica una o più immagini per l'attività specificata
@@ -252,15 +265,16 @@ public class ActivityService {
         Activity activity = activityRepository.findById(uuid)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "activity.notFound"));
 
-        if (activity.getImages() == null) {
-            activity.setImages(new java.util.ArrayList<>());
+        if (activity.getTemplate().getImages() == null) {
+            activity.getTemplate().setImages(new java.util.ArrayList<>());
         }
 
         for (MultipartFile file : files) {
             String relativePath = fileStorageService.store(file, ACTIVITIES_SUBDIR);
-            activity.getImages().add(relativePath);
+            activity.getTemplate().getImages().add(relativePath);
         }
 
+        activityTemplateRepository.save(activity.getTemplate());
         Activity saved = activityRepository.save(activity);
         return activityMapper.toDTO(saved);
     }
@@ -278,9 +292,10 @@ public class ActivityService {
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "activity.notFound"));
 
         String targetPath = ACTIVITIES_SUBDIR + "/" + filename;
-        if (activity.getImages() != null && activity.getImages().contains(targetPath)) {
+        if (activity.getTemplate().getImages() != null && activity.getTemplate().getImages().contains(targetPath)) {
             fileStorageService.delete(targetPath);
-            activity.getImages().remove(targetPath);
+            activity.getTemplate().getImages().remove(targetPath);
+            activityTemplateRepository.save(activity.getTemplate());
             Activity saved = activityRepository.save(activity);
             return activityMapper.toDTO(saved);
         } else {

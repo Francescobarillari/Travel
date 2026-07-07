@@ -1,6 +1,5 @@
 package it.unical.ea.Travel.Entities.location;
 
-import it.unical.ea.Travel.Entities.activity.Activity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -41,7 +40,7 @@ public class Location {
     private String imageUrl;
 
     @OneToMany(mappedBy = "locationEntity", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Activity> activities = new ArrayList<>();
+    private List<it.unical.ea.Travel.Entities.activity.ActivityTemplate> activityTemplates = new ArrayList<>();
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

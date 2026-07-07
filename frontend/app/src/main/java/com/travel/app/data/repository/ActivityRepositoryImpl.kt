@@ -39,9 +39,9 @@ class ActivityRepositoryImpl(
         }
     }
 
-    override suspend fun searchActivities(query: String, minPrice: Double?, maxPrice: Double?, page: Int, size: Int): Result<it.unical.ea.dtos.common.PageDto<ActivityDto>> {
+    override suspend fun searchActivities(query: String, minPrice: Double?, maxPrice: Double?, minStartTime: String?, page: Int, size: Int): Result<it.unical.ea.dtos.common.PageDto<ActivityDto>> {
         return try {
-            val result = apiService.searchActivities(query, minPrice, maxPrice, page, size)
+            val result = apiService.searchActivities(query, minPrice, maxPrice, minStartTime, page, size)
             Result.success(result)
         } catch (e: Exception) {
             Result.failure(Exception(handleError(e)))

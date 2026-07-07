@@ -17,7 +17,7 @@ import java.util.Map;
 
 @Slf4j
 @Service
-@ConditionalOnProperty(name = "payment.mock", havingValue = "false", matchIfMissing = true) // Kept for compatibility, or change to paypal.mock
+@ConditionalOnProperty(name = "payment.mock", havingValue = "false", matchIfMissing = false)
 public class PayPalPaymentGatewayImpl implements PaymentGateway {
 
     private final String clientId;

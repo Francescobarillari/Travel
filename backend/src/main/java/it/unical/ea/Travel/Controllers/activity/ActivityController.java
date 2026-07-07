@@ -80,10 +80,11 @@ public class ActivityController {
             @RequestParam(required = false) String query,
             @RequestParam(required = false) Double minPrice,
             @RequestParam(required = false) Double maxPrice,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime minStartTime,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        org.springframework.data.domain.Page<ActivityDto> results = activityService.searchActivities(query, minPrice, maxPrice, page, size);
+        org.springframework.data.domain.Page<ActivityDto> results = activityService.searchActivities(query, minPrice, maxPrice, minStartTime, page, size);
         return ResponseEntity.ok(results);
     }
 

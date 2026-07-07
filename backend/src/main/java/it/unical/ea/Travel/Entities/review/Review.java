@@ -1,6 +1,6 @@
 package it.unical.ea.Travel.Entities.review;
 
-import it.unical.ea.Travel.Entities.activity.Activity;
+import it.unical.ea.Travel.Entities.activity.ActivityTemplate;
 import it.unical.ea.Travel.Entities.audit.AuditBaseEntity;
 import it.unical.ea.Travel.Entities.itinerary.Itinerary;
 import it.unical.ea.Travel.Entities.user.User;
@@ -33,8 +33,8 @@ public class Review extends AuditBaseEntity {
     private User author;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "activity_id")
-    private Activity activity;
+    @JoinColumn(name = "activity_template_id")
+    private ActivityTemplate activityTemplate;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "itinerary_id")

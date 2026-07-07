@@ -1,10 +1,10 @@
 package it.unical.ea.Travel.Services.review;
 
-import it.unical.ea.Travel.Entities.activity.Activity;
+import it.unical.ea.Travel.Entities.activity.ActivityTemplate;
 import it.unical.ea.Travel.Entities.itinerary.Itinerary;
 import it.unical.ea.Travel.Entities.review.Review;
 import it.unical.ea.Travel.Entities.user.User;
-import it.unical.ea.Travel.Repositories.activity.ActivityRepository;
+import it.unical.ea.Travel.Repositories.activity.ActivityTemplateRepository;
 import it.unical.ea.Travel.Repositories.itinerary.ItineraryRepository;
 import it.unical.ea.Travel.Repositories.review.ReviewRepository;
 import it.unical.ea.Travel.Repositories.user.UserRepository;
@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 public class ReviewService {
 
     private final ReviewRepository reviewRepository;
-    private final ActivityRepository activityRepository;
+    private final ActivityTemplateRepository activityTemplateRepository;
     private final ItineraryRepository itineraryRepository;
     private final UserRepository userRepository;
 
@@ -41,9 +41,9 @@ public class ReviewService {
         review.setComment(dto.getComment());
 
         if (dto.getActivityId() != null) {
-            Activity activity = activityRepository.findById(dto.getActivityId())
-                    .orElseThrow(() -> new RuntimeException("Activity not found"));
-            review.setActivity(activity);
+            ActivityTemplate activityTemplate = activityTemplateRepository.findById(dto.getActivityId())
+                    .orElseThrow(() -> new RuntimeException("Activity Template not found"));
+            review.setActivityTemplate(activityTemplate);
         } else if (dto.getItineraryId() != null) {
             Itinerary itinerary = itineraryRepository.findById(dto.getItineraryId())
                     .orElseThrow(() -> new RuntimeException("Itinerary not found"));
@@ -57,8 +57,8 @@ public class ReviewService {
     }
 
     @Transactional(readOnly = true)
-    public List<ReviewDto> getReviewsForActivity(UUID activityId) {
-        return reviewRepository.findByActivityIdOrderByCreatedAtDesc(activityId)
+    public List<ReviewDto> getReviewsForActivity(UUID activityTemplateId) {
+        return reviewRepository.findByActivityTemplateIdOrderByCreatedAtDesc(activityTemplateId)
                 .stream()
                 .map(this::toDto)
                 .collect(Collectors.toList());
@@ -75,12 +75,13 @@ public class ReviewService {
         allReviews.addAll(reviewRepository.findByItineraryIdOrderByCreatedAtDesc(itineraryId));
         
         // 2. Get reviews for all activities in this itinerary
-        List<UUID> activityIds = itinerary.getActivities().stream()
-                .map(Activity::getId)
+        List<UUID> activityTemplateIds = itinerary.getActivities().stream()
+                .map(a -> a.getTemplate().getId())
+                .distinct()
                 .collect(Collectors.toList());
-                
-        if (!activityIds.isEmpty()) {
-            allReviews.addAll(reviewRepository.findByActivityIdInOrderByCreatedAtDesc(activityIds));
+
+        if (!activityTemplateIds.isEmpty()) {
+            allReviews.addAll(reviewRepository.findByActivityTemplateIdInOrderByCreatedAtDesc(activityTemplateIds));
         }
 
         // Sort by createdAt desc
@@ -141,10 +142,10 @@ public class ReviewService {
         dto.setComment(review.getComment());
         dto.setCreatedAt(review.getCreatedAt());
         
-        if (review.getActivity() != null) {
+        if (review.getActivityTemplate() != null) {
             try {
-                dto.setActivityId(review.getActivity().getId());
-                dto.setActivityName(review.getActivity().getName());
+                dto.setActivityId(review.getActivityTemplate().getId());
+                dto.setActivityName(review.getActivityTemplate().getName());
             } catch (Exception e) {
                 dto.setActivityName("Attività Eliminata");
             }

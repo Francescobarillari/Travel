@@ -109,13 +109,16 @@ class FeedServiceTest {
     void shouldExtractPastBookingsAndUseSpecification() {
         when(userRepository.getUserByEmail(userEmail)).thenReturn(Optional.of(testUser));
 
-        Activity activity = new Activity();
-        activity.setLocation("Roma, Italia");
-        activity.setTags(new HashSet<>(Collections.singletonList(TravelTag.STORIA)));
+        it.unical.ea.Travel.Entities.activity.ActivityTemplate template = new it.unical.ea.Travel.Entities.activity.ActivityTemplate();
+        template.setLocation("Roma, Italia");
+        template.setTags(new HashSet<>(Collections.singletonList(TravelTag.STORIA)));
 
         Location actLoc = new Location();
         actLoc.setName("Roma, Italia");
-        activity.setLocationEntity(actLoc);
+        template.setLocationEntity(actLoc);
+
+        Activity activity = new Activity();
+        activity.setTemplate(template);
 
         ActivityBooking booking = new ActivityBooking();
         booking.setActivity(activity);

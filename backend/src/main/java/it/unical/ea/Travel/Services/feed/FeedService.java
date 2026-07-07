@@ -46,20 +46,20 @@ public class FeedService {
         
         for (ActivityBooking booking : bookings) {
             Activity act = booking.getActivity();
-            if (act != null) {
+            if (act != null && act.getTemplate() != null) {
                 // Estrai la località dell'attività (es. città)
-                if (act.getLocationEntity() != null) {
-                    targetLocations.add(act.getLocationEntity().getName());
-                } else if (act.getLocation() != null && !act.getLocation().isBlank()) {
+                if (act.getTemplate().getLocationEntity() != null) {
+                    targetLocations.add(act.getTemplate().getLocationEntity().getName());
+                } else if (act.getTemplate().getLocation() != null && !act.getTemplate().getLocation().isBlank()) {
                     // Estrai solo il nome prima della virgola se presente, per fare corrispondenza sulla città
-                    String city = act.getLocation().split(",")[0].trim();
+                    String city = act.getTemplate().getLocation().split(",")[0].trim();
                     if (!city.isEmpty()) {
                         targetLocations.add(city);
                     }
                 }
                 // Estrai i tag associati a quell'attività prenotata
-                if (act.getTags() != null) {
-                    targetTags.addAll(act.getTags());
+                if (act.getTemplate().getTags() != null) {
+                    targetTags.addAll(act.getTemplate().getTags());
                 }
             }
         }
@@ -80,8 +80,8 @@ public class FeedService {
 
             // Condizione per i tag: controlla se una qualsiasi attività della località ha un tag che corrisponde
             if (!targetTags.isEmpty()) {
-                Join<Location, Activity> activityJoin = root.join("activities", JoinType.LEFT);
-                Join<Activity, TravelTag> tagJoin = activityJoin.join("tags", JoinType.LEFT);
+                Join<Location, it.unical.ea.Travel.Entities.activity.ActivityTemplate> activityJoin = root.join("activityTemplates", JoinType.LEFT);
+                Join<it.unical.ea.Travel.Entities.activity.ActivityTemplate, TravelTag> tagJoin = activityJoin.join("tags", JoinType.LEFT);
                 
                 List<Predicate> tagPredicates = new ArrayList<>();
                 for (TravelTag tag : targetTags) {

@@ -12,12 +12,12 @@ import java.util.UUID;
 @Repository
 public interface ReviewRepository extends JpaRepository<Review, UUID> {
 
-    List<Review> findByActivityIdOrderByCreatedAtDesc(UUID activityId);
+    List<Review> findByActivityTemplateIdOrderByCreatedAtDesc(UUID activityTemplateId);
 
     List<Review> findByItineraryIdOrderByCreatedAtDesc(UUID itineraryId);
 
-    @Query("SELECT r FROM Review r WHERE r.activity.id IN :activityIds ORDER BY r.createdAt DESC")
-    List<Review> findByActivityIdInOrderByCreatedAtDesc(@Param("activityIds") List<UUID> activityIds);
+    @Query("SELECT r FROM Review r WHERE r.activityTemplate.id IN :activityTemplateIds ORDER BY r.createdAt DESC")
+    List<Review> findByActivityTemplateIdInOrderByCreatedAtDesc(@Param("activityTemplateIds") List<UUID> activityTemplateIds);
 
     List<Review> findByAuthorIdOrderByCreatedAtDesc(UUID authorId);
 }

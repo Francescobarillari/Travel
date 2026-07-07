@@ -73,10 +73,22 @@ fun PersonalizeItineraryScreen(
     var draggingIndex by remember { mutableStateOf<Int?>(null) }
     var dragOffsetY by remember { mutableStateOf(0f) }
 
-    LaunchedEffect(city) {
+    LaunchedEffect(city, selectedActivities) {
         if (city.isNotBlank()) {
             isLoading = true
-            val res = AppContainer.activityRepository.searchActivities(query = city, size = 100)
+            
+            // Calculate minStartTime
+            val minStartTime = if (selectedActivities.isNotEmpty()) {
+                selectedActivities.maxByOrNull { it.endTime ?: "" }?.endTime
+            } else {
+                itinerary.startDateTime
+            }
+            
+            val res = AppContainer.activityRepository.searchActivities(
+                query = city, 
+                minStartTime = minStartTime,
+                size = 100
+            )
             isLoading = false
             res.fold(
                 onSuccess = { page ->

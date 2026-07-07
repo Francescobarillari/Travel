@@ -85,6 +85,7 @@ interface ApiService {
         @retrofit2.http.Query("query") query: String,
         @retrofit2.http.Query("minPrice") minPrice: Double? = null,
         @retrofit2.http.Query("maxPrice") maxPrice: Double? = null,
+        @retrofit2.http.Query("minStartTime") minStartTime: String? = null,
         @retrofit2.http.Query("page") page: Int = 0,
         @retrofit2.http.Query("size") size: Int = 10
     ): it.unical.ea.dtos.common.PageDto<ActivityDto>
@@ -221,4 +222,9 @@ open class MockApiService : ApiService {
     override suspend fun getUsers(): List<UserDTO> = throw NotImplementedError()
     override suspend fun getUser(id: String): UserDTO = throw NotImplementedError()
     override suspend fun getItineraryById(id: String): ItineraryDto = throw NotImplementedError()
+    
+    override suspend fun bookItinerary(id: String): PaymentIntentResponseDto = throw NotImplementedError()
+    override suspend fun isItineraryBooked(id: String): Boolean = throw NotImplementedError()
+    override suspend fun confirmItineraryBooking(bookingId: String) {}
+    override suspend fun bookActivity(id: String): PaymentIntentResponseDto = throw NotImplementedError()
 }

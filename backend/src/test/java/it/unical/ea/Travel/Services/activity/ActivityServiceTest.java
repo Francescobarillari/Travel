@@ -39,6 +39,9 @@ class ActivityServiceTest {
     private ActivityBookingRepository activityBookingRepository;
 
     @Mock
+    private it.unical.ea.Travel.Repositories.activity.ActivityTemplateRepository activityTemplateRepository;
+
+    @Mock
     private UserRepository userRepository;
 
     @Mock
@@ -63,16 +66,24 @@ class ActivityServiceTest {
 
     @BeforeEach
     void setUp() {
+        it.unical.ea.Travel.Entities.activity.ActivityTemplate template = new it.unical.ea.Travel.Entities.activity.ActivityTemplate();
+        template.setName("Visita al Colosseo");
+        template.setImages(new java.util.ArrayList<>());
+
         futureActivity = new Activity();
         futureActivity.setId(activityId);
-        futureActivity.setName("Visita al Colosseo");
+        futureActivity.setTemplate(template);
         futureActivity.setStartTime(LocalDateTime.now().plusDays(7));
         futureActivity.setEndTime(LocalDateTime.now().plusDays(7).plusHours(2));
         futureActivity.setParticipants(20);
 
+        it.unical.ea.Travel.Entities.activity.ActivityTemplate pastTemplate = new it.unical.ea.Travel.Entities.activity.ActivityTemplate();
+        pastTemplate.setName("Attività Passata");
+        pastTemplate.setImages(new java.util.ArrayList<>());
+
         pastActivity = new Activity();
         pastActivity.setId(pastActivityId);
-        pastActivity.setName("Attività Passata");
+        pastActivity.setTemplate(pastTemplate);
         pastActivity.setStartTime(LocalDateTime.now().minusDays(7));
         pastActivity.setEndTime(LocalDateTime.now().minusDays(7).plusHours(2));
         pastActivity.setParticipants(10);
@@ -141,8 +152,11 @@ class ActivityServiceTest {
             when(activityRepository.findByIdForUpdate(activityId)).thenReturn(Optional.of(futureActivity));
             when(userRepository.getUserByEmail(userEmail)).thenReturn(Optional.of(testUser));
             when(activityBookingRepository.countDirectParticipants(activityId)).thenReturn(5L);
-            when(activityBookingRepository.findByUserIdAndActivityId(userId, activityId))
-                    .thenReturn(Optional.of(new ActivityBooking()));
+            ActivityBooking mockBooking = new ActivityBooking();
+            mockBooking.setId(UUID.randomUUID());
+            mockBooking.setStatus(it.unical.ea.Travel.Entities.payment.BookingStatus.CONFIRMED);
+            when(activityBookingRepository.findByUserIdAndActivityId(any(), any()))
+                    .thenReturn(Optional.of(mockBooking));
 
             ApiException exception = assertThrows(ApiException.class,
                     () -> activityService.bookActivity(activityId.toString(), userEmail));
@@ -309,8 +323,8 @@ class ActivityServiceTest {
             verify(fileStorageService).store(file1, "activities");
             verify(fileStorageService).store(file2, "activities");
             verify(activityRepository).save(futureActivity);
-            assertTrue(futureActivity.getImages().contains("activities/img1.jpg"));
-            assertTrue(futureActivity.getImages().contains("activities/img2.jpg"));
+            assertTrue(futureActivity.getTemplate().getImages().contains("activities/img1.jpg"));
+            assertTrue(futureActivity.getTemplate().getImages().contains("activities/img2.jpg"));
         }
     }
 }

@@ -6,6 +6,8 @@ import it.unical.ea.Travel.Exception.ApiException;
 import it.unical.ea.Travel.Mappers.activity.ActivityMapper;
 import it.unical.ea.Travel.Mappers.user.UserMapper;
 import it.unical.ea.Travel.Repositories.activity.ActivityRepository;
+import it.unical.ea.Travel.Repositories.activity.ActivityTemplateRepository;
+import it.unical.ea.Travel.Repositories.itinerary.ItineraryRepository;
 import it.unical.ea.Travel.Repositories.user.UserRepository;
 import it.unical.ea.Travel.Services.audit.AuditLogService;
 import it.unical.ea.Travel.Services.activity.ActivityService;
@@ -38,6 +40,8 @@ public class AdminController {
 
     private final UserRepository userRepository;
     private final ActivityRepository activityRepository;
+    private final ActivityTemplateRepository activityTemplateRepository;
+    private final ItineraryRepository itineraryRepository;
     private final ActivityService activityService;
     private final KeycloakAdminService keycloakAdminService;
     private final FileStorageService fileStorageService;
@@ -81,7 +85,7 @@ public class AdminController {
     @Operation(summary = "Ottieni attività in attesa di approvazione")
     @GetMapping("/activities/pending")
     public List<ActivityDto> getPendingActivities() {
-        List<Activity> pending = activityRepository.findByApproved(false);
+        List<Activity> pending = activityRepository.findByTemplateApproved(false);
         List<ActivityDto> dtos = activityMapper.toDTOList(pending);
         for (int i = 0; i < pending.size(); i++) {
             dtos.get(i).setCurrentParticipants(activityService.calculateCurrentParticipants(pending.get(i)));
@@ -91,22 +95,26 @@ public class AdminController {
 
     @Operation(summary = "Approva un'attività")
     @PostMapping("/activities/{id}/approve")
-    public ResponseEntity<Void> approveActivity(@PathVariable String id) {
-        Activity activity = activityRepository.findById(UUID.fromString(id))
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "activity.notFound"));
-        activity.setApproved(true);
-        activityRepository.save(activity);
-        auditLogService.log("APPROVE_ACTIVITY", "Activity", id, "Approved activity: " + activity.getName());
+    public ResponseEntity<Void> approveActivity(@PathVariable String id, @RequestParam Boolean approved) {
+        UUID uuid = UUID.fromString(id);
+        Activity activity = activityRepository.findById(uuid)
+                .orElseThrow(() -> new RuntimeException("Attività non trovata"));
+
+        activity.getTemplate().setApproved(approved);
+        activityTemplateRepository.save(activity.getTemplate());
+        auditLogService.log("APPROVE_ACTIVITY", "Activity", id, "Admin ha " + (approved ? "approvato" : "rifiutato") + " l'attività: " + activity.getTemplate().getName());
         return ResponseEntity.ok().build();
     }
 
     @Operation(summary = "Rifiuta o cancella un'attività")
     @DeleteMapping("/activities/{id}")
     public ResponseEntity<Void> rejectActivity(@PathVariable String id) {
-        Activity activity = activityRepository.findById(UUID.fromString(id))
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "activity.notFound"));
+        UUID uuid = UUID.fromString(id);
+        Activity activity = activityRepository.findById(uuid)
+                .orElseThrow(() -> new RuntimeException("Attività non trovata"));
+
         activityRepository.delete(activity);
-        auditLogService.log("REJECT_ACTIVITY", "Activity", id, "Rejected and deleted activity: " + activity.getName());
+        auditLogService.log("DELETE_ACTIVITY_ADMIN", "Activity", id, "Admin ha eliminato l'attività: " + activity.getTemplate().getName());
         return ResponseEntity.ok().build();
     }
 

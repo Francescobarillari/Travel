@@ -397,6 +397,8 @@ fun CompanyDashboardScreenPreview() {
                     override suspend fun getActivities() = Result.success(emptyList<it.unical.ea.dtos.activity.ActivityDto>())
                 },
                 userRepository = object : com.travel.app.domain.repository.UserRepository {
+                    override suspend fun deleteAccount(userId: String) = Result.success(Unit)
+                    override suspend fun uploadAvatar(userId: String, imageBytes: ByteArray, mimeType: String, fileName: String) = Result.failure<com.travel.app.domain.model.User>(Exception())
                     override fun getSessionUser(): com.travel.app.domain.model.User? = null
                     override suspend fun login(email: String, password: String, captchaToken: String?) = Result.failure<com.travel.app.domain.model.User>(Exception())
                     override suspend fun registerViaggiatoreUser(email: String, firstName: String, lastName: String, password: String, phone: String?, captchaToken: String?) = Result.failure<com.travel.app.domain.model.User>(Exception())

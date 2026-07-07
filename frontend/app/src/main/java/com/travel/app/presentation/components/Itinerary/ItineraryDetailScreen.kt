@@ -71,7 +71,6 @@ fun ItineraryDetailScreen(
     val totalPrice = itinerary.getActivities()?.sumOf { it.getPrice()?.toDouble() ?: 0.0 } ?: 0.0
     val uniqueTags = itinerary.getActivities()?.flatMap { it.getTags() ?: emptySet() }?.toSet() ?: emptySet()
     val uniqueLocations = itinerary.getActivities()?.map { it.getLocation() }?.filter { !it.isNullOrBlank() }?.distinct() ?: emptyList()
-    val context = androidx.compose.ui.platform.LocalContext.current
 
     var reviews by remember { mutableStateOf<List<ReviewDto>>(emptyList()) }
     val scope = rememberCoroutineScope()

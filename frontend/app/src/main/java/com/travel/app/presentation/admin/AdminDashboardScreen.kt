@@ -380,6 +380,8 @@ fun AdminDashboardScreenPreview() {
     }
 
     val mockUserRepository = object : com.travel.app.domain.repository.UserRepository {
+        override suspend fun deleteAccount(userId: String) = Result.success(Unit)
+        override suspend fun uploadAvatar(userId: String, imageBytes: ByteArray, mimeType: String, fileName: String) = Result.failure<User>(Exception())
         override suspend fun login(email: String, password: String, captchaToken: String?) = Result.failure<User>(Exception())
         override suspend fun registerViaggiatoreUser(email: String, firstName: String, lastName: String, password: String, phone: String?, captchaToken: String?) = Result.failure<User>(Exception())
         override suspend fun registerSocietaUser(email: String, companyName: String, vatNumber: String, password: String, phone: String?, captchaToken: String?, documentPhotos: List<String>) = Result.failure<User>(Exception())
