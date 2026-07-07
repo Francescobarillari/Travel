@@ -80,6 +80,17 @@ public class DataSeeder implements CommandLineRunner {
         traveler.setPreferences(new HashSet<>(Arrays.asList(TravelTag.AVVENTURA, TravelTag.NATURA)));
         userRepository.save(traveler);
 
+        // Create the super short account
+        User shortUser = new User();
+        shortUser.setEmail("a@a.com");
+        shortUser.setPasswordHash("hashed_password");
+        shortUser.setUserType(UserType.VIAGGIATORE);
+        shortUser.setFirstName("A");
+        shortUser.setLastName("A");
+        shortUser.setRoles("ROLE_VIAGGIATORE");
+        shortUser.setKeycloakId(UUID.randomUUID().toString());
+        userRepository.save(shortUser);
+
         // --- Località 1: Roma ---
         Location loc1 = locationRepository.findByNameIgnoreCase("Roma, Italia")
                 .orElseGet(() -> {

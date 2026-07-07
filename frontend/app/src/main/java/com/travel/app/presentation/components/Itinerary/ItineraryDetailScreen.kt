@@ -185,7 +185,7 @@ fun ItineraryDetailScreen(
                     IconButton(
                         onClick = {
                             val locs = itinerary.getActivities()?.mapNotNull { it.getLocation() }?.filter { it.isNotBlank() }?.distinct()?.joinToString(", ")
-                            CalendarExportUtil.exportToIcs(
+                            CalendarExportUtil.addToCalendar(
                                 context = context,
                                 title = itinerary.getTitle() ?: "Itinerario",
                                 description = itinerary.getDescription(),

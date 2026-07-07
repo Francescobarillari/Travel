@@ -710,3 +710,69 @@
 2026-07-06 22:30:13.252 INFO  [http-nio-8080-exec-5] security-audit - REQUEST_END: method=DELETE, uri=/api/v1/reviews/f38e60b8-5a8e-4876-816e-a47980e33009, user=fra@example.com
 2026-07-06 22:30:13.281 INFO  [http-nio-8080-exec-7] security-audit - REQUEST_START: method=GET, uri=/api/v1/reviews/itinerary/0341dc09-6f01-4f05-ab9e-9944a7f1e5e7, user=fra@example.com
 2026-07-06 22:30:13.304 INFO  [http-nio-8080-exec-7] security-audit - REQUEST_END: method=GET, uri=/api/v1/reviews/itinerary/0341dc09-6f01-4f05-ab9e-9944a7f1e5e7, user=fra@example.com
+2026-07-07 08:54:16.032 INFO  [http-nio-8080-exec-1] security-audit - REQUEST_START: method=POST, uri=/api/auth/signup, user=SYSTEM
+2026-07-07 08:54:16.526 INFO  [http-nio-8080-exec-1] security-audit - REQUEST_END: method=POST, uri=/api/auth/signup, user=SYSTEM
+2026-07-07 08:54:20.756 INFO  [http-nio-8080-exec-3] security-audit - REQUEST_START: method=POST, uri=/api/auth/signup, user=SYSTEM
+2026-07-07 08:54:20.820 INFO  [http-nio-8080-exec-3] security-audit - REQUEST_END: method=POST, uri=/api/auth/signup, user=SYSTEM
+2026-07-07 08:54:25.693 INFO  [http-nio-8080-exec-2] security-audit - REQUEST_START: method=POST, uri=/api/auth/signup, user=SYSTEM
+2026-07-07 08:54:25.728 INFO  [http-nio-8080-exec-2] security-audit - REQUEST_END: method=POST, uri=/api/auth/signup, user=SYSTEM
+2026-07-07 08:54:40.081 INFO  [http-nio-8080-exec-4] security-audit - REQUEST_START: method=POST, uri=/api/auth/signup, user=SYSTEM
+2026-07-07 08:54:40.111 INFO  [http-nio-8080-exec-4] security-audit - REQUEST_END: method=POST, uri=/api/auth/signup, user=SYSTEM
+2026-07-07 08:55:38.231 INFO  [http-nio-8080-exec-5] security-audit - REQUEST_START: method=POST, uri=/api/auth/login, user=SYSTEM
+2026-07-07 08:55:41.696 WARN  [http-nio-8080-exec-5] security-audit - LOGIN_FAILED: User email=user@travel.com
+2026-07-07 08:55:41.823 INFO  [http-nio-8080-exec-5] security-audit - REQUEST_END: method=POST, uri=/api/auth/login, user=SYSTEM
+2026-07-07 08:56:21.534 INFO  [http-nio-8080-exec-6] security-audit - REQUEST_START: method=POST, uri=/api/auth/login, user=SYSTEM
+2026-07-07 08:56:21.711 WARN  [http-nio-8080-exec-6] security-audit - LOGIN_FAILED: User email=basic-user@travel.com
+2026-07-07 08:56:21.720 INFO  [http-nio-8080-exec-6] security-audit - REQUEST_END: method=POST, uri=/api/auth/login, user=SYSTEM
+2026-07-07 08:56:27.178 INFO  [http-nio-8080-exec-7] security-audit - REQUEST_START: method=POST, uri=/api/auth/login, user=SYSTEM
+2026-07-07 08:56:27.354 WARN  [http-nio-8080-exec-7] security-audit - LOGIN_FAILED: User email=basic-user@travel.com
+2026-07-07 08:56:27.358 INFO  [http-nio-8080-exec-7] security-audit - REQUEST_END: method=POST, uri=/api/auth/login, user=SYSTEM
+2026-07-07 08:56:42.114 INFO  [http-nio-8080-exec-8] security-audit - REQUEST_START: method=POST, uri=/api/auth/login, user=SYSTEM
+2026-07-07 08:56:42.962 INFO  [http-nio-8080-exec-8] security-audit - LOGIN_SUCCESS: User email=basic-user@example.com
+2026-07-07 08:56:43.074 INFO  [http-nio-8080-exec-8] security-audit - REQUEST_END: method=POST, uri=/api/auth/login, user=SYSTEM
+2026-07-07 08:56:43.375 INFO  [http-nio-8080-exec-9] security-audit - REQUEST_START: method=GET, uri=/user/me, user=basic-user@example.com
+2026-07-07 08:56:43.392 INFO  [http-nio-8080-exec-9] security-audit - REQUEST_END: method=GET, uri=/user/me, user=basic-user@example.com
+2026-07-07 09:05:21.402 INFO  [http-nio-8080-exec-1] security-audit - REQUEST_START: method=POST, uri=/api/auth/login, user=SYSTEM
+2026-07-07 09:05:25.932 WARN  [http-nio-8080-exec-1] security-audit - LOGIN_FAILED: User email=a@a.it
+2026-07-07 09:05:26.112 INFO  [http-nio-8080-exec-1] security-audit - REQUEST_END: method=POST, uri=/api/auth/login, user=SYSTEM
+2026-07-07 09:07:05.893 INFO  [http-nio-8080-exec-3] security-audit - REQUEST_START: method=POST, uri=/api/auth/login, user=SYSTEM
+2026-07-07 09:07:07.585 INFO  [http-nio-8080-exec-3] security-audit - LOGIN_SUCCESS: User email=a@a.com
+2026-07-07 09:07:07.669 INFO  [http-nio-8080-exec-3] security-audit - REQUEST_END: method=POST, uri=/api/auth/login, user=SYSTEM
+2026-07-07 09:07:08.206 INFO  [http-nio-8080-exec-4] security-audit - REQUEST_START: method=GET, uri=/user/me, user=a@a.com
+2026-07-07 09:07:08.245 INFO  [http-nio-8080-exec-4] security-audit - REQUEST_END: method=GET, uri=/user/me, user=a@a.com
+2026-07-07 09:07:08.443 INFO  [http-nio-8080-exec-5] security-audit - REQUEST_START: method=GET, uri=/activity/search, user=a@a.com
+2026-07-07 09:07:08.554 INFO  [http-nio-8080-exec-6] security-audit - REQUEST_START: method=GET, uri=/api/location/search, user=a@a.com
+2026-07-07 09:07:08.560 INFO  [http-nio-8080-exec-7] security-audit - REQUEST_START: method=GET, uri=/itinerary, user=a@a.com
+2026-07-07 09:07:08.607 INFO  [http-nio-8080-exec-6] security-audit - REQUEST_END: method=GET, uri=/api/location/search, user=a@a.com
+2026-07-07 09:07:08.607 INFO  [http-nio-8080-exec-9] security-audit - REQUEST_START: method=GET, uri=/api/location/search, user=a@a.com
+2026-07-07 09:07:08.608 INFO  [http-nio-8080-exec-8] security-audit - REQUEST_START: method=GET, uri=/activity/search, user=a@a.com
+2026-07-07 09:07:08.613 INFO  [http-nio-8080-exec-5] security-audit - REQUEST_END: method=GET, uri=/activity/search, user=a@a.com
+2026-07-07 09:07:08.615 INFO  [http-nio-8080-exec-9] security-audit - REQUEST_END: method=GET, uri=/api/location/search, user=a@a.com
+2026-07-07 09:07:08.619 INFO  [http-nio-8080-exec-7] security-audit - REQUEST_END: method=GET, uri=/itinerary, user=a@a.com
+2026-07-07 09:07:08.644 INFO  [http-nio-8080-exec-8] security-audit - REQUEST_END: method=GET, uri=/activity/search, user=a@a.com
+2026-07-07 09:07:08.650 INFO  [http-nio-8080-exec-10] security-audit - REQUEST_START: method=GET, uri=/itinerary, user=a@a.com
+2026-07-07 09:07:08.698 INFO  [http-nio-8080-exec-10] security-audit - REQUEST_END: method=GET, uri=/itinerary, user=a@a.com
+2026-07-07 09:07:10.309 INFO  [http-nio-8080-exec-1] security-audit - REQUEST_START: method=GET, uri=/activity, user=a@a.com
+2026-07-07 09:07:10.495 INFO  [http-nio-8080-exec-1] security-audit - REQUEST_END: method=GET, uri=/activity, user=a@a.com
+2026-07-07 09:07:10.691 INFO  [http-nio-8080-exec-2] security-audit - REQUEST_START: method=GET, uri=/itinerary, user=a@a.com
+2026-07-07 09:07:10.717 INFO  [http-nio-8080-exec-2] security-audit - REQUEST_END: method=GET, uri=/itinerary, user=a@a.com
+2026-07-07 09:07:12.965 INFO  [http-nio-8080-exec-4] security-audit - REQUEST_START: method=GET, uri=/api/location/search, user=a@a.com
+2026-07-07 09:07:12.965 INFO  [http-nio-8080-exec-3] security-audit - REQUEST_START: method=GET, uri=/activity/search, user=a@a.com
+2026-07-07 09:07:12.965 INFO  [http-nio-8080-exec-6] security-audit - REQUEST_START: method=GET, uri=/itinerary, user=a@a.com
+2026-07-07 09:07:12.980 INFO  [http-nio-8080-exec-4] security-audit - REQUEST_END: method=GET, uri=/api/location/search, user=a@a.com
+2026-07-07 09:07:12.995 INFO  [http-nio-8080-exec-3] security-audit - REQUEST_END: method=GET, uri=/activity/search, user=a@a.com
+2026-07-07 09:07:12.997 INFO  [http-nio-8080-exec-6] security-audit - REQUEST_END: method=GET, uri=/itinerary, user=a@a.com
+2026-07-07 09:07:14.595 INFO  [http-nio-8080-exec-7] security-audit - REQUEST_START: method=GET, uri=/itinerary, user=a@a.com
+2026-07-07 09:07:14.596 INFO  [http-nio-8080-exec-5] security-audit - REQUEST_START: method=GET, uri=/activity/search, user=a@a.com
+2026-07-07 09:07:14.596 INFO  [http-nio-8080-exec-9] security-audit - REQUEST_START: method=GET, uri=/api/location/search, user=a@a.com
+2026-07-07 09:07:14.625 INFO  [http-nio-8080-exec-9] security-audit - REQUEST_END: method=GET, uri=/api/location/search, user=a@a.com
+2026-07-07 09:07:14.638 INFO  [http-nio-8080-exec-7] security-audit - REQUEST_END: method=GET, uri=/itinerary, user=a@a.com
+2026-07-07 09:07:14.640 INFO  [http-nio-8080-exec-5] security-audit - REQUEST_END: method=GET, uri=/activity/search, user=a@a.com
+2026-07-07 09:07:17.416 INFO  [http-nio-8080-exec-10] security-audit - REQUEST_START: method=GET, uri=/itinerary/28f1596c-1d22-4e42-9f97-4b36312ff4fb/image, user=anonymousUser
+2026-07-07 09:07:17.416 INFO  [http-nio-8080-exec-8] security-audit - REQUEST_START: method=GET, uri=/itinerary/0bb7b4ef-919d-47ad-9302-91dc644b9808/image, user=anonymousUser
+2026-07-07 09:07:17.480 INFO  [http-nio-8080-exec-10] security-audit - REQUEST_END: method=GET, uri=/itinerary/28f1596c-1d22-4e42-9f97-4b36312ff4fb/image, user=anonymousUser
+2026-07-07 09:07:17.480 INFO  [http-nio-8080-exec-8] security-audit - REQUEST_END: method=GET, uri=/itinerary/0bb7b4ef-919d-47ad-9302-91dc644b9808/image, user=anonymousUser
+2026-07-07 09:07:19.317 INFO  [http-nio-8080-exec-1] security-audit - REQUEST_START: method=GET, uri=/itinerary/0bb7b4ef-919d-47ad-9302-91dc644b9808/image, user=anonymousUser
+2026-07-07 09:07:19.329 INFO  [http-nio-8080-exec-1] security-audit - REQUEST_END: method=GET, uri=/itinerary/0bb7b4ef-919d-47ad-9302-91dc644b9808/image, user=anonymousUser
+2026-07-07 09:07:19.385 INFO  [http-nio-8080-exec-2] security-audit - REQUEST_START: method=GET, uri=/api/v1/reviews/itinerary/0bb7b4ef-919d-47ad-9302-91dc644b9808, user=a@a.com
+2026-07-07 09:07:19.437 INFO  [http-nio-8080-exec-2] security-audit - REQUEST_END: method=GET, uri=/api/v1/reviews/itinerary/0bb7b4ef-919d-47ad-9302-91dc644b9808, user=a@a.com

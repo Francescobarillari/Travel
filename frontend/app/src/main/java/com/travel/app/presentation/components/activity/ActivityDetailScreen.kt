@@ -215,7 +215,7 @@ fun ActivityDetailScreen(
                             // Calendar Export Button
                             IconButton(
                                 onClick = {
-                                    CalendarExportUtil.exportToIcs(
+                                    CalendarExportUtil.addToCalendar(
                                         context = context,
                                         title = act.name ?: "Attività",
                                         description = act.description,
