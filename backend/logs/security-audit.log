@@ -2994,3 +2994,83 @@
 2026-07-07 16:04:11.968 INFO  [http-nio-8080-exec-1] security-audit - REQUEST_START: method=POST, uri=/api/auth/signup, user=SYSTEM
 2026-07-07 16:04:20.860 INFO  [http-nio-8080-exec-1] security-audit - AUDIT_EVENT: actor=SYSTEM, action=USER_REGISTER, entityName=User, entityId=a639348c-49ef-445e-a2d9-3945cc8c684e, details=Registered user with email: baudouvoufrateu-8570@yopmail.com of type VIAGGIATORE
 2026-07-07 16:04:21.340 INFO  [http-nio-8080-exec-1] security-audit - REQUEST_END: method=POST, uri=/api/auth/signup, user=SYSTEM
+2026-07-07 16:09:15.293 INFO  [http-nio-8080-exec-3] security-audit - REQUEST_START: method=POST, uri=/api/auth/signup, user=SYSTEM
+2026-07-07 16:09:25.704 INFO  [http-nio-8080-exec-3] security-audit - AUDIT_EVENT: actor=SYSTEM, action=USER_REGISTER, entityName=User, entityId=45b0ab80-2024-4535-a29f-eacc8e73a9b0, details=Registered user with email: fouddileuxovi-2280@yopmail.com of type VIAGGIATORE
+2026-07-07 16:09:26.103 INFO  [http-nio-8080-exec-3] security-audit - REQUEST_END: method=POST, uri=/api/auth/signup, user=SYSTEM
+2026-07-07 16:09:33.356 INFO  [http-nio-8080-exec-5] security-audit - REQUEST_START: method=POST, uri=/api/auth/signup, user=SYSTEM
+2026-07-07 16:09:33.672 INFO  [http-nio-8080-exec-5] security-audit - REQUEST_END: method=POST, uri=/api/auth/signup, user=SYSTEM
+2026-07-07 16:10:09.000 INFO  [http-nio-8080-exec-6] security-audit - REQUEST_START: method=POST, uri=/api/auth/signup, user=SYSTEM
+2026-07-07 16:10:13.703 INFO  [http-nio-8080-exec-6] security-audit - AUDIT_EVENT: actor=SYSTEM, action=USER_REGISTER, entityName=User, entityId=0df698c4-66bc-4444-b8fc-f058d103c98e, details=Registered user with email: truredovapeu-4168@yopmail.com of type VIAGGIATORE
+2026-07-07 16:10:13.782 INFO  [http-nio-8080-exec-6] security-audit - REQUEST_END: method=POST, uri=/api/auth/signup, user=SYSTEM
+2026-07-07 16:11:28.825 INFO  [http-nio-8080-exec-8] security-audit - REQUEST_START: method=POST, uri=/api/auth/login, user=SYSTEM
+2026-07-07 16:11:29.198 INFO  [http-nio-8080-exec-8] security-audit - LOGIN_SUCCESS: User email=truredovapeu-4168@yopmail.com
+2026-07-07 16:11:34.922 INFO  [http-nio-8080-exec-8] security-audit - REQUEST_END: method=POST, uri=/api/auth/login, user=SYSTEM
+2026-07-07 16:11:36.390 INFO  [http-nio-8080-exec-9] security-audit - REQUEST_START: method=GET, uri=/user/me, user=truredovapeu-4168@yopmail.com
+2026-07-07 16:11:36.543 INFO  [http-nio-8080-exec-9] security-audit - REQUEST_END: method=GET, uri=/user/me, user=truredovapeu-4168@yopmail.com
+2026-07-07 16:11:36.736 INFO  [http-nio-8080-exec-10] security-audit - REQUEST_START: method=GET, uri=/activity/search, user=truredovapeu-4168@yopmail.com
+2026-07-07 16:11:36.751 INFO  [http-nio-8080-exec-2] security-audit - REQUEST_START: method=GET, uri=/user, user=truredovapeu-4168@yopmail.com
+2026-07-07 16:11:36.757 INFO  [http-nio-8080-exec-1] security-audit - REQUEST_START: method=GET, uri=/api/location/search, user=truredovapeu-4168@yopmail.com
+2026-07-07 16:11:36.810 INFO  [http-nio-8080-exec-3] security-audit - REQUEST_START: method=GET, uri=/itinerary, user=truredovapeu-4168@yopmail.com
+2026-07-07 16:11:36.912 INFO  [http-nio-8080-exec-4] security-audit - REQUEST_START: method=GET, uri=/activity/search, user=truredovapeu-4168@yopmail.com
+2026-07-07 16:11:37.006 INFO  [http-nio-8080-exec-2] security-audit - REQUEST_END: method=GET, uri=/user, user=truredovapeu-4168@yopmail.com
+2026-07-07 16:11:37.067 INFO  [http-nio-8080-exec-5] security-audit - REQUEST_START: method=GET, uri=/api/location/search, user=truredovapeu-4168@yopmail.com
+2026-07-07 16:11:37.158 INFO  [http-nio-8080-exec-5] security-audit - REQUEST_END: method=GET, uri=/api/location/search, user=truredovapeu-4168@yopmail.com
+2026-07-07 16:11:37.160 INFO  [http-nio-8080-exec-1] security-audit - REQUEST_END: method=GET, uri=/api/location/search, user=truredovapeu-4168@yopmail.com
+2026-07-07 16:11:37.211 INFO  [http-nio-8080-exec-6] security-audit - REQUEST_START: method=GET, uri=/itinerary, user=truredovapeu-4168@yopmail.com
+2026-07-07 16:11:37.211 INFO  [http-nio-8080-exec-7] security-audit - REQUEST_START: method=GET, uri=/user, user=truredovapeu-4168@yopmail.com
+2026-07-07 16:11:37.235 INFO  [http-nio-8080-exec-3] security-audit - REQUEST_END: method=GET, uri=/itinerary, user=truredovapeu-4168@yopmail.com
+2026-07-07 16:11:37.235 INFO  [http-nio-8080-exec-10] security-audit - REQUEST_END: method=GET, uri=/activity/search, user=truredovapeu-4168@yopmail.com
+2026-07-07 16:11:37.236 INFO  [http-nio-8080-exec-4] security-audit - REQUEST_END: method=GET, uri=/activity/search, user=truredovapeu-4168@yopmail.com
+2026-07-07 16:11:37.311 INFO  [http-nio-8080-exec-7] security-audit - REQUEST_END: method=GET, uri=/user, user=truredovapeu-4168@yopmail.com
+2026-07-07 16:11:37.368 INFO  [http-nio-8080-exec-6] security-audit - REQUEST_END: method=GET, uri=/itinerary, user=truredovapeu-4168@yopmail.com
+2026-07-07 16:11:48.023 INFO  [http-nio-8080-exec-8] security-audit - REQUEST_START: method=POST, uri=/user/0df698c4-66bc-4444-b8fc-f058d103c98e/avatar, user=truredovapeu-4168@yopmail.com
+2026-07-07 16:11:48.850 INFO  [http-nio-8080-exec-8] security-audit - REQUEST_END: method=POST, uri=/user/0df698c4-66bc-4444-b8fc-f058d103c98e/avatar, user=truredovapeu-4168@yopmail.com
+2026-07-07 16:11:49.013 INFO  [http-nio-8080-exec-9] security-audit - REQUEST_START: method=GET, uri=/user/0df698c4-66bc-4444-b8fc-f058d103c98e/avatar, user=anonymousUser
+2026-07-07 16:11:49.124 INFO  [http-nio-8080-exec-9] security-audit - REQUEST_END: method=GET, uri=/user/0df698c4-66bc-4444-b8fc-f058d103c98e/avatar, user=anonymousUser
+2026-07-07 16:18:03.821 INFO  [http-nio-8080-exec-1] security-audit - REQUEST_START: method=POST, uri=/api/auth/signup, user=SYSTEM
+2026-07-07 16:18:13.377 INFO  [http-nio-8080-exec-1] security-audit - AUDIT_EVENT: actor=SYSTEM, action=USER_REGISTER, entityName=User, entityId=d3ffa62b-2132-4e59-a4ee-03dc9ee6710e, details=Registered user with email: geuveucrecreza-5857@yopmail.com of type VIAGGIATORE
+2026-07-07 16:18:13.835 INFO  [http-nio-8080-exec-1] security-audit - REQUEST_END: method=POST, uri=/api/auth/signup, user=SYSTEM
+2026-07-07 16:18:29.933 INFO  [http-nio-8080-exec-5] security-audit - REQUEST_START: method=POST, uri=/api/auth/signup, user=SYSTEM
+2026-07-07 16:18:30.185 INFO  [http-nio-8080-exec-5] security-audit - REQUEST_END: method=POST, uri=/api/auth/signup, user=SYSTEM
+2026-07-07 16:18:47.668 INFO  [http-nio-8080-exec-6] security-audit - REQUEST_START: method=POST, uri=/api/auth/signup, user=SYSTEM
+2026-07-07 16:18:51.610 INFO  [http-nio-8080-exec-6] security-audit - AUDIT_EVENT: actor=SYSTEM, action=USER_REGISTER, entityName=User, entityId=9efc932e-342a-4e75-9898-b9f62e993e7a, details=Registered user with email: fasihellodi-1168@yopmail.com of type VIAGGIATORE
+2026-07-07 16:18:51.704 INFO  [http-nio-8080-exec-6] security-audit - REQUEST_END: method=POST, uri=/api/auth/signup, user=SYSTEM
+2026-07-07 16:19:09.980 INFO  [http-nio-8080-exec-7] security-audit - REQUEST_START: method=POST, uri=/api/auth/login, user=SYSTEM
+2026-07-07 16:19:10.325 INFO  [http-nio-8080-exec-7] security-audit - LOGIN_SUCCESS: User email=fasihellodi-1168@yopmail.com
+2026-07-07 16:19:13.824 INFO  [http-nio-8080-exec-7] security-audit - REQUEST_END: method=POST, uri=/api/auth/login, user=SYSTEM
+2026-07-07 16:19:15.083 INFO  [http-nio-8080-exec-8] security-audit - REQUEST_START: method=GET, uri=/user/me, user=fasihellodi-1168@yopmail.com
+2026-07-07 16:19:15.148 INFO  [http-nio-8080-exec-8] security-audit - REQUEST_END: method=GET, uri=/user/me, user=fasihellodi-1168@yopmail.com
+2026-07-07 16:19:15.348 INFO  [http-nio-8080-exec-9] security-audit - REQUEST_START: method=GET, uri=/activity/search, user=fasihellodi-1168@yopmail.com
+2026-07-07 16:19:15.374 INFO  [http-nio-8080-exec-1] security-audit - REQUEST_START: method=GET, uri=/itinerary, user=fasihellodi-1168@yopmail.com
+2026-07-07 16:19:15.381 INFO  [http-nio-8080-exec-10] security-audit - REQUEST_START: method=GET, uri=/user, user=fasihellodi-1168@yopmail.com
+2026-07-07 16:19:15.391 INFO  [http-nio-8080-exec-2] security-audit - REQUEST_START: method=GET, uri=/api/location/search, user=fasihellodi-1168@yopmail.com
+2026-07-07 16:19:15.459 INFO  [http-nio-8080-exec-3] security-audit - REQUEST_START: method=GET, uri=/activity/search, user=fasihellodi-1168@yopmail.com
+2026-07-07 16:19:15.608 INFO  [http-nio-8080-exec-10] security-audit - REQUEST_END: method=GET, uri=/user, user=fasihellodi-1168@yopmail.com
+2026-07-07 16:19:15.679 INFO  [http-nio-8080-exec-2] security-audit - REQUEST_END: method=GET, uri=/api/location/search, user=fasihellodi-1168@yopmail.com
+2026-07-07 16:19:15.679 INFO  [http-nio-8080-exec-5] security-audit - REQUEST_START: method=GET, uri=/api/location/search, user=fasihellodi-1168@yopmail.com
+2026-07-07 16:19:15.726 INFO  [http-nio-8080-exec-5] security-audit - REQUEST_END: method=GET, uri=/api/location/search, user=fasihellodi-1168@yopmail.com
+2026-07-07 16:19:15.726 INFO  [http-nio-8080-exec-4] security-audit - REQUEST_START: method=GET, uri=/user, user=fasihellodi-1168@yopmail.com
+2026-07-07 16:19:15.734 INFO  [http-nio-8080-exec-1] security-audit - REQUEST_END: method=GET, uri=/itinerary, user=fasihellodi-1168@yopmail.com
+2026-07-07 16:19:15.735 INFO  [http-nio-8080-exec-3] security-audit - REQUEST_END: method=GET, uri=/activity/search, user=fasihellodi-1168@yopmail.com
+2026-07-07 16:19:15.735 INFO  [http-nio-8080-exec-9] security-audit - REQUEST_END: method=GET, uri=/activity/search, user=fasihellodi-1168@yopmail.com
+2026-07-07 16:19:15.768 INFO  [http-nio-8080-exec-6] security-audit - REQUEST_START: method=GET, uri=/itinerary, user=fasihellodi-1168@yopmail.com
+2026-07-07 16:19:15.809 INFO  [http-nio-8080-exec-4] security-audit - REQUEST_END: method=GET, uri=/user, user=fasihellodi-1168@yopmail.com
+2026-07-07 16:19:15.880 INFO  [http-nio-8080-exec-6] security-audit - REQUEST_END: method=GET, uri=/itinerary, user=fasihellodi-1168@yopmail.com
+2026-07-07 16:19:41.141 INFO  [http-nio-8080-exec-8] security-audit - REQUEST_START: method=GET, uri=/activity, user=fasihellodi-1168@yopmail.com
+2026-07-07 16:19:41.449 INFO  [http-nio-8080-exec-8] security-audit - REQUEST_END: method=GET, uri=/activity, user=fasihellodi-1168@yopmail.com
+2026-07-07 16:19:41.541 INFO  [http-nio-8080-exec-10] security-audit - REQUEST_START: method=GET, uri=/itinerary, user=fasihellodi-1168@yopmail.com
+2026-07-07 16:19:41.670 INFO  [http-nio-8080-exec-10] security-audit - REQUEST_END: method=GET, uri=/itinerary, user=fasihellodi-1168@yopmail.com
+2026-07-07 16:19:42.078 INFO  [http-nio-8080-exec-5] security-audit - REQUEST_START: method=GET, uri=/itinerary, user=fasihellodi-1168@yopmail.com
+2026-07-07 16:19:42.085 INFO  [http-nio-8080-exec-2] security-audit - REQUEST_START: method=GET, uri=/activity/search, user=fasihellodi-1168@yopmail.com
+2026-07-07 16:19:42.096 INFO  [http-nio-8080-exec-3] security-audit - REQUEST_START: method=GET, uri=/api/location/search, user=fasihellodi-1168@yopmail.com
+2026-07-07 16:19:42.100 INFO  [http-nio-8080-exec-1] security-audit - REQUEST_START: method=GET, uri=/user, user=fasihellodi-1168@yopmail.com
+2026-07-07 16:19:42.163 INFO  [http-nio-8080-exec-3] security-audit - REQUEST_END: method=GET, uri=/api/location/search, user=fasihellodi-1168@yopmail.com
+2026-07-07 16:19:42.213 INFO  [http-nio-8080-exec-1] security-audit - REQUEST_END: method=GET, uri=/user, user=fasihellodi-1168@yopmail.com
+2026-07-07 16:19:42.232 INFO  [http-nio-8080-exec-5] security-audit - REQUEST_END: method=GET, uri=/itinerary, user=fasihellodi-1168@yopmail.com
+2026-07-07 16:19:42.277 INFO  [http-nio-8080-exec-2] security-audit - REQUEST_END: method=GET, uri=/activity/search, user=fasihellodi-1168@yopmail.com
+2026-07-07 16:19:42.560 INFO  [http-nio-8080-exec-9] security-audit - REQUEST_START: method=GET, uri=/user/0df698c4-66bc-4444-b8fc-f058d103c98e/avatar, user=anonymousUser
+2026-07-07 16:19:42.737 INFO  [http-nio-8080-exec-9] security-audit - REQUEST_END: method=GET, uri=/user/0df698c4-66bc-4444-b8fc-f058d103c98e/avatar, user=anonymousUser
+2026-07-07 16:19:44.524 INFO  [http-nio-8080-exec-4] security-audit - REQUEST_START: method=GET, uri=/user/56544ecf-e356-479a-a10b-05ae5355d243/avatar, user=anonymousUser
+2026-07-07 16:19:44.595 INFO  [http-nio-8080-exec-4] security-audit - REQUEST_END: method=GET, uri=/user/56544ecf-e356-479a-a10b-05ae5355d243/avatar, user=anonymousUser
+2026-07-07 16:19:45.211 INFO  [http-nio-8080-exec-6] security-audit - REQUEST_START: method=GET, uri=/user/d06ca9ba-69d2-469f-94b9-d38379a6b2fd/avatar, user=anonymousUser
+2026-07-07 16:19:45.265 INFO  [http-nio-8080-exec-6] security-audit - REQUEST_END: method=GET, uri=/user/d06ca9ba-69d2-469f-94b9-d38379a6b2fd/avatar, user=anonymousUser

@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -48,9 +49,8 @@ fun EsploraScreen(
     favoritesTrigger: Int = 0,
     modifier: Modifier = Modifier
 ) {
-    val scrollState = rememberScrollState()
     val focusManager = LocalFocusManager.current
-    var isSearchFocused by remember { mutableStateOf(false) }
+    var isSearchActive by remember { mutableStateOf(false) }
 
     val favoriteActivities = remember { mutableStateMapOf<String, Boolean>() }
     val favoriteItineraries = remember { mutableStateMapOf<String, Boolean>() }
@@ -111,7 +111,11 @@ fun EsploraScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp, vertical = 8.dp)
-                .onFocusChanged { isSearchFocused = it.isFocused },
+                .onFocusChanged { 
+                    if (it.isFocused) {
+                        isSearchActive = true
+                    }
+                },
             placeholder = { 
                 Text(
                     text = "Cerca per utenti, itinerari, attività...",
@@ -120,14 +124,28 @@ fun EsploraScreen(
                 ) 
             },
             leadingIcon = { 
-                Icon(
-                    imageVector = Icons.Default.Search, 
-                    contentDescription = "Cerca", 
-                    tint = MaterialTheme.colorScheme.primary 
-                ) 
+                if (isSearchActive) {
+                    IconButton(onClick = {
+                        focusManager.clearFocus()
+                        viewModel.onSearchQueryChanged("")
+                        isSearchActive = false
+                    }) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack, 
+                            contentDescription = "Indietro",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.Search, 
+                        contentDescription = "Cerca", 
+                        tint = MaterialTheme.colorScheme.primary 
+                    )
+                }
             },
             trailingIcon = {
-                if (isSearchFocused || viewModel.searchQuery.isNotEmpty()) {
+                if (isSearchActive || viewModel.searchQuery.isNotEmpty()) {
                     IconButton(onClick = { isFilterPanelVisible = !isFilterPanelVisible }) {
                         Icon(
                             imageVector = Icons.Default.FilterList,
@@ -148,7 +166,7 @@ fun EsploraScreen(
             )
         )
 
-        androidx.compose.animation.AnimatedVisibility(visible = isFilterPanelVisible && (isSearchFocused || viewModel.searchQuery.isNotEmpty())) {
+        androidx.compose.animation.AnimatedVisibility(visible = isFilterPanelVisible && (isSearchActive || viewModel.searchQuery.isNotEmpty())) {
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -180,7 +198,7 @@ fun EsploraScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        androidx.compose.animation.AnimatedVisibility(visible = isSearchFocused || viewModel.searchQuery.isNotEmpty()) {
+        androidx.compose.animation.AnimatedVisibility(visible = isSearchActive || viewModel.searchQuery.isNotEmpty()) {
             TabRow(
                 selectedTabIndex = viewModel.selectedTab.ordinal,
                 containerColor = Color.Transparent,
@@ -214,6 +232,12 @@ fun EsploraScreen(
 
         val listState = androidx.compose.foundation.lazy.rememberLazyListState()
 
+        LaunchedEffect(listState.isScrollInProgress) {
+            if (listState.isScrollInProgress) {
+                focusManager.clearFocus()
+            }
+        }
+
         LaunchedEffect(listState) {
             snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index }
                 .collect { lastIndex ->
@@ -233,7 +257,7 @@ fun EsploraScreen(
         ) {
             
             item {
-                androidx.compose.animation.AnimatedVisibility(visible = !isSearchFocused && viewModel.searchQuery.isEmpty()) {
+                androidx.compose.animation.AnimatedVisibility(visible = !isSearchActive && viewModel.searchQuery.isEmpty()) {
                     Column(modifier = Modifier.padding(20.dp)) {
                         Text(
                             text = "Ispirazioni di Viaggio",
@@ -276,7 +300,7 @@ fun EsploraScreen(
                 }
             }
             
-            if (isSearchFocused || viewModel.searchQuery.isNotEmpty()) {
+            if (isSearchActive || viewModel.searchQuery.isNotEmpty()) {
                 
                 if (viewModel.errorMessage != null) {
                     item {
@@ -513,6 +537,8 @@ fun EsploraScreenPreview() {
                     override suspend fun unblockCompany(id: String) = Result.success(Unit)
                     override suspend fun getAllUsers() = Result.success(emptyList<User>())
                     override suspend fun getUserById(id: String) = Result.failure<User>(Exception("Not implemented"))
+                    override suspend fun deleteAccount(userId: String) = Result.success(Unit)
+                    override suspend fun uploadAvatar(userId: String, imageBytes: ByteArray, mimeType: String, fileName: String) = Result.failure<User>(Exception("Not implemented"))
                 },
                 itineraryRepository = object : com.travel.app.domain.repository.ItineraryRepository {
                     override suspend fun getItineraries() = Result.success(emptyList<it.unical.ea.dtos.itinerary.ItineraryDto>())

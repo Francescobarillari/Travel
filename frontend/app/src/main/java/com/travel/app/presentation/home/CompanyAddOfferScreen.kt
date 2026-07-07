@@ -52,6 +52,12 @@ fun CompanyAddOfferScreen(
     val calendar = Calendar.getInstance()
     val focusManager = LocalFocusManager.current
 
+    LaunchedEffect(scrollState.isScrollInProgress) {
+        if (scrollState.isScrollInProgress) {
+            focusManager.clearFocus()
+        }
+    }
+
     // Image Picker Launcher
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetMultipleContents()
