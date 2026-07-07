@@ -61,6 +61,7 @@ class CompanyAddOfferViewModel(
         get() = activityId != null
 
     // Form fields state
+    var title by mutableStateOf("")
     var description by mutableStateOf("")
     var location by mutableStateOf("")
     
@@ -89,6 +90,7 @@ class CompanyAddOfferViewModel(
 
     fun resetForm() {
         activityId = null
+        title = ""
         description = ""
         location = ""
         startYear = 0
@@ -109,6 +111,10 @@ class CompanyAddOfferViewModel(
 
     fun submitActivity() {
         // Validation
+        if (title.isBlank()) {
+            errorMessage = "Il titolo dell'attività è obbligatorio"
+            return
+        }
         if (location.isBlank()) {
             errorMessage = "La posizione dell'attività è obbligatoria"
             return
@@ -155,10 +161,8 @@ class CompanyAddOfferViewModel(
                 val startLdt = LocalDateTime.of(startYear, startMonth, startDay, startHour, startMinute)
                 val endLdt = LocalDateTime.of(endYear, endMonth, endDay, endHour, endMinute)
 
-                val activityName = if (defaultOrganizer.isNotBlank()) defaultOrganizer else "Attività"
-
                 val activityDto = ActivityDto()
-                activityDto.setName(activityName)
+                activityDto.setName(title.trim())
                 activityDto.setDescription(if (description.isNotBlank()) description else null)
                 activityDto.setLocation(location)
                 activityDto.setStartTime(startLdt)
@@ -194,6 +198,7 @@ class CompanyAddOfferViewModel(
             try {
                 val result = activityRepository.getActivityById(id)
                 result.onSuccess { activity ->
+                    title = activity.name ?: ""
                     description = activity.description ?: ""
                     location = activity.location ?: ""
                     

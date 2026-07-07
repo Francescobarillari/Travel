@@ -110,6 +110,22 @@ fun CompanyAddOfferScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     ActivityInputField(
+                        label = "Titolo attività *",
+                        value = viewModel.title,
+                        onValueChange = { viewModel.title = it },
+                        placeholder = "Es. Tour guidato del Colosseo...",
+                        singleLine = true,
+                        enabled = !viewModel.isEditMode,
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = null,
+                                tint = Color(0xFF64748B)
+                            )
+                        }
+                    )
+
+                    ActivityInputField(
                         label = "Descrizione *",
                         value = viewModel.description,
                         onValueChange = { viewModel.description = it },
