@@ -358,7 +358,7 @@ fun AdminDashboardScreenPreview() {
         override suspend fun createActivity(request: it.unical.ea.dtos.activity.ActivityDto) = request
         override suspend fun getActivities() = emptyList<it.unical.ea.dtos.activity.ActivityDto>()
         override suspend fun searchActivities(query: String, minPrice: Double?, maxPrice: Double?, page: Int, size: Int) = it.unical.ea.dtos.common.PageDto<it.unical.ea.dtos.activity.ActivityDto>()
-        override suspend fun searchLocalita(query: String, page: Int, size: Int) = it.unical.ea.dtos.common.PageDto<it.unical.ea.dtos.location.LocationDto>()
+        override suspend fun searchLocalita(query: String, includeExternal: Boolean, page: Int, size: Int) = it.unical.ea.dtos.common.PageDto<it.unical.ea.dtos.location.LocationDto>()
         override suspend fun getLocalitaById(id: String) = it.unical.ea.dtos.location.LocationDto()
         override suspend fun getActivityById(id: String) = it.unical.ea.dtos.activity.ActivityDto()
         override suspend fun getItineraries() = emptyList<it.unical.ea.dtos.itinerary.ItineraryDto>()
