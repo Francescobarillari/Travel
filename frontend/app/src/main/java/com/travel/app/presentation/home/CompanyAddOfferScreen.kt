@@ -438,8 +438,8 @@ fun CompanyAddOfferScreen(
                 viewModel.showSuccessDialog = false
                 onNavigateBack()
             },
-            title = { Text(if (viewModel.isEditMode) "Offerta Modificata" else "Offerta Pubblicata") },
-            text = { Text(if (viewModel.isEditMode) "La tua attività è stata modificata con successo." else "La tua attività è stata pubblicata con successo ed è ora visibile ai viaggiatori.") },
+            title = { Text(if (viewModel.isEditMode) "Offerta Modificata" else "In Attesa di Approvazione") },
+            text = { Text(if (viewModel.isEditMode) "La tua attività è stata modificata con successo." else "La tua attività è stata creata con successo. Sarà pubblicata e visibile ai viaggiatori non appena un amministratore l'avrà approvata.") },
             confirmButton = {
                 Button(
                     onClick = { 
