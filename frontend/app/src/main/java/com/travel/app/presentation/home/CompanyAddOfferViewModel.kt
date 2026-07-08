@@ -154,6 +154,7 @@ class CompanyAddOfferViewModel(
     }
 
     fun submitActivity(context: android.content.Context) {
+        if (isLoading) return
         val participants = maxParticipantsText.toIntOrNull()
         val priceVal = if (isFreeEvent) 0.0 else priceText.toDoubleOrNull()
 
@@ -171,7 +172,7 @@ class CompanyAddOfferViewModel(
             endLdt = endLdt,
             startDate = startLocalDate,
             endDate = endLocalDate,
-            selectedDays = selectedDaysOfWeek.toSet(),
+            selectedDays = if (isEditMode) emptySet() else setOf("MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"),
             timeSlots = timeSlots.toList(),
             maxParticipants = participants,
             price = priceVal
@@ -206,7 +207,7 @@ class CompanyAddOfferViewModel(
                     createRequest.setLocation(location)
                     createRequest.setStartDate(startLocalDate!!)
                     createRequest.setEndDate(endLocalDate!!)
-                    createRequest.setDaysOfWeek(selectedDaysOfWeek.toSet())
+                    createRequest.setDaysOfWeek(setOf("MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"))
                     createRequest.setTimeSlots(timeSlots.toList())
                     createRequest.setParticipants(participants!!)
                     createRequest.setPrice(BigDecimal.valueOf(priceVal!!))
@@ -304,6 +305,7 @@ class CompanyAddOfferViewModel(
     }
 
     fun deleteActivity(onSuccess: () -> Unit) {
+        if (isLoading) return
         val currentId = activityId ?: return
         isLoading = true
         errorMessage = null

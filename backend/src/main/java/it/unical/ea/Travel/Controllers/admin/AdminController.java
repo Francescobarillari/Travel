@@ -86,16 +86,45 @@ public class AdminController {
     @GetMapping("/activities/pending")
     public List<ActivityDto> getPendingActivities() {
         List<Activity> pending = activityRepository.findByTemplateApproved(false);
-        List<ActivityDto> dtos = activityMapper.toDTOList(pending);
-        for (int i = 0; i < pending.size(); i++) {
-            dtos.get(i).setCurrentParticipants(activityService.calculateCurrentParticipants(pending.get(i)));
+        
+        // Raggruppa le sessioni per ID del template
+        java.util.Map<UUID, java.util.List<Activity>> sessionsByTemplate = new java.util.HashMap<>();
+        for (Activity act : pending) {
+            if (act.getTemplate() != null) {
+                sessionsByTemplate.computeIfAbsent(act.getTemplate().getId(), k -> new java.util.ArrayList<>()).add(act);
+            }
+        }
+        
+        List<ActivityDto> dtos = new java.util.ArrayList<>();
+        for (java.util.List<Activity> sessions : sessionsByTemplate.values()) {
+            if (sessions.isEmpty()) continue;
+            
+            // Trova la sessione con la data di inizio minima e quella con la data di fine massima
+            Activity minAct = sessions.get(0);
+            Activity maxAct = sessions.get(0);
+            for (Activity act : sessions) {
+                if (act.getStartTime().isBefore(minAct.getStartTime())) {
+                    minAct = act;
+                }
+                if (act.getEndTime().isAfter(maxAct.getEndTime())) {
+                    maxAct = act;
+                }
+            }
+            
+            // Crea il DTO basandosi sulla sessione minima
+            ActivityDto dto = activityMapper.toDTO(minAct);
+            // Imposta l'intervallo completo della ricorrenza
+            dto.setStartTime(minAct.getStartTime());
+            dto.setEndTime(maxAct.getEndTime());
+            dto.setCurrentParticipants(activityService.calculateCurrentParticipants(minAct));
+            dtos.add(dto);
         }
         return dtos;
     }
 
     @Operation(summary = "Approva un'attività")
     @PostMapping("/activities/{id}/approve")
-    public ResponseEntity<Void> approveActivity(@PathVariable String id, @RequestParam Boolean approved) {
+    public ResponseEntity<Void> approveActivity(@PathVariable String id, @RequestParam(required = false, defaultValue = "true") Boolean approved) {
         UUID uuid = UUID.fromString(id);
         Activity activity = activityRepository.findById(uuid)
                 .orElseThrow(() -> new RuntimeException("Attività non trovata"));

@@ -71,4 +71,7 @@ public class ActivityDto {
 
     @Schema(description = "Media delle recensioni", example = "4.5")
     private Double averageRating = 0.0;
+
+    @Schema(description = "Altre sessioni/date disponibili per questo template")
+    private List<ActivityDto> sessions;
 }
