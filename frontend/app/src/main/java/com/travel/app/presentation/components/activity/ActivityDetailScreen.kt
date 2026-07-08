@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -75,6 +76,7 @@ fun ActivityDetailScreen(
     var showSuccessDialog by remember { mutableStateOf(false) }
     var showCancelConfirmationDialog by remember { mutableStateOf(false) }
     var showCancelSuccessDialog by remember { mutableStateOf(false) }
+    var showReceiptDialog by remember { mutableStateOf(false) }
     
     var reviews by remember { mutableStateOf<List<ReviewDto>>(emptyList()) }
     val scope = rememberCoroutineScope()
@@ -192,38 +194,57 @@ fun ActivityDetailScreen(
                                 color = MaterialTheme.colorScheme.primary
                             )
                         }
-                        Button(
-                            onClick = {
-                                if (isBooked) {
-                                    showCancelConfirmationDialog = true
-                                } else {
-                                    scope.launch {
-                                        isLoading = true
-                                        val bookRes = AppContainer.activityRepository.bookActivity(currentSession!!.id.toString())
-                                        isLoading = false
-                                        bookRes.fold(
-                                            onSuccess = { response ->
-                                                currentBookingId = response.bookingId
-                                                paymentClientSecret = response.clientSecret
-                                                showCheckoutSummary = true
-                                            },
-                                            onFailure = {
-                                                Toast.makeText(context, "Errore nella prenotazione: ${it.message}", Toast.LENGTH_LONG).show()
-                                            }
-                                        )
-                                    }
-                                }
-                            },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = if (isBooked) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
-                            ),
-                            modifier = Modifier.height(48.dp),
-                            shape = RoundedCornerShape(24.dp)
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Text(
-                                text = if (isBooked) "Annulla Prenotazione" else "Prenota",
-                                fontWeight = FontWeight.Bold
-                            )
+                            if (isBooked) {
+                                IconButton(
+                                    onClick = { showReceiptDialog = true },
+                                    modifier = Modifier
+                                        .size(48.dp)
+                                        .background(MaterialTheme.colorScheme.primaryContainer, CircleShape)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Receipt,
+                                        contentDescription = "Ricevuta",
+                                        tint = MaterialTheme.colorScheme.onPrimaryContainer
+                                    )
+                                }
+                            }
+                            Button(
+                                onClick = {
+                                    if (isBooked) {
+                                        showCancelConfirmationDialog = true
+                                    } else {
+                                        scope.launch {
+                                            isLoading = true
+                                            val bookRes = AppContainer.activityRepository.bookActivity(currentSession!!.id.toString())
+                                            isLoading = false
+                                            bookRes.fold(
+                                                onSuccess = { response ->
+                                                    currentBookingId = response.bookingId
+                                                    paymentClientSecret = response.clientSecret
+                                                    showCheckoutSummary = true
+                                                },
+                                                onFailure = {
+                                                    Toast.makeText(context, "Errore nella prenotazione: ${it.message}", Toast.LENGTH_LONG).show()
+                                                }
+                                            )
+                                        }
+                                    }
+                                },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (isBooked) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+                                ),
+                                modifier = Modifier.height(48.dp),
+                                shape = RoundedCornerShape(24.dp)
+                            ) {
+                                Text(
+                                    text = if (isBooked) "Annulla Prenotazione" else "Prenota",
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
                         }
                     }
                 }
@@ -337,24 +358,26 @@ fun ActivityDetailScreen(
                             }
                             
                             // Favorite Button
-                            IconButton(
-                                onClick = {
-                                    onFavoriteClick()
-                                    if (!isFavorite) {
-                                        act.location?.split(",")?.firstOrNull()?.trim()?.let { city ->
-                                            AppContainer.sessionManager.incrementLocationScore(city, 3)
+                            if (!isBooked) {
+                                IconButton(
+                                    onClick = {
+                                        onFavoriteClick()
+                                        if (!isFavorite) {
+                                            act.location?.split(",")?.firstOrNull()?.trim()?.let { city ->
+                                                AppContainer.sessionManager.incrementLocationScore(city, 3)
+                                            }
                                         }
-                                    }
-                                },
-                                modifier = Modifier
-                                    .size(44.dp)
-                                    .background(Color.Black.copy(alpha = 0.5f), CircleShape)
-                            ) {
-                                Icon(
-                                    imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                                    contentDescription = "Preferito",
-                                    tint = if (isFavorite) Color.Red else Color.White
-                                )
+                                    },
+                                    modifier = Modifier
+                                        .size(44.dp)
+                                        .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                                ) {
+                                    Icon(
+                                        imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                        contentDescription = "Preferito",
+                                        tint = if (isFavorite) Color.Red else Color.White
+                                    )
+                                }
                             }
                         }
 
@@ -798,15 +821,161 @@ fun ActivityDetailScreen(
         AlertDialog(
             onDismissRequest = { showCancelSuccessDialog = false },
             title = { Text("Prenotazione Annullata", fontWeight = FontWeight.Bold) },
-            text = { Text("La tua prenotazione è stata annullata con successo.") },
+            text = { Text("La tua prenotazione è stata annullata con successo ed è stato emesso il relativo rimborso.") },
             confirmButton = {
-                Button(
-                    onClick = { showCancelSuccessDialog = false }
-                ) {
-                    Text("Chiudi")
+                TextButton(onClick = { showCancelSuccessDialog = false }) {
+                    Text("OK", fontWeight = FontWeight.Bold)
                 }
             }
         )
+    }
+
+    if (showReceiptDialog && activity != null && currentSession != null) {
+        androidx.compose.ui.window.Dialog(onDismissRequest = { showReceiptDialog = false }) {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .wrapContentHeight()
+                    .padding(16.dp),
+                shape = RoundedCornerShape(24.dp),
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 6.dp,
+                shadowElevation = 10.dp
+            ) {
+                Column(
+                    modifier = Modifier
+                        .padding(24.dp)
+                        .fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Receipt,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(56.dp)
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = "RICEVUTA DI PRENOTAZIONE",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = "Transazione completata con successo",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    Divider(color = MaterialTheme.colorScheme.outlineVariant, thickness = 1.dp)
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("ID Prenotazione:", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(
+                            text = "TRV-${currentSession.id?.toString()?.substring(0,8)?.uppercase() ?: "N/A"}",
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("Attività:", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(
+                            text = activity?.name ?: "Attività",
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false).padding(start = 8.dp)
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("Data:", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        val dateStr = try {
+                            val formatter = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm", java.util.Locale.ITALIAN)
+                            currentSession.startTime?.format(formatter) ?: "N/A"
+                        } catch (e: Exception) {
+                            "N/A"
+                        }
+                        Text(
+                            text = dateStr,
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("Utente:", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(
+                            text = currentUserEmail,
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("Metodo Pagamento:", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(
+                            text = if ((currentSession.price?.toDouble() ?: 0.0) == 0.0) "Nessuno (Gratis)" else "PayPal / Carta",
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Divider(color = MaterialTheme.colorScheme.outlineVariant, thickness = 1.dp)
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Importo Pagato",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        val priceVal = currentSession.price?.toDouble() ?: 0.0
+                        Text(
+                            text = if (priceVal == 0.0) "Gratis" else "€${String.format(java.util.Locale.getDefault(), "%.2f", priceVal)}",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Button(
+                        onClick = { showReceiptDialog = false },
+                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                        shape = RoundedCornerShape(24.dp)
+                    ) {
+                        Text("Chiudi", fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
     }
 
     if (showDateSelectorDialog && activity != null && currentSession != null) {
