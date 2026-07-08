@@ -54,6 +54,11 @@ fun AdminDashboardScreen(
     var selectedTab by remember { mutableStateOf(0) }
     var activeImageForZoom by remember { mutableStateOf<String?>(null) }
 
+    // Il back di sistema torna alla panoramica quando si è nelle liste di moderazione.
+    androidx.activity.compose.BackHandler(enabled = selectedTab != 0) {
+        selectedTab = 0
+    }
+
     val isPreview = androidx.compose.ui.platform.LocalInspectionMode.current
     LaunchedEffect(Unit) {
         if (!isPreview) {

@@ -37,6 +37,14 @@ fun TravelApp(
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
 
+    // Dalle schermate di registrazione / recupero password il back di sistema riporta
+    // al Login invece di uscire dall'app.
+    androidx.activity.compose.BackHandler(
+        enabled = currentScreen == Screen.REGISTER || currentScreen == Screen.FORGOT_PASSWORD
+    ) {
+        currentScreen = Screen.LOGIN
+    }
+
     // Flusso di Auto-Login all'avvio dell'applicazione
     LaunchedEffect(Unit) {
         val cachedUser = userRepository.getSessionUser()
