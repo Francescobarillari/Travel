@@ -1,8 +1,8 @@
 package com.travel.app.presentation.home.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -10,9 +10,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -28,19 +28,20 @@ fun CompanyKpiCard(
         modifier = modifier,
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = BorderStroke(1.dp, Color(0xFFE2E8F0))
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+                .padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Box(
                 modifier = Modifier
-                    .size(36.dp)
-                    .clip(CircleShape)
-                    .background(iconColor.copy(alpha = 0.1f)),
+                    .size(34.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(iconColor.copy(alpha = 0.12f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -50,154 +51,23 @@ fun CompanyKpiCard(
                     modifier = Modifier.size(18.dp)
                 )
             }
-            Text(
-                text = value,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.ExtraBold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Text(
-                text = title,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF64748B)
-            )
-        }
-    }
-}
-
-@Composable
-fun OccupancyProgressRing(
-    occupiedCount: Int,
-    capacityCount: Int,
-    modifier: Modifier = Modifier
-) {
-    val percentage = if (capacityCount > 0) (100 * occupiedCount / capacityCount) else 0
-    val remaining = (capacityCount - occupiedCount).coerceAtLeast(0)
-
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(24.dp)
-    ) {
-        Box(
-            modifier = Modifier.size(110.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            val colorProgress = MaterialTheme.colorScheme.primary
-            val colorSecondary = MaterialTheme.colorScheme.secondary
-            val colorTrack = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-
-            androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
-                val strokeWidth = 14.dp.toPx()
-                val radius = (size.minDimension - strokeWidth) / 2
-                val center = androidx.compose.ui.geometry.Offset(size.width / 2, size.height / 2)
-                val rect = androidx.compose.ui.geometry.Rect(center, radius)
-
-                // Sfondo
-                drawArc(
-                    color = colorTrack,
-                    startAngle = 0f,
-                    sweepAngle = 360f,
-                    useCenter = false,
-                    topLeft = rect.topLeft,
-                    size = rect.size,
-                    style = androidx.compose.ui.graphics.drawscope.Stroke(
-                        width = strokeWidth
-                    )
-                )
-
-                // Progresso
-                val sweepAngle = 360f * percentage / 100f
-                if (sweepAngle > 0) {
-                    drawArc(
-                        brush = Brush.linearGradient(
-                            colors = listOf(
-                                colorProgress,
-                                colorSecondary
-                            )
-                        ),
-                        startAngle = -90f,
-                        sweepAngle = sweepAngle,
-                        useCenter = false,
-                        topLeft = rect.topLeft,
-                        size = rect.size,
-                        style = androidx.compose.ui.graphics.drawscope.Stroke(
-                            width = strokeWidth,
-                            cap = androidx.compose.ui.graphics.StrokeCap.Round
-                        )
-                    )
-                }
-            }
-
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(
-                    text = "$percentage%",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
+                    text = value,
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Color(0xFF0F172A)
                 )
                 Text(
-                    text = "Occupati",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Color.Gray
+                    text = title,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color(0xFF64748B),
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }
-
-        Column(
-            verticalArrangement = Arrangement.spacedBy(6.dp),
-            modifier = Modifier.weight(1f)
-        ) {
-            StatDetailItem(
-                color = MaterialTheme.colorScheme.primary,
-                label = "Posti Prenotati",
-                value = "$occupiedCount"
-            )
-            StatDetailItem(
-                color = MaterialTheme.colorScheme.secondary,
-                label = "Posti Disponibili",
-                value = "$remaining"
-            )
-            StatDetailItem(
-                color = Color.Gray,
-                label = "Capacità Totale",
-                value = "$capacityCount"
-            )
-        }
-    }
-}
-
-@Composable
-fun StatDetailItem(
-    color: Color,
-    label: String,
-    value: String
-) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Box(
-            modifier = Modifier
-                .size(8.dp)
-                .background(color, CircleShape)
-        )
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.weight(1f)
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface
-        )
     }
 }
 
@@ -208,20 +78,19 @@ fun ActivityFillRateBar(
     capacityCount: Int,
     modifier: Modifier = Modifier
 ) {
-    val progress = if (capacityCount > 0) occupiedCount.toFloat() / capacityCount else 0f
-    val percentage = (progress * 100).toInt()
+    val progress = if (capacityCount > 0) (occupiedCount.toFloat() / capacityCount).coerceIn(0f, 1f) else 0f
 
     val barColor = when {
-        progress >= 0.75f -> Color(0xFF2E7D32)
-        progress >= 0.25f -> Color(0xFFE65100)
-        else -> Color(0xFFC62828)
+        progress >= 0.75f -> Color(0xFF16A34A)
+        progress >= 0.25f -> Color(0xFFF59E0B)
+        else -> Color(0xFF94A3B8)
     }
 
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+            .padding(vertical = 6.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -232,25 +101,27 @@ fun ActivityFillRateBar(
                 text = name,
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface,
+                color = Color(0xFF0F172A),
                 maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f)
             )
+            Spacer(Modifier.width(12.dp))
             Text(
-                text = "$occupiedCount/$capacityCount ($percentage%)",
+                text = "$occupiedCount/$capacityCount posti",
                 style = MaterialTheme.typography.bodySmall,
                 fontWeight = FontWeight.Bold,
-                color = barColor
+                color = Color(0xFF475569)
             )
         }
         LinearProgressIndicator(
             progress = progress,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(8.dp)
-                .clip(RoundedCornerShape(4.dp)),
+                .height(6.dp)
+                .clip(RoundedCornerShape(3.dp)),
             color = barColor,
-            trackColor = MaterialTheme.colorScheme.surfaceVariant
+            trackColor = Color(0xFFF1F5F9)
         )
     }
 }
