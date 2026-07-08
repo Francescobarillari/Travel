@@ -61,6 +61,9 @@ fun ActivityDetailScreen(
     modifier: Modifier = Modifier
 ) {
     var activity by remember { mutableStateOf<ActivityDto?>(null) }
+    var selectedSession by remember { mutableStateOf<ActivityDto?>(null) }
+    var showDateSelectorDialog by remember { mutableStateOf(false) }
+    val currentSession = selectedSession ?: activity
     var isLoading by remember { mutableStateOf(true) }
     var errorMsg by remember { mutableStateOf<String?>(null) }
     
@@ -83,6 +86,7 @@ fun ActivityDetailScreen(
         result.fold(
             onSuccess = {
                 activity = it
+                selectedSession = it
                 isLoading = false
                 // Increment location score when viewed
                 it.location?.split(",")?.firstOrNull()?.trim()?.let { city ->
@@ -94,14 +98,18 @@ fun ActivityDetailScreen(
                 isLoading = false
             }
         )
-        val bookedResult = AppContainer.activityRepository.isActivityBooked(activityId)
-        if (bookedResult.isSuccess) {
-            isBooked = bookedResult.getOrDefault(false)
-        }
         currentUserEmail = AppContainer.sessionManager.getSessionUser()?.email.orEmpty()
         val reviewsResult = AppContainer.reviewRepository.getReviewsForActivity(activityId)
         if (reviewsResult.isSuccess) {
             reviews = reviewsResult.getOrNull() ?: emptyList()
+        }
+    }
+
+    LaunchedEffect(selectedSession) {
+        val currentId = selectedSession?.id?.toString() ?: return@LaunchedEffect
+        val bookedResult = AppContainer.activityRepository.isActivityBooked(currentId)
+        if (bookedResult.isSuccess) {
+            isBooked = bookedResult.getOrDefault(false)
         }
     }
 
@@ -176,7 +184,7 @@ fun ActivityDetailScreen(
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                            val priceVal = activity!!.price?.toDouble() ?: 0.0
+                            val priceVal = currentSession!!.price?.toDouble() ?: 0.0
                             Text(
                                 text = if (priceVal == 0.0) "Gratis" else "€${String.format(Locale.getDefault(), "%.2f", priceVal)}",
                                 style = MaterialTheme.typography.titleLarge,
@@ -191,7 +199,7 @@ fun ActivityDetailScreen(
                                 } else {
                                     scope.launch {
                                         isLoading = true
-                                        val bookRes = AppContainer.activityRepository.bookActivity(activity?.id?.toString() ?: activityId)
+                                        val bookRes = AppContainer.activityRepository.bookActivity(currentSession!!.id.toString())
                                         isLoading = false
                                         bookRes.fold(
                                             onSuccess = { response ->
@@ -313,8 +321,8 @@ fun ActivityDetailScreen(
                                         title = act.name ?: "Attività",
                                         description = act.description,
                                         location = act.location,
-                                        startTime = act.startTime,
-                                        endTime = act.endTime
+                                        startTime = currentSession!!.startTime,
+                                        endTime = currentSession!!.endTime
                                     )
                                 },
                                 modifier = Modifier
@@ -393,10 +401,16 @@ fun ActivityDetailScreen(
                             horizontalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
                             // Date Card
+                            val hasMultipleSessions = (act.sessions?.size ?: 0) > 1
                             Surface(
                                 color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
                                 shape = RoundedCornerShape(16.dp),
-                                modifier = Modifier.weight(1f)
+                                modifier = Modifier.weight(1f),
+                                onClick = {
+                                    if (hasMultipleSessions) {
+                                        showDateSelectorDialog = true
+                                    }
+                                }
                             ) {
                                 Row(
                                     modifier = Modifier.padding(12.dp),
@@ -410,12 +424,23 @@ fun ActivityDetailScreen(
                                         modifier = Modifier.size(20.dp)
                                     )
                                     Column {
-                                        Text(
-                                            text = "Data",
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                        val start = act.startTime
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Text(
+                                                text = "Data",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                            if (hasMultipleSessions) {
+                                                Spacer(modifier = Modifier.width(4.dp))
+                                                Text(
+                                                    text = "(Cambia)",
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    color = MaterialTheme.colorScheme.primary,
+                                                    fontWeight = FontWeight.Bold
+                                                )
+                                            }
+                                        }
+                                        val start = currentSession!!.startTime
                                         val dateText = if (start != null) formatDate(start) else "Non specificata"
                                         Text(
                                             text = dateText,
@@ -450,10 +475,10 @@ fun ActivityDetailScreen(
                                             style = MaterialTheme.typography.labelSmall,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
-                                        val start = act.startTime
-                                        val end = act.endTime
-                                        val timeText = if (start != null && end != null) {
-                                            "${formatTime(start)} - ${formatTime(end)}"
+                                        val startVal = currentSession!!.startTime
+                                        val endVal = currentSession!!.endTime
+                                        val timeText = if (startVal != null && endVal != null) {
+                                            "${formatTime(startVal)} - ${formatTime(endVal)}"
                                         } else {
                                             "Non specificato"
                                         }
@@ -498,8 +523,8 @@ fun ActivityDetailScreen(
                                         modifier = Modifier.size(20.dp)
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    val current = act.currentParticipants ?: 0
-                                    val total = act.participants ?: 0
+                                    val current = currentSession!!.currentParticipants ?: 0
+                                    val total = currentSession!!.participants ?: 0
                                     Text(
                                         text = "Partecipanti: $current / $total posti",
                                         style = MaterialTheme.typography.bodyMedium,
@@ -679,13 +704,13 @@ fun ActivityDetailScreen(
         }
     }
 
-    if (showCheckoutSummary && currentBookingId != null && activity != null) {
+    if (showCheckoutSummary && currentBookingId != null && activity != null && currentSession != null) {
         CheckoutSummaryScreen(
             bookingId = currentBookingId!!,
-            title = activity!!.name ?: "Attività",
-            totalPrice = activity!!.price?.toDouble() ?: 0.0,
+            title = activity?.name ?: "Attività",
+            totalPrice = currentSession!!.price?.toDouble() ?: 0.0,
             isItinerary = false,
-            activities = listOf(activity!!),
+            activities = listOf(currentSession!!),
             userEmail = currentUserEmail,
             isConfirming = isLoading,
             onConfirm = {
@@ -713,7 +738,7 @@ fun ActivityDetailScreen(
                 scope.launch {
                     isLoading = true
                     try {
-                        AppContainer.activityRepository.cancelActivityBooking(activity?.id?.toString() ?: activityId)
+                        AppContainer.activityRepository.cancelActivityBooking(currentSession!!.id.toString())
                     } catch (_: Exception) {
                         // Ignora errori, chiudi comunque
                     }
@@ -733,7 +758,7 @@ fun ActivityDetailScreen(
         )
     }
 
-    if (showCancelConfirmationDialog) {
+    if (showCancelConfirmationDialog && currentSession != null) {
         AlertDialog(
             onDismissRequest = { showCancelConfirmationDialog = false },
             title = { Text("Annulla Prenotazione", fontWeight = FontWeight.Bold) },
@@ -744,7 +769,7 @@ fun ActivityDetailScreen(
                         showCancelConfirmationDialog = false
                         scope.launch {
                             isLoading = true
-                            val cancelRes = AppContainer.activityRepository.cancelActivityBooking(activity?.id?.toString() ?: activityId)
+                            val cancelRes = AppContainer.activityRepository.cancelActivityBooking(currentSession!!.id.toString())
                             isLoading = false
                             cancelRes.fold(
                                 onSuccess = {
@@ -779,6 +804,90 @@ fun ActivityDetailScreen(
                     onClick = { showCancelSuccessDialog = false }
                 ) {
                     Text("Chiudi")
+                }
+            }
+        )
+    }
+
+    if (showDateSelectorDialog && activity != null && currentSession != null) {
+        val sessionsList = activity?.sessions.orEmpty()
+        AlertDialog(
+            onDismissRequest = { showDateSelectorDialog = false },
+            title = { Text("Seleziona una data", fontWeight = FontWeight.Bold) },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 300.dp)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    for (session in sessionsList) {
+                        val start = session.startTime
+                        val end = session.endTime
+                        val isSelected = session.id == currentSession!!.id
+                        
+                        val formattedDate = if (start != null) formatDate(start) else "N/D"
+                        val formattedTime = if (start != null && end != null) "${formatTime(start)} - ${formatTime(end)}" else "N/D"
+                        val current = session.currentParticipants ?: 0
+                        val total = session.participants ?: 0
+                        val spotsLeft = total - current
+
+                        Surface(
+                            onClick = {
+                                selectedSession = session
+                                showDateSelectorDialog = false
+                            },
+                            color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                            shape = RoundedCornerShape(12.dp),
+                            border = BorderStroke(
+                                width = 1.dp,
+                                color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent
+                            ),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = formattedDate,
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = formattedTime,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = "Posti disponibili: $spotsLeft / $total",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                if (isSelected) {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = "Selezionata",
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showDateSelectorDialog = false }) {
+                    Text("Annulla")
                 }
             }
         )

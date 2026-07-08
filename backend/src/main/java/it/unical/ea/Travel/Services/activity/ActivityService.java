@@ -69,12 +69,52 @@ public class ActivityService {
     private boolean paymentMock;
 
     public List<ActivityDto> getAllActivities() {
-        List<Activity> activities = activityRepository.findAll();
-        List<ActivityDto> dtos = activityMapper.toDTOList(activities);
+        List<Activity> activities = activityRepository.findByTemplateApproved(true);
+        
+        // Raggruppa le sessioni per ID del template
+        java.util.Map<UUID, List<Activity>> sessionsByTemplate = new java.util.HashMap<>();
+        for (Activity act : activities) {
+            sessionsByTemplate.computeIfAbsent(act.getTemplate().getId(), k -> new java.util.ArrayList<>()).add(act);
+        }
 
-        // Arricchisci ogni DTO con il conteggio dinamico dei partecipanti
-        for (int i = 0; i < activities.size(); i++) {
-            dtos.get(i).setCurrentParticipants(calculateCurrentParticipants(activities.get(i)));
+        List<ActivityDto> dtos = new java.util.ArrayList<>();
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+
+        for (java.util.Map.Entry<UUID, List<Activity>> entry : sessionsByTemplate.entrySet()) {
+            List<Activity> sessions = entry.getValue();
+            if (sessions.isEmpty()) continue;
+
+            // Filtra le sessioni future per valorizzare la lista delle sessioni disponibili
+            List<Activity> futureSessions = sessions.stream()
+                .filter(s -> s.getStartTime().isAfter(now) || s.getStartTime().isEqual(now))
+                .sorted(java.util.Comparator.comparing(Activity::getStartTime))
+                .toList();
+
+            // Scegli la sessione primaria: preferibilmente la prima futura, altrimenti l'ultima passata
+            Activity primarySession;
+            if (!futureSessions.isEmpty()) {
+                primarySession = futureSessions.get(0);
+            } else {
+                // Se non ci sono sessioni future, ordina tutte per data decrescente e prendi la più recente
+                List<Activity> modifiableSessions = new java.util.ArrayList<>(sessions);
+                modifiableSessions.sort(java.util.Comparator.comparing(Activity::getStartTime).reversed());
+                primarySession = modifiableSessions.get(0);
+            }
+
+            ActivityDto dto = activityMapper.toDTO(primarySession);
+            dto.setCurrentParticipants(calculateCurrentParticipants(primarySession));
+
+            // Popola il campo sessions con tutte le sessioni future disponibili (ordinate per tempo di inizio)
+            List<ActivityDto> sessionDtos = futureSessions.stream()
+                .map(session -> {
+                    ActivityDto sDto = activityMapper.toDTO(session);
+                    sDto.setCurrentParticipants(calculateCurrentParticipants(session));
+                    return sDto;
+                })
+                .collect(Collectors.toList());
+            dto.setSessions(sessionDtos);
+
+            dtos.add(dto);
         }
 
         return dtos; 
@@ -229,6 +269,16 @@ public class ActivityService {
             Activity activity = activityOpt.get();
             ActivityDto dto = activityMapper.toDTO(activity);
             dto.setCurrentParticipants(calculateCurrentParticipants(activity));
+            
+            // Popola tutte le altre sessioni future dello stesso template
+            List<Activity> sessions = activityRepository.findSessionsByTemplate(activity.getTemplate().getId(), LocalDateTime.now());
+            List<ActivityDto> sessionDtos = sessions.stream().map(session -> {
+                ActivityDto sDto = activityMapper.toDTO(session);
+                sDto.setCurrentParticipants(calculateCurrentParticipants(session));
+                return sDto;
+            }).collect(Collectors.toList());
+            dto.setSessions(sessionDtos);
+            
             return dto;
         }
 
@@ -236,11 +286,20 @@ public class ActivityService {
         Optional<ActivityTemplate> templateOpt = activityTemplateRepository.findById(uuid);
         if (templateOpt.isPresent()) {
             ActivityTemplate template = templateOpt.get();
-            List<Activity> sessions = activityRepository.findSessionsByTemplate(template.getId(), null);
+            List<Activity> sessions = activityRepository.findSessionsByTemplate(template.getId(), LocalDateTime.now());
             if (!sessions.isEmpty()) {
                 Activity firstSession = sessions.get(0);
                 ActivityDto dto = activityMapper.toDTO(firstSession);
                 dto.setCurrentParticipants(calculateCurrentParticipants(firstSession));
+                
+                // Mappa tutte le sessioni nel DTO
+                List<ActivityDto> sessionDtos = sessions.stream().map(session -> {
+                    ActivityDto sDto = activityMapper.toDTO(session);
+                    sDto.setCurrentParticipants(calculateCurrentParticipants(session));
+                    return sDto;
+                }).collect(Collectors.toList());
+                dto.setSessions(sessionDtos);
+                
                 return dto;
             } else {
                 // Se il template non ha sessioni, restituisce un DTO fittizio basato sulle info del template
@@ -257,6 +316,7 @@ public class ActivityService {
                 dto.setEndTime(LocalDateTime.now());
                 dto.setParticipants(0);
                 dto.setCurrentParticipants(0);
+                dto.setSessions(new java.util.ArrayList<>());
                 return dto;
             }
         }
@@ -492,7 +552,7 @@ public class ActivityService {
                 .toList();
     }
 
-    // Carica una o più immagini per l'attività specificata
+    // Carica una o più immagini per l'attività o il template specificato
     @Transactional
     public ActivityDto uploadImages(String activityId, MultipartFile[] files) {
         if (files == null || files.length == 0) {
@@ -503,21 +563,65 @@ public class ActivityService {
         }
 
         UUID uuid = UUID.fromString(activityId);
-        Activity activity = activityRepository.findById(uuid)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "activity.notFound"));
 
-        if (activity.getTemplate().getImages() == null) {
-            activity.getTemplate().setImages(new java.util.ArrayList<>());
+        // 1. Cerca se l'ID appartiene a un'Activity (Sessione)
+        Optional<Activity> activityOpt = activityRepository.findById(uuid);
+        if (activityOpt.isPresent()) {
+            Activity activity = activityOpt.get();
+            ActivityTemplate template = activity.getTemplate();
+            if (template.getImages() == null) {
+                template.setImages(new java.util.ArrayList<>());
+            }
+            for (MultipartFile file : files) {
+                String relativePath = fileStorageService.store(file, ACTIVITIES_SUBDIR);
+                template.getImages().add(relativePath);
+            }
+            activityTemplateRepository.save(template);
+            Activity saved = activityRepository.save(activity);
+            return activityMapper.toDTO(saved);
         }
 
-        for (MultipartFile file : files) {
-            String relativePath = fileStorageService.store(file, ACTIVITIES_SUBDIR);
-            activity.getTemplate().getImages().add(relativePath);
+        // 2. Altrimenti, cerca se l'ID appartiene a un ActivityTemplate
+        Optional<ActivityTemplate> templateOpt = activityTemplateRepository.findById(uuid);
+        if (templateOpt.isPresent()) {
+            ActivityTemplate template = templateOpt.get();
+            if (template.getImages() == null) {
+                template.setImages(new java.util.ArrayList<>());
+            }
+            for (MultipartFile file : files) {
+                String relativePath = fileStorageService.store(file, ACTIVITIES_SUBDIR);
+                template.getImages().add(relativePath);
+            }
+            activityTemplateRepository.save(template);
+
+            // Trova se ha sessioni per restituire il DTO corretto
+            List<Activity> sessions = activityRepository.findSessionsByTemplate(template.getId(), null);
+            if (!sessions.isEmpty()) {
+                Activity firstSession = sessions.get(0);
+                ActivityDto dto = activityMapper.toDTO(firstSession);
+                dto.setCurrentParticipants(calculateCurrentParticipants(firstSession));
+                return dto;
+            } else {
+                ActivityDto dto = new ActivityDto();
+                dto.setId(template.getId());
+                dto.setName(template.getName());
+                dto.setDescription(template.getDescription());
+                dto.setLocation(template.getLocation());
+                if (template.getOrganizer() != null) {
+                    dto.setOrganizer(template.getOrganizer().getCompanyName());
+                }
+                dto.setImages(template.getImages());
+                dto.setTags(template.getTags());
+                dto.setPrice(BigDecimal.ZERO);
+                dto.setStartTime(LocalDateTime.now());
+                dto.setEndTime(LocalDateTime.now());
+                dto.setParticipants(0);
+                dto.setCurrentParticipants(0);
+                return dto;
+            }
         }
 
-        activityTemplateRepository.save(activity.getTemplate());
-        Activity saved = activityRepository.save(activity);
-        return activityMapper.toDTO(saved);
+        throw new ApiException(HttpStatus.NOT_FOUND, "activity.notFound");
     }
 
     // Carica l'immagine dell'attività come risorsa
@@ -525,23 +629,65 @@ public class ActivityService {
         return fileStorageService.load(ACTIVITIES_SUBDIR + "/" + filename);
     }
 
-    // Elimina una specifica immagine associata all'attività
+    // Elimina una specifica immagine associata all'attività o al template
     @Transactional
     public ActivityDto deleteImage(String activityId, String filename) {
         UUID uuid = UUID.fromString(activityId);
-        Activity activity = activityRepository.findById(uuid)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "activity.notFound"));
-
         String targetPath = ACTIVITIES_SUBDIR + "/" + filename;
-        if (activity.getTemplate().getImages() != null && activity.getTemplate().getImages().contains(targetPath)) {
-            fileStorageService.delete(targetPath);
-            activity.getTemplate().getImages().remove(targetPath);
-            activityTemplateRepository.save(activity.getTemplate());
-            Activity saved = activityRepository.save(activity);
-            return activityMapper.toDTO(saved);
-        } else {
-            throw new ApiException(HttpStatus.NOT_FOUND, "activity.imageNotFound");
+
+        Optional<Activity> activityOpt = activityRepository.findById(uuid);
+        if (activityOpt.isPresent()) {
+            Activity activity = activityOpt.get();
+            ActivityTemplate template = activity.getTemplate();
+            if (template.getImages() != null && template.getImages().contains(targetPath)) {
+                fileStorageService.delete(targetPath);
+                template.getImages().remove(targetPath);
+                activityTemplateRepository.save(template);
+                Activity saved = activityRepository.save(activity);
+                return activityMapper.toDTO(saved);
+            } else {
+                throw new ApiException(HttpStatus.NOT_FOUND, "activity.imageNotFound");
+            }
         }
+
+        Optional<ActivityTemplate> templateOpt = activityTemplateRepository.findById(uuid);
+        if (templateOpt.isPresent()) {
+            ActivityTemplate template = templateOpt.get();
+            if (template.getImages() != null && template.getImages().contains(targetPath)) {
+                fileStorageService.delete(targetPath);
+                template.getImages().remove(targetPath);
+                activityTemplateRepository.save(template);
+
+                List<Activity> sessions = activityRepository.findSessionsByTemplate(template.getId(), null);
+                if (!sessions.isEmpty()) {
+                    Activity firstSession = sessions.get(0);
+                    ActivityDto dto = activityMapper.toDTO(firstSession);
+                    dto.setCurrentParticipants(calculateCurrentParticipants(firstSession));
+                    return dto;
+                } else {
+                    ActivityDto dto = new ActivityDto();
+                    dto.setId(template.getId());
+                    dto.setName(template.getName());
+                    dto.setDescription(template.getDescription());
+                    dto.setLocation(template.getLocation());
+                    if (template.getOrganizer() != null) {
+                        dto.setOrganizer(template.getOrganizer().getCompanyName());
+                    }
+                    dto.setImages(template.getImages());
+                    dto.setTags(template.getTags());
+                    dto.setPrice(BigDecimal.ZERO);
+                    dto.setStartTime(LocalDateTime.now());
+                    dto.setEndTime(LocalDateTime.now());
+                    dto.setParticipants(0);
+                    dto.setCurrentParticipants(0);
+                    return dto;
+                }
+            } else {
+                throw new ApiException(HttpStatus.NOT_FOUND, "activity.imageNotFound");
+            }
+        }
+
+        throw new ApiException(HttpStatus.NOT_FOUND, "activity.notFound");
     }
 
     public List<UserDTO> getBookedUsers(String activityId) {
