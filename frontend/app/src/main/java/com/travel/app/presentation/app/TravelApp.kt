@@ -51,11 +51,15 @@ fun TravelApp(
                     currentUser = freshUser
                     currentScreen = if (freshUser.userType == "ADMIN") Screen.ADMIN else Screen.HOME
                 },
-                onFailure = {
-                    // Se il token è scaduto o non valido, effettua il logout per sicurezza
-                    userRepository.logout()
-                    currentUser = null
-                    currentScreen = Screen.LOGIN
+                onFailure = { error ->
+                    // Se il token è scaduto o non valido (401), effettua il logout per sicurezza.
+                    // Se è un errore di rete (IOException -> Nessuna connessione internet), manteniamo la sessione.
+                    val errorMessage = error.message ?: ""
+                    if (errorMessage == "Credenziali non valide" || errorMessage.contains("401")) {
+                        userRepository.logout()
+                        currentUser = null
+                        currentScreen = Screen.LOGIN
+                    }
                 }
             )
         } else {

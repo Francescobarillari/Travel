@@ -17,7 +17,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-enum class EsploraTab {
+enum class CercaTab {
     TUTTI,
     LOCALITA,
     UTENTI,
@@ -25,14 +25,14 @@ enum class EsploraTab {
     ITINERARI
 }
 
-class EsploraViewModel(
+class CercaViewModel(
     private val activityRepository: ActivityRepository,
     private val localitaRepository: LocalitaRepository,
     private val userRepository: UserRepository,
     private val itineraryRepository: ItineraryRepository
 ) : ViewModel() {
 
-    var selectedTab by mutableStateOf(EsploraTab.TUTTI)
+    var selectedTab by mutableStateOf(CercaTab.TUTTI)
 
     var searchQuery by mutableStateOf("")
         private set
@@ -79,7 +79,7 @@ class EsploraViewModel(
         performSearch()
     }
 
-    fun onTabSelected(tab: EsploraTab) {
+    fun onTabSelected(tab: CercaTab) {
         selectedTab = tab
     }
 
@@ -198,11 +198,11 @@ class EsploraViewModel(
     fun loadMore() {
         if (isLoading || isLoadingMore) return
         
-        if (selectedTab == EsploraTab.TUTTI || selectedTab == EsploraTab.LOCALITA) {
+        if (selectedTab == CercaTab.TUTTI || selectedTab == CercaTab.LOCALITA) {
             if (!isLastLocalitaPage) loadMoreLocalita()
         }
         
-        if (selectedTab == EsploraTab.TUTTI || selectedTab == EsploraTab.ATTIVITA) {
+        if (selectedTab == CercaTab.TUTTI || selectedTab == CercaTab.ATTIVITA) {
             if (!isLastActivityPage) loadMoreActivities()
         }
     }

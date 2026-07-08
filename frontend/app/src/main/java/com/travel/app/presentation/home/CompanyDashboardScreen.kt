@@ -409,6 +409,8 @@ fun CompanyDashboardScreenPreview() {
                     override suspend fun getAllCompanies() = Result.success(emptyList<com.travel.app.domain.model.User>())
                     override suspend fun blockCompany(id: String) = Result.success(Unit)
                     override suspend fun unblockCompany(id: String) = Result.success(Unit)
+                    override suspend fun uploadAvatar(userId: String, imageBytes: ByteArray, mimeType: String, fileName: String) = Result.failure<com.travel.app.domain.model.User>(Exception())
+                    override suspend fun deleteAccount(userId: String) = Result.success(Unit)
                 }
             )
         }

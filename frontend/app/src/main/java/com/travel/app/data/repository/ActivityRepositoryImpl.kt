@@ -5,6 +5,9 @@ import com.travel.app.data.dto.ErrorResponseDto
 import com.travel.app.domain.repository.ActivityRepository
 import com.travel.app.service.ApiService
 import it.unical.ea.dtos.activity.ActivityDto
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import retrofit2.HttpException
 import java.io.IOException
 
@@ -51,6 +54,19 @@ class ActivityRepositoryImpl(
     override suspend fun updateActivity(id: String, activity: ActivityDto): Result<ActivityDto> {
         return try {
             val result = apiService.updateActivity(id, activity)
+            Result.success(result)
+        } catch (e: Exception) {
+            Result.failure(Exception(handleError(e)))
+        }
+    }
+
+    override suspend fun uploadActivityImages(id: String, imageParts: List<Triple<ByteArray, String, String>>): Result<ActivityDto> {
+        return try {
+            val parts = imageParts.map { (bytes, mimeType, fileName) ->
+                val requestBody = bytes.toRequestBody(mimeType.toMediaTypeOrNull())
+                MultipartBody.Part.createFormData("files", fileName, requestBody)
+            }
+            val result = apiService.uploadActivityImages(id, parts)
             Result.success(result)
         } catch (e: Exception) {
             Result.failure(Exception(handleError(e)))

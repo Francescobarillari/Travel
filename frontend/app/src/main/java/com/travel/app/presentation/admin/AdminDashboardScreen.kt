@@ -389,6 +389,8 @@ fun AdminDashboardScreenPreview() {
         override suspend fun getAllCompanies() = Result.success(emptyList<User>())
         override suspend fun blockCompany(id: String) = Result.success(Unit)
         override suspend fun unblockCompany(id: String) = Result.success(Unit)
+        override suspend fun uploadAvatar(userId: String, imageBytes: ByteArray, mimeType: String, fileName: String) = Result.failure<User>(Exception())
+        override suspend fun deleteAccount(userId: String) = Result.success(Unit)
     }
 
     val mockViewModel = remember {
