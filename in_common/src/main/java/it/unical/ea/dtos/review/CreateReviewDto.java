@@ -12,6 +12,6 @@ import java.util.UUID;
 public class CreateReviewDto {
     private UUID activityId;
     private UUID itineraryId; // One of these should be populated
-    private Integer rating; // 1 to 5
+    private Double rating; // 1 to 5
     private String comment;
 }
