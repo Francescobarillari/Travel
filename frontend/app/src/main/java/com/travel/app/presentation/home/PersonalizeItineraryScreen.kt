@@ -36,6 +36,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.travel.app.data.AppContainer
 import it.unical.ea.dtos.activity.ActivityDto
+import it.unical.ea.dtos.activity.ActivityTemplateDto
 import it.unical.ea.dtos.itinerary.CreateItineraryRequest
 import it.unical.ea.dtos.itinerary.ItineraryDto
 import kotlinx.coroutines.launch
@@ -50,8 +51,6 @@ fun PersonalizeItineraryScreen(
     val focusManager = LocalFocusManager.current
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val density = LocalDensity.current
-    val itemHeightPx = remember(density) { with(density) { 110.dp.toPx() } }
 
     val city = remember(itinerary) {
         itinerary.activities?.firstOrNull()?.location?.split(",")?.firstOrNull()?.trim() ?: ""
@@ -61,32 +60,21 @@ fun PersonalizeItineraryScreen(
     var isSaving by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     
-    var availableActivities by remember { mutableStateOf<List<ActivityDto>>(emptyList()) }
+    var availableActivities by remember { mutableStateOf<List<ActivityTemplateDto>>(emptyList()) }
     var selectedActivities by remember(itinerary) {
-        mutableStateOf(itinerary.activities ?: emptyList())
+        mutableStateOf((itinerary.activities ?: emptyList()).sortedBy { it.startTime })
     }
 
     var activeTab by remember { mutableStateOf(0) } // 0 = Ordina, 1 = Aggiungi
     var searchQuery by remember { mutableStateOf("") }
+    var activeTemplateForSessionSelection by remember { mutableStateOf<ActivityTemplateDto?>(null) }
 
-    // Drag and drop states
-    var draggingIndex by remember { mutableStateOf<Int?>(null) }
-    var dragOffsetY by remember { mutableStateOf(0f) }
-
-    LaunchedEffect(city, selectedActivities) {
+    LaunchedEffect(city) {
         if (city.isNotBlank()) {
             isLoading = true
-            
-            // Calculate minStartTime
-            val minStartTime = if (selectedActivities.isNotEmpty()) {
-                selectedActivities.maxByOrNull { it.endTime ?: "" }?.endTime
-            } else {
-                itinerary.startDateTime
-            }
-            
             val res = AppContainer.activityRepository.searchActivities(
                 query = city, 
-                minStartTime = minStartTime,
+                minStartTime = null,
                 size = 100
             )
             isLoading = false
@@ -281,150 +269,63 @@ fun PersonalizeItineraryScreen(
                             }
                         } else {
                             Column(modifier = Modifier.fillMaxSize().weight(1f)) {
-                                // Info banner
-                                Card(
-                                    modifier = Modifier.fillMaxWidth().padding(16.dp),
-                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)),
-                                    shape = RoundedCornerShape(12.dp)
-                                ) {
-                                    Row(
-                                        modifier = Modifier.padding(12.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Icon(Icons.Default.Info, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
-                                        Spacer(modifier = Modifier.width(12.dp))
-                                        Text(
-                                            "Tieni premuto e trascina un'attività su o giù per riordinarla.",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                                        )
-                                    }
-                                }
-
                                 LazyColumn(
                                     modifier = Modifier.fillMaxSize().weight(1f),
                                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                                     verticalArrangement = Arrangement.spacedBy(10.dp)
                                 ) {
-                                    itemsIndexed(
+                                    items(
                                         items = selectedActivities,
-                                        key = { _, act -> act.id?.toString() ?: "" }
-                                    ) { index, activity ->
-                                        Box(
-                                            modifier = Modifier
-                                                .animateItemPlacement()
-                                                .fillMaxWidth()
+                                        key = { act -> act.id?.toString() ?: "" }
+                                    ) { activity ->
+                                        val actId = activity.id?.toString() ?: ""
+                                        Card(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            shape = RoundedCornerShape(16.dp),
+                                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                                         ) {
-                                            val actId = activity.id?.toString() ?: ""
-                                            val isDraggingThis = draggingIndex == index
-                                            
-                                            Card(
+                                            Row(
                                                 modifier = Modifier
                                                     .fillMaxWidth()
-                                                    .graphicsLayer {
-                                                        translationY = if (isDraggingThis) dragOffsetY else 0f
-                                                        scaleX = if (isDraggingThis) 1.04f else 1.0f
-                                                        scaleY = if (isDraggingThis) 1.04f else 1.0f
-                                                        shadowElevation = if (isDraggingThis) 8.dp.toPx() else 0f
-                                                    },
-                                                shape = RoundedCornerShape(16.dp),
-                                                colors = CardDefaults.cardColors(
-                                                    containerColor = if (isDraggingThis) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.surface
-                                                ),
-                                                elevation = CardDefaults.cardElevation(defaultElevation = if (isDraggingThis) 6.dp else 2.dp)
+                                                    .padding(16.dp),
+                                                verticalAlignment = Alignment.CenterVertically
                                             ) {
-                                                Row(
-                                                    modifier = Modifier
-                                                        .fillMaxWidth()
-                                                        .padding(16.dp),
-                                                    verticalAlignment = Alignment.CenterVertically
+                                                Column(modifier = Modifier.weight(1f)) {
+                                                    Text(
+                                                        text = activity.name ?: "Attività senza nome",
+                                                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                                        color = MaterialTheme.colorScheme.onSurface,
+                                                        maxLines = 1,
+                                                        overflow = TextOverflow.Ellipsis
+                                                    )
+                                                    Spacer(modifier = Modifier.height(4.dp))
+                                                    val formattedDate = activity.startTime?.let { "${it.dayOfMonth}/${it.monthValue}/${it.year} ${String.format("%02d:%02d", it.hour, it.minute)}" } ?: "N/D"
+                                                    val formattedEnd = activity.endTime?.let { "${String.format("%02d:%02d", it.hour, it.minute)}" } ?: "N/D"
+                                                    Text(
+                                                        text = "$formattedDate - $formattedEnd",
+                                                        style = MaterialTheme.typography.bodySmall,
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                    )
+                                                    Spacer(modifier = Modifier.height(2.dp))
+                                                    Text(
+                                                        text = "€${String.format("%.2f", activity.price?.toDouble() ?: 0.0)}",
+                                                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                                        color = MaterialTheme.colorScheme.primary
+                                                    )
+                                                }
+
+                                                Spacer(modifier = Modifier.width(16.dp))
+
+                                                IconButton(
+                                                    onClick = {
+                                                        selectedActivities = selectedActivities.filter { it.id?.toString() != actId }
+                                                    },
+                                                    colors = IconButtonDefaults.iconButtonColors(
+                                                        contentColor = MaterialTheme.colorScheme.error
+                                                    )
                                                 ) {
-                                                    // Drag handle
-                                                    Box(
-                                                        modifier = Modifier
-                                                            .size(40.dp)
-                                                            .pointerInput(index) {
-                                                                detectDragGesturesAfterLongPress(
-                                                                    onDragStart = {
-                                                                        draggingIndex = index
-                                                                        dragOffsetY = 0f
-                                                                    },
-                                                                    onDrag = { change, dragAmount ->
-                                                                        change.consume()
-                                                                        dragOffsetY += dragAmount.y
-                                                                        
-                                                                        val dragIdx = draggingIndex
-                                                                        if (dragIdx != null) {
-                                                                            if (dragOffsetY > itemHeightPx / 2 && dragIdx < selectedActivities.size - 1) {
-                                                                                // Swap with next
-                                                                                val mutableList = selectedActivities.toMutableList()
-                                                                                val temp = mutableList[dragIdx]
-                                                                                mutableList[dragIdx] = mutableList[dragIdx + 1]
-                                                                                mutableList[dragIdx + 1] = temp
-                                                                                selectedActivities = mutableList
-                                                                                draggingIndex = dragIdx + 1
-                                                                                dragOffsetY -= itemHeightPx
-                                                                            } else if (dragOffsetY < -itemHeightPx / 2 && dragIdx > 0) {
-                                                                                // Swap with previous
-                                                                                val mutableList = selectedActivities.toMutableList()
-                                                                                val temp = mutableList[dragIdx]
-                                                                                mutableList[dragIdx] = mutableList[dragIdx - 1]
-                                                                                mutableList[dragIdx - 1] = temp
-                                                                                selectedActivities = mutableList
-                                                                                draggingIndex = dragIdx - 1
-                                                                                dragOffsetY += itemHeightPx
-                                                                            }
-                                                                        }
-                                                                    },
-                                                                    onDragEnd = {
-                                                                        draggingIndex = null
-                                                                        dragOffsetY = 0f
-                                                                    },
-                                                                    onDragCancel = {
-                                                                        draggingIndex = null
-                                                                        dragOffsetY = 0f
-                                                                    }
-                                                                )
-                                                            },
-                                                        contentAlignment = Alignment.Center
-                                                    ) {
-                                                        Icon(
-                                                            imageVector = Icons.Default.DragHandle,
-                                                            contentDescription = "Trascina",
-                                                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                                                        )
-                                                    }
-
-                                                    Spacer(modifier = Modifier.width(8.dp))
-
-                                                    Column(modifier = Modifier.weight(1f)) {
-                                                        Text(
-                                                            text = activity.name ?: "Attività senza nome",
-                                                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                                            color = MaterialTheme.colorScheme.onSurface,
-                                                            maxLines = 1,
-                                                            overflow = TextOverflow.Ellipsis
-                                                        )
-                                                        Spacer(modifier = Modifier.height(4.dp))
-                                                        Text(
-                                                            text = "€${String.format("%.2f", activity.price?.toDouble() ?: 0.0)}",
-                                                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                                                            color = MaterialTheme.colorScheme.primary
-                                                        )
-                                                    }
-
-                                                    Spacer(modifier = Modifier.width(16.dp))
-
-                                                    IconButton(
-                                                        onClick = {
-                                                            selectedActivities = selectedActivities.filter { it.id?.toString() != actId }
-                                                        },
-                                                        colors = IconButtonDefaults.iconButtonColors(
-                                                            contentColor = MaterialTheme.colorScheme.error
-                                                        )
-                                                    ) {
-                                                        Icon(imageVector = Icons.Default.Delete, contentDescription = "Rimuovi")
-                                                    }
+                                                    Icon(imageVector = Icons.Default.Delete, contentDescription = "Rimuovi")
                                                 }
                                             }
                                         }
@@ -461,9 +362,6 @@ fun PersonalizeItineraryScreen(
                                 verticalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
                                 items(filtered) { activity ->
-                                    val actId = activity.id?.toString() ?: ""
-                                    val isAdded = selectedActivities.any { it.id?.toString() == actId }
-
                                     Card(
                                         modifier = Modifier.fillMaxWidth(),
                                         shape = RoundedCornerShape(16.dp),
@@ -488,41 +386,38 @@ fun PersonalizeItineraryScreen(
                                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                                 )
                                                 Spacer(modifier = Modifier.height(4.dp))
-                                                Text(
-                                                    text = "€${String.format("%.2f", activity.price?.toDouble() ?: 0.0)}",
-                                                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                                                    color = MaterialTheme.colorScheme.primary
-                                                )
+                                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                                    Text(
+                                                        text = "⭐ ${activity.averageRating ?: 0.0}",
+                                                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                                                        color = Color(0xFFEAB308)
+                                                    )
+                                                    activity.sessions?.firstOrNull()?.price?.let { price ->
+                                                        Spacer(modifier = Modifier.width(12.dp))
+                                                        Text(
+                                                            text = "Da €${String.format("%.2f", price.toDouble())}",
+                                                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                                            color = MaterialTheme.colorScheme.primary
+                                                        )
+                                                    }
+                                                }
                                             }
 
                                             Spacer(modifier = Modifier.width(16.dp))
 
-                                            if (isAdded) {
-                                                Button(
-                                                    onClick = {
-                                                        selectedActivities = selectedActivities.filter { it.id?.toString() != actId }
-                                                    },
-                                                    colors = ButtonDefaults.buttonColors(
-                                                        containerColor = MaterialTheme.colorScheme.errorContainer,
-                                                        contentColor = MaterialTheme.colorScheme.onErrorContainer
-                                                    ),
-                                                    shape = RoundedCornerShape(12.dp)
-                                                ) {
-                                                    Text("Aggiunto")
-                                                }
-                                            } else {
-                                                Button(
-                                                    onClick = {
-                                                        selectedActivities = selectedActivities + activity
-                                                    },
-                                                    colors = ButtonDefaults.buttonColors(
-                                                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                                                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                                                    ),
-                                                    shape = RoundedCornerShape(12.dp)
-                                                ) {
-                                                    Text("Aggiungi")
-                                                }
+                                            val countSelected = activity.sessions?.count { s -> selectedActivities.any { it.id?.toString() == s.id?.toString() } } ?: 0
+
+                                            Button(
+                                                onClick = {
+                                                    activeTemplateForSessionSelection = activity
+                                                },
+                                                colors = ButtonDefaults.buttonColors(
+                                                    containerColor = if (countSelected > 0) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.secondaryContainer,
+                                                    contentColor = if (countSelected > 0) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSecondaryContainer
+                                                ),
+                                                shape = RoundedCornerShape(12.dp)
+                                            ) {
+                                                Text(if (countSelected > 0) "Aggiunto ($countSelected)" else "Scegli Orario")
                                             }
                                         }
                                     }
@@ -531,6 +426,75 @@ fun PersonalizeItineraryScreen(
                         }
                     }
                 }
+            }
+
+            if (activeTemplateForSessionSelection != null) {
+                val template = activeTemplateForSessionSelection!!
+                AlertDialog(
+                    onDismissRequest = { activeTemplateForSessionSelection = null },
+                    title = { Text("Seleziona data e ora per ${template.name}") },
+                    text = {
+                        val sessions = template.sessions ?: emptyList()
+                        if (sessions.isEmpty()) {
+                            Text("Nessuna sessione programmata al momento.", style = MaterialTheme.typography.bodyMedium)
+                        } else {
+                            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                items(sessions) { session ->
+                                    val isSessionAdded = selectedActivities.any { it.id?.toString() == session.id?.toString() }
+                                    val formattedDate = session.startTime?.let { "${it.dayOfMonth}/${it.monthValue}/${it.year} ${String.format("%02d:%02d", it.hour, it.minute)}" } ?: "N/D"
+                                    val formattedEnd = session.endTime?.let { "${String.format("%02d:%02d", it.hour, it.minute)}" } ?: "N/D"
+                                    
+                                    Card(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clickable(enabled = !isSessionAdded) {
+                                                val overlap = selectedActivities.any { existing ->
+                                                    val sStart = session.startTime
+                                                    val sEnd = session.endTime
+                                                    val eStart = existing.startTime
+                                                    val eEnd = existing.endTime
+                                                    if (sStart != null && sEnd != null && eStart != null && eEnd != null) {
+                                                        sStart.isBefore(eEnd) && sEnd.isAfter(eStart)
+                                                    } else {
+                                                        false
+                                                    }
+                                                }
+                                                if (overlap) {
+                                                    Toast.makeText(context, "Errore: si sovrappone con un'altra attività selezionata!", Toast.LENGTH_LONG).show()
+                                                } else {
+                                                    selectedActivities = (selectedActivities + session).sortedBy { it.startTime }
+                                                    activeTemplateForSessionSelection = null
+                                                }
+                                            },
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = if (isSessionAdded) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surfaceVariant
+                                        )
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth().padding(12.dp),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Column {
+                                                Text(text = "$formattedDate - $formattedEnd", fontWeight = FontWeight.Bold)
+                                                Text(text = "Prezzo: €${session.price} | Posti: ${session.participants}", style = MaterialTheme.typography.bodySmall)
+                                            }
+                                            if (isSessionAdded) {
+                                                Text("Selezionato", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    confirmButton = {},
+                    dismissButton = {
+                        TextButton(onClick = { activeTemplateForSessionSelection = null }) {
+                            Text("Annulla")
+                        }
+                    }
+                )
             }
         }
     }

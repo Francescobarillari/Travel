@@ -84,6 +84,7 @@ public class DataSeeder implements CommandLineRunner {
                 req.setFirstName("Test");
                 req.setLastName("User");
                 String keycloakId = keycloakAdminService.createUser(req);
+                keycloakAdminService.verifyEmail(keycloakId);
 
                 User user = new User();
                 user.setEmail(TEST_EMAIL);
@@ -94,11 +95,26 @@ public class DataSeeder implements CommandLineRunner {
                 user.setRoles("ROLE_VIAGGIATORE");
                 user.setKeycloakId(keycloakId);
                 userRepository.save(user);
-                log.info("✅ Utente test creato: {} / {}", TEST_EMAIL, TEST_PASSWORD);
+                log.info("✅ Utente test creato e verificato: {} / {}", TEST_EMAIL, TEST_PASSWORD);
             } catch (KeycloakUserAlreadyExistsException e) {
                 log.info("ℹ️ Utente test già presente su Keycloak: {}", TEST_EMAIL);
+                try {
+                    userRepository.getUserByEmail(TEST_EMAIL).ifPresent(u -> {
+                        keycloakAdminService.verifyEmail(u.getKeycloakId());
+                    });
+                } catch (Exception ex) {
+                    log.warn("Impossibile verificare utente esistente: {}", ex.getMessage());
+                }
             } catch (Exception e) {
                 log.warn("⚠️ Impossibile creare utente test (Keycloak non raggiungibile?): {}", e.getMessage());
+            }
+        } else {
+            try {
+                userRepository.getUserByEmail(TEST_EMAIL).ifPresent(u -> {
+                    keycloakAdminService.verifyEmail(u.getKeycloakId());
+                });
+            } catch (Exception e) {
+                log.warn("Impossibile verificare utente esistente: {}", e.getMessage());
             }
         }
     }

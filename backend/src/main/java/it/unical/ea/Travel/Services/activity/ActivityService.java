@@ -33,6 +33,18 @@ import java.math.BigDecimal;
 import it.unical.ea.Travel.Services.payment.PaymentGateway;
 import it.unical.ea.dtos.payment.PaymentIntentResponseDto;
 import it.unical.ea.Travel.Entities.payment.BookingStatus;
+import it.unical.ea.dtos.activity.ActivityTemplateDto;
+import it.unical.ea.dtos.activity.CreateActivityRequestDto;
+import it.unical.ea.dtos.activity.TimeSlotDto;
+import it.unical.ea.Travel.Repositories.review.ReviewRepository;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.DayOfWeek;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.stream.Collectors;
+import java.util.Collections;
 
 @Service
 @RequiredArgsConstructor
@@ -50,6 +62,7 @@ public class ActivityService {
     private final UserMapper userMapper;
     private final it.unical.ea.Travel.Services.location.LocationService locationService;
     private final PaymentGateway paymentGateway;
+    private final ReviewRepository reviewRepository;
 
     @Value("${payment.mock:true}")
     private boolean paymentMock;
@@ -67,14 +80,25 @@ public class ActivityService {
     }
 
     @Transactional(readOnly = true)
-    public org.springframework.data.domain.Page<ActivityDto> searchActivities(String keyword, Double minPrice, Double maxPrice, java.time.LocalDateTime minStartTime, int page, int size) {
+    public org.springframework.data.domain.Page<ActivityTemplateDto> searchActivities(String keyword, java.time.LocalDateTime minStartTime, int page, int size) {
         org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
         String safeKeyword = (keyword == null) ? "" : keyword.trim();
-        org.springframework.data.domain.Page<Activity> activities = activityRepository.searchByKeyword(safeKeyword, minPrice, maxPrice, minStartTime, pageable);
+        org.springframework.data.domain.Page<ActivityTemplate> templates = activityTemplateRepository.searchTemplatesByKeywordSortedByRating(safeKeyword, pageable);
         
-        return activities.map(activity -> {
-            ActivityDto dto = activityMapper.toDTO(activity);
-            dto.setCurrentParticipants(calculateCurrentParticipants(activity));
+        return templates.map(template -> {
+            ActivityTemplateDto dto = activityMapper.toTemplateDTO(template);
+            
+            Double avgRating = reviewRepository.getAverageRatingForTemplate(template.getId());
+            dto.setAverageRating(avgRating != null ? avgRating : 0.0);
+            
+            List<Activity> sessions = activityRepository.findSessionsByTemplate(template.getId(), minStartTime);
+            List<ActivityDto> sessionDtos = sessions.stream().map(session -> {
+                ActivityDto sessionDto = activityMapper.toDTO(session);
+                sessionDto.setCurrentParticipants(calculateCurrentParticipants(session));
+                return sessionDto;
+            }).collect(Collectors.toList());
+            
+            dto.setSessions(sessionDtos);
             return dto;
         });
     }
@@ -103,6 +127,68 @@ public class ActivityService {
         Activity savedActivity = activityRepository.save(activity);
         auditLogService.log("CREATE_ACTIVITY", "Activity", savedActivity.getId().toString(), "Created activity schedule for template: " + template.getName());
         return activityMapper.toDTO(savedActivity);
+    }
+
+    @Transactional
+    public ActivityTemplateDto createActivityBatch(CreateActivityRequestDto request) {
+        ActivityTemplate template = new ActivityTemplate();
+        template.setName(request.getName().trim());
+        template.setDescription(request.getDescription() != null ? request.getDescription().trim() : null);
+        template.setLocation(request.getLocation());
+        template.setApproved(false);
+        template.setTags(request.getTags());
+
+        it.unical.ea.Travel.Entities.location.Location locationEntity = locationService.getOrCreateLocation(request.getLocation());
+        template.setLocationEntity(locationEntity);
+
+        String email = SecurityUtils.getCurrentUserEmail();
+        User organizer = userRepository.getUserByEmail(email)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "user.notFound"));
+        template.setOrganizer(organizer);
+
+        template = activityTemplateRepository.save(template);
+
+        Set<DayOfWeek> days = request.getDaysOfWeek().stream()
+                .map(String::toUpperCase)
+                .map(DayOfWeek::valueOf)
+                .collect(Collectors.toSet());
+
+        LocalDate current = request.getStartDate();
+        LocalDate end = request.getEndDate();
+        List<Activity> generatedSessions = new ArrayList<>();
+
+        while (!current.isAfter(end)) {
+            if (days.contains(current.getDayOfWeek())) {
+                for (TimeSlotDto slot : request.getTimeSlots()) {
+                    Activity session = new Activity();
+                    session.setTemplate(template);
+                    session.setStartTime(current.atTime(slot.getStartTime()));
+                    session.setEndTime(current.atTime(slot.getEndTime()));
+     
+                    session.setParticipants(request.getParticipants());
+                    session.setPrice(request.getPrice());
+                    
+                    Activity savedSession = activityRepository.save(session);
+                    generatedSessions.add(savedSession);
+                }
+            }
+            current = current.plusDays(1);
+        }
+
+        auditLogService.log("CREATE_ACTIVITY_BATCH", "ActivityTemplate", template.getId().toString(), 
+                "Created activity template and " + generatedSessions.size() + " sessions for: " + template.getName());
+
+        ActivityTemplateDto dto = activityMapper.toTemplateDTO(template);
+        dto.setAverageRating(0.0);
+        
+        List<ActivityDto> sessionDtos = generatedSessions.stream().map(session -> {
+            ActivityDto sessionDto = activityMapper.toDTO(session);
+            sessionDto.setCurrentParticipants(0);
+            return sessionDto;
+        }).collect(Collectors.toList());
+        dto.setSessions(sessionDtos);
+
+        return dto;
     }
 
     @Transactional
@@ -136,13 +222,44 @@ public class ActivityService {
     public ActivityDto getActivity(String stringId) {
         UUID uuid = UUID.fromString(stringId);
         
-        Activity activity = activityRepository.findById(uuid)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "activity.notFound"));
+        Optional<Activity> activityOpt = activityRepository.findById(uuid);
+        if (activityOpt.isPresent()) {
+            Activity activity = activityOpt.get();
+            ActivityDto dto = activityMapper.toDTO(activity);
+            dto.setCurrentParticipants(calculateCurrentParticipants(activity));
+            return dto;
+        }
 
-        ActivityDto dto = activityMapper.toDTO(activity);
-        dto.setCurrentParticipants(calculateCurrentParticipants(activity));
+        // Se non viene trovata tra le attività, verifica se l'ID appartiene a un ActivityTemplate
+        Optional<ActivityTemplate> templateOpt = activityTemplateRepository.findById(uuid);
+        if (templateOpt.isPresent()) {
+            ActivityTemplate template = templateOpt.get();
+            List<Activity> sessions = activityRepository.findSessionsByTemplate(template.getId(), null);
+            if (!sessions.isEmpty()) {
+                Activity firstSession = sessions.get(0);
+                ActivityDto dto = activityMapper.toDTO(firstSession);
+                dto.setCurrentParticipants(calculateCurrentParticipants(firstSession));
+                return dto;
+            } else {
+                // Se il template non ha sessioni, restituisce un DTO fittizio basato sulle info del template
+                ActivityDto dto = new ActivityDto();
+                dto.setId(template.getId());
+                dto.setName(template.getName());
+                dto.setDescription(template.getDescription());
+                dto.setLocation(template.getLocation());
+                dto.setOrganizer(template.getOrganizer().getCompanyName());
+                dto.setImages(template.getImages());
+                dto.setTags(template.getTags());
+                dto.setPrice(BigDecimal.ZERO);
+                dto.setStartTime(LocalDateTime.now());
+                dto.setEndTime(LocalDateTime.now());
+                dto.setParticipants(0);
+                dto.setCurrentParticipants(0);
+                return dto;
+            }
+        }
 
-        return dto;
+        throw new ApiException(HttpStatus.NOT_FOUND, "activity.notFound");
     }
 
     

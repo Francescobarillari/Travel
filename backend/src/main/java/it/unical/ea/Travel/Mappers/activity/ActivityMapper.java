@@ -1,6 +1,7 @@
 package it.unical.ea.Travel.Mappers.activity;
 
 import it.unical.ea.dtos.activity.ActivityDto;
+import it.unical.ea.dtos.activity.ActivityTemplateDto;
 import it.unical.ea.Travel.Entities.activity.Activity;
 import it.unical.ea.Travel.Entities.activity.ActivityTemplate;
 import org.mapstruct.Mapper;
@@ -38,4 +39,11 @@ public interface ActivityMapper {
     ActivityTemplate toTemplateEntity(ActivityDto dto);
 
     List<Activity> toEntityList(List<ActivityDto> dtos);
+
+    @Mapping(target = "sessions", ignore = true)
+    @Mapping(target = "averageRating", ignore = true)
+    @Mapping(target = "organizer", expression = "java(template.getOrganizer() != null ? (template.getOrganizer().getCompanyName() != null ? template.getOrganizer().getCompanyName() : template.getOrganizer().getFirstName() + \" \" + template.getOrganizer().getLastName()) : \"\")")
+    ActivityTemplateDto toTemplateDTO(ActivityTemplate template);
+
+    List<ActivityTemplateDto> toTemplateDTOList(List<ActivityTemplate> templates);
 }

@@ -33,4 +33,7 @@ public interface ActivityRepository extends JpaRepository<Activity, UUID> {
             @Param("maxPrice") Double maxPrice, 
             @Param("minStartTime") java.time.LocalDateTime minStartTime,
             Pageable pageable);
+
+    @Query("SELECT a FROM Activity a WHERE a.template.id = :templateId AND (cast(:minStartTime as timestamp) IS NULL OR a.startTime >= :minStartTime) ORDER BY a.startTime ASC")
+    List<Activity> findSessionsByTemplate(@Param("templateId") UUID templateId, @Param("minStartTime") java.time.LocalDateTime minStartTime);
 }

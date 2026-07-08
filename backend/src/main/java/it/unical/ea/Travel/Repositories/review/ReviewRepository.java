@@ -20,4 +20,7 @@ public interface ReviewRepository extends JpaRepository<Review, UUID> {
     List<Review> findByActivityTemplateIdInOrderByCreatedAtDesc(@Param("activityTemplateIds") List<UUID> activityTemplateIds);
 
     List<Review> findByAuthorIdOrderByCreatedAtDesc(UUID authorId);
+
+    @Query("SELECT AVG(r.rating) FROM Review r WHERE r.activityTemplate.id = :templateId")
+    Double getAverageRatingForTemplate(@Param("templateId") UUID templateId);
 }

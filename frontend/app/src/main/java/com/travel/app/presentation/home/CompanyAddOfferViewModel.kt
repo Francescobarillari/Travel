@@ -11,6 +11,8 @@ import com.travel.app.domain.repository.ActivityRepository
 import com.travel.app.domain.repository.UserRepository
 import com.travel.app.domain.repository.LocalitaRepository
 import it.unical.ea.dtos.activity.ActivityDto
+import it.unical.ea.dtos.activity.CreateActivityRequestDto
+import it.unical.ea.dtos.activity.TimeSlotDto
 import it.unical.ea.dtos.location.LocationDto
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -83,6 +85,30 @@ class CompanyAddOfferViewModel(
     // Selected images list
     val selectedImages = mutableStateListOf<Uri>()
 
+    // Recurring activity states
+    val selectedDaysOfWeek = mutableStateListOf<String>()
+    val timeSlots = mutableStateListOf<TimeSlotDto>()
+
+    fun toggleDayOfWeek(day: String) {
+        if (selectedDaysOfWeek.contains(day)) {
+            selectedDaysOfWeek.remove(day)
+        } else {
+            selectedDaysOfWeek.add(day)
+        }
+    }
+
+    fun addTimeSlot(startH: Int, startM: Int, endH: Int, endM: Int) {
+        val start = java.time.LocalTime.of(startH, startM)
+        val end = java.time.LocalTime.of(endH, endM)
+        timeSlots.add(TimeSlotDto(start, end))
+    }
+
+    fun removeTimeSlot(index: Int) {
+        if (index in timeSlots.indices) {
+            timeSlots.removeAt(index)
+        }
+    }
+
     // UI Status state
     var isLoading by mutableStateOf(false)
     var errorMessage by mutableStateOf<String?>(null)
@@ -106,6 +132,10 @@ class CompanyAddOfferViewModel(
         maxParticipantsText = ""
         priceText = ""
         selectedImages.clear()
+        selectedDaysOfWeek.clear()
+        timeSlots.clear()
+        // default time slot
+        timeSlots.add(TimeSlotDto(java.time.LocalTime.of(14, 0), java.time.LocalTime.of(16, 0)))
         errorMessage = null
     }
 
@@ -128,16 +158,22 @@ class CompanyAddOfferViewModel(
             return
         }
 
-        // Compare dates
-        val startCal = Calendar.getInstance().apply {
-            set(startYear, startMonth - 1, startDay, startHour, startMinute)
-        }
-        val endCal = Calendar.getInstance().apply {
-            set(endYear, endMonth - 1, endDay, endHour, endMinute)
-        }
-        if (startCal.after(endCal)) {
+        val startLocalDate = java.time.LocalDate.of(startYear, startMonth, startDay)
+        val endLocalDate = java.time.LocalDate.of(endYear, endMonth, endDay)
+        if (startLocalDate.isAfter(endLocalDate)) {
             errorMessage = "La data di inizio deve essere precedente alla data di fine"
             return
+        }
+
+        if (!isEditMode) {
+            if (selectedDaysOfWeek.isEmpty()) {
+                errorMessage = "Seleziona almeno un giorno della settimana"
+                return
+            }
+            if (timeSlots.isEmpty()) {
+                errorMessage = "Seleziona almeno una fascia oraria"
+                return
+            }
         }
 
         val participants = maxParticipantsText.toIntOrNull()
@@ -157,24 +193,32 @@ class CompanyAddOfferViewModel(
 
         viewModelScope.launch {
             try {
-                // Create LocalDateTime objects for DTO
-                val startLdt = LocalDateTime.of(startYear, startMonth, startDay, startHour, startMinute)
-                val endLdt = LocalDateTime.of(endYear, endMonth, endDay, endHour, endMinute)
-
-                val activityDto = ActivityDto()
-                activityDto.setName(title.trim())
-                activityDto.setDescription(if (description.isNotBlank()) description else null)
-                activityDto.setLocation(location)
-                activityDto.setStartTime(startLdt)
-                activityDto.setEndTime(endLdt)
-                activityDto.setParticipants(participants)
-                activityDto.setPrice(BigDecimal.valueOf(priceVal))
-                activityDto.setOrganizer(defaultOrganizer)
-
                 val result = if (isEditMode) {
+                    val startLdt = LocalDateTime.of(startYear, startMonth, startDay, startHour, startMinute)
+                    val endLdt = LocalDateTime.of(endYear, endMonth, endDay, endHour, endMinute)
+                    val activityDto = ActivityDto()
+                    activityDto.setName(title.trim())
+                    activityDto.setDescription(if (description.isNotBlank()) description else null)
+                    activityDto.setLocation(location)
+                    activityDto.setStartTime(startLdt)
+                    activityDto.setEndTime(endLdt)
+                    activityDto.setParticipants(participants)
+                    activityDto.setPrice(BigDecimal.valueOf(priceVal))
+                    activityDto.setOrganizer(defaultOrganizer)
                     activityRepository.updateActivity(activityId!!, activityDto)
                 } else {
-                    activityRepository.createActivity(activityDto)
+                    val createRequest = CreateActivityRequestDto()
+                    createRequest.setName(title.trim())
+                    createRequest.setDescription(if (description.isNotBlank()) description else null)
+                    createRequest.setLocation(location)
+                    createRequest.setStartDate(startLocalDate)
+                    createRequest.setEndDate(endLocalDate)
+                    createRequest.setDaysOfWeek(selectedDaysOfWeek.toSet())
+                    createRequest.setTimeSlots(timeSlots.toList())
+                    createRequest.setParticipants(participants)
+                    createRequest.setPrice(BigDecimal.valueOf(priceVal))
+                    createRequest.setOrganizer(defaultOrganizer)
+                    activityRepository.createActivity(createRequest)
                 }
                 result.onSuccess {
                     showSuccessDialog = true

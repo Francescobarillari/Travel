@@ -165,9 +165,9 @@ fun AdminHomeScreenPreview() {
         override suspend fun register(request: it.unical.ea.dtos.authDto.SignupRequest) = "mock"
         override suspend fun getMe() = it.unical.ea.dtos.user.UserDTO()
         override suspend fun updateMe(request: it.unical.ea.dtos.user.UserDTO) = request
-        override suspend fun createActivity(request: it.unical.ea.dtos.activity.ActivityDto) = request
+        override suspend fun createActivity(request: it.unical.ea.dtos.activity.CreateActivityRequestDto) = it.unical.ea.dtos.activity.ActivityTemplateDto()
         override suspend fun getActivities() = emptyList<it.unical.ea.dtos.activity.ActivityDto>()
-        override suspend fun searchActivities(query: String, minPrice: Double?, maxPrice: Double?, page: Int, size: Int) = it.unical.ea.dtos.common.PageDto<it.unical.ea.dtos.activity.ActivityDto>()
+        override suspend fun searchActivities(query: String, minStartTime: String?, page: Int, size: Int) = it.unical.ea.dtos.common.PageDto<it.unical.ea.dtos.activity.ActivityTemplateDto>()
         override suspend fun searchLocalita(query: String, includeExternal: Boolean, page: Int, size: Int) = it.unical.ea.dtos.common.PageDto<it.unical.ea.dtos.location.LocationDto>()
         override suspend fun getLocalitaById(id: String) = it.unical.ea.dtos.location.LocationDto()
         override suspend fun getActivityById(id: String) = it.unical.ea.dtos.activity.ActivityDto()

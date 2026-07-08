@@ -11,6 +11,7 @@ import com.travel.app.domain.repository.UserRepository
 import com.travel.app.domain.repository.ItineraryRepository
 import com.travel.app.domain.model.User
 import it.unical.ea.dtos.activity.ActivityDto
+import it.unical.ea.dtos.activity.ActivityTemplateDto
 import it.unical.ea.dtos.location.LocationDto as LocalitaDto
 import it.unical.ea.dtos.itinerary.ItineraryDto
 import kotlinx.coroutines.Job
@@ -55,7 +56,7 @@ class EsploraViewModel(
         performSearch()
     }
     
-    var activities by mutableStateOf<List<ActivityDto>>(emptyList())
+    var activities by mutableStateOf<List<ActivityTemplateDto>>(emptyList())
     var localitaList by mutableStateOf<List<LocalitaDto>>(emptyList())
     var userList by mutableStateOf<List<User>>(emptyList())
     var allItineraries by mutableStateOf<List<ItineraryDto>>(emptyList())
@@ -102,10 +103,19 @@ class EsploraViewModel(
         viewModelScope.launch {
             try {
                 val activityDeferred = viewModelScope.launch {
-                    val result = activityRepository.searchActivities(searchQuery, minPrice, maxPrice, currentActivityPage, PAGE_SIZE)
+                    val result = activityRepository.searchActivities(searchQuery, null, currentActivityPage, PAGE_SIZE)
                     result.fold(
                         onSuccess = { page -> 
-                            activities = page.content ?: emptyList()
+                            var results = page.content ?: emptyList()
+                            if (minPrice != null || maxPrice != null) {
+                                results = results.filter { template ->
+                                    val price = template.sessions?.firstOrNull()?.price?.toDouble() ?: 0.0
+                                    val matchesMin = minPrice == null || price >= minPrice!!
+                                    val matchesMax = maxPrice == null || price <= maxPrice!!
+                                    matchesMin && matchesMax
+                                }
+                            }
+                            activities = results
                             isLastActivityPage = (page.number ?: 0) >= (page.totalPages ?: 1) - 1
                         },
                         onFailure = { errorMessage = it.message }
@@ -232,10 +242,19 @@ class EsploraViewModel(
         isLoadingMore = true
         currentActivityPage++
         viewModelScope.launch {
-            val result = activityRepository.searchActivities(searchQuery, minPrice, maxPrice, currentActivityPage, PAGE_SIZE)
+            val result = activityRepository.searchActivities(searchQuery, null, currentActivityPage, PAGE_SIZE)
             result.fold(
                 onSuccess = { page -> 
-                    activities = activities + (page.content ?: emptyList())
+                    var results = page.content ?: emptyList()
+                    if (minPrice != null || maxPrice != null) {
+                        results = results.filter { template ->
+                            val price = template.sessions?.firstOrNull()?.price?.toDouble() ?: 0.0
+                            val matchesMin = minPrice == null || price >= minPrice!!
+                            val matchesMax = maxPrice == null || price <= maxPrice!!
+                            matchesMin && matchesMax
+                        }
+                    }
+                    activities = activities + results
                     isLastActivityPage = (page.number ?: 0) >= (page.totalPages ?: 1) - 1
                 },
                 onFailure = { errorMessage = it.message }

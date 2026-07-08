@@ -8,21 +8,15 @@ import lombok.Setter;
 import it.unical.ea.enums.TravelTag;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
 import java.util.HashSet;
-import java.util.UUID;
 
 @Getter
 @Setter
 @NoArgsConstructor
-public class ActivityDto {
-    @Schema(format = "uuid", example = "550e8400-e29b-41d4-a716-446655440000")
-    private UUID id;
-
-    @Schema(format = "uuid", description = "L'ID del template concettuale associato", example = "550e8400-e29b-41d4-a716-446655440001")
-    private UUID templateId;
+public class CreateActivityRequestDto {
 
     @NotBlank(message = "Il nome dell'attività è obbligatorio")
     @Size(max = 150, message = "Il nome non può superare i 150 caratteri")
@@ -37,15 +31,22 @@ public class ActivityDto {
     @Schema(example = "Roma, Colosseo")
     private String location;
 
-    @NotNull(message = "La data e ora di inizio sono obbligatorie")
-    @Schema(type = "string", format = "date-time", example = "2025-07-01T10:00:00")
-    private LocalDateTime startTime;
+    @NotNull(message = "La data di inizio periodo è obbligatoria")
+    @Schema(type = "string", format = "date", example = "2025-07-01")
+    private LocalDate startDate;
 
-    @NotNull(message = "La data e ora di fine sono obbligatorie")
-    @Schema(type = "string", format = "date-time", example = "2025-07-01T12:00:00")
-    private LocalDateTime endTime;
+    @NotNull(message = "La data di fine periodo è obbligatoria")
+    @Schema(type = "string", format = "date", example = "2025-07-31")
+    private LocalDate endDate;
 
-    @NotNull(message = "Il numero massimo di partecipanti è obbligatorio")
+    @NotEmpty(message = "Seleziona almeno un giorno della settimana")
+    @Schema(description = "Giorni della settimana selezionati (es. MONDAY, TUESDAY)", example = "[\"MONDAY\", \"WEDNESDAY\"]")
+    private Set<String> daysOfWeek = new HashSet<>();
+
+    @NotEmpty(message = "Seleziona almeno una fascia oraria")
+    private List<TimeSlotDto> timeSlots;
+
+    @NotNull(message = "Il numero massimo di partecipanti per sessione è obbligatorio")
     @Min(value = 1, message = "Il numero di partecipanti deve essere almeno 1")
     @Schema(example = "20")
     private Integer participants;
@@ -57,18 +58,6 @@ public class ActivityDto {
     @Schema(example = "Guida Turistica S.r.l.")
     private String organizer;
 
-    @Schema(description = "Lista di URL di immagini dell'attività")
-    private List<String> images;
-
-    @Schema(description = "Numero attuale di partecipanti prenotati", example = "5", accessMode = Schema.AccessMode.READ_ONLY)
-    private Integer currentParticipants = 0;
-
-    @Schema(type = "string", format = "date-time", example = "2025-06-25T10:30:00")
-    private LocalDateTime createdAt;
-
     @Schema(description = "Tag/Categorie associate all'attività")
     private Set<TravelTag> tags = new HashSet<>();
-
-    @Schema(description = "Media delle recensioni", example = "4.5")
-    private Double averageRating = 0.0;
 }

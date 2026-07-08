@@ -19,6 +19,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import it.unical.ea.dtos.activity.ActivityDto;
+import it.unical.ea.dtos.activity.ActivityTemplateDto;
+import it.unical.ea.dtos.activity.CreateActivityRequestDto;
 import it.unical.ea.dtos.user.UserDTO;
 import it.unical.ea.dtos.payment.PaymentIntentResponseDto;
 import it.unical.ea.Travel.Services.activity.ActivityService;
@@ -51,6 +53,12 @@ public class ActivityController {
         return enrichImageUrls(activityService.createActivity(request));
     }
 
+    @Operation(summary = "Crea attività ricorrenti (batch)")
+    @PostMapping("/batch")
+    public ActivityTemplateDto saveActivityBatch(@Valid @RequestBody CreateActivityRequestDto request) {
+        return enrichTemplateImageUrls(activityService.createActivityBatch(request));
+    }
+
     @Operation(summary = "Modifica un'attività esistente")
     @PutMapping("/{stringId}")
     public ActivityDto updateActivity(
@@ -76,15 +84,14 @@ public class ActivityController {
 
     @Operation(summary = "Cerca attività per parola chiave (paginato)")
     @GetMapping("/search")
-    public ResponseEntity<org.springframework.data.domain.Page<ActivityDto>> searchActivities(
+    public ResponseEntity<org.springframework.data.domain.Page<ActivityTemplateDto>> searchActivities(
             @RequestParam(required = false) String query,
-            @RequestParam(required = false) Double minPrice,
-            @RequestParam(required = false) Double maxPrice,
             @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime minStartTime,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        org.springframework.data.domain.Page<ActivityDto> results = activityService.searchActivities(query, minPrice, maxPrice, minStartTime, page, size);
+        org.springframework.data.domain.Page<ActivityTemplateDto> results = activityService.searchActivities(query, minStartTime, page, size);
+        results.forEach(this::enrichTemplateImageUrls);
         return ResponseEntity.ok(results);
     }
 
@@ -186,6 +193,30 @@ public class ActivityController {
                     })
                     .toList();
             dto.setImages(absoluteUrls);
+        }
+        return dto;
+    }
+
+    private ActivityTemplateDto enrichTemplateImageUrls(ActivityTemplateDto dto) {
+        if (dto == null) {
+            return null;
+        }
+        if (dto.getImages() != null && !dto.getImages().isEmpty()) {
+            List<String> absoluteUrls = dto.getImages().stream()
+                    .map(path -> {
+                        if (path.startsWith("http"))
+                            return path;
+                        String filename = path.substring(path.lastIndexOf("/") + 1);
+                        return ServletUriComponentsBuilder.fromCurrentContextPath()
+                                .path("/activity/images/")
+                                .path(filename)
+                                .toUriString();
+                    })
+                    .toList();
+            dto.setImages(absoluteUrls);
+        }
+        if (dto.getSessions() != null) {
+            dto.getSessions().forEach(this::enrichImageUrls);
         }
         return dto;
     }

@@ -122,6 +122,26 @@ public class KeycloakAdminService {
             // Best-effort rollback: il chiamante sta gia gestendo il fallimento DB.
         }
     }
+    public void verifyEmail(String keycloakUserId) {
+        if (keycloakUserId == null || keycloakUserId.isBlank()) {
+            return;
+        }
+        String token = getAdminAccessToken();
+        Map<String, Object> update = Map.of(
+                "emailVerified", true,
+                "requiredActions", List.of()
+        );
+        try {
+            restClient.put()
+                    .uri("/admin/realms/{realm}/users/{userId}", realm, keycloakUserId)
+                    .header("Authorization", "Bearer " + token)
+                    .body(update)
+                    .retrieve()
+                    .toBodilessEntity();
+        } catch (Exception e) {
+            System.err.println("Errore nella verifica dell'email dell'utente: " + e.getMessage());
+        }
+    }
 
     public void disableUser(String keycloakUserId) {
         if (keycloakUserId == null || keycloakUserId.isBlank()) {

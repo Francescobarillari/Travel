@@ -259,39 +259,178 @@ fun CompanyAddOfferScreen(
                         modifier = Modifier.fillMaxWidth(),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        ActivityDatePickerField(
-                            label = "Data e Ora Inizio",
-                            dateText = if (viewModel.startYear > 0) String.format("%02d/%02d/%d alle %02d:%02d", viewModel.startDay, viewModel.startMonth, viewModel.startYear, viewModel.startHour, viewModel.startMinute) else "",
-                            isSet = viewModel.startYear > 0,
-                            badgeColor = Color(0xFFEFF6FF),
-                            iconColor = MaterialTheme.colorScheme.primary,
-                            onClick = {
-                                showDateTimePicker(context, calendar) { year, month, day, hour, minute ->
-                                    viewModel.startYear = year
-                                    viewModel.startMonth = month
-                                    viewModel.startDay = day
-                                    viewModel.startHour = hour
-                                    viewModel.startMinute = minute
+                        if (viewModel.isEditMode) {
+                            ActivityDatePickerField(
+                                label = "Data e Ora Inizio",
+                                dateText = if (viewModel.startYear > 0) String.format("%02d/%02d/%d alle %02d:%02d", viewModel.startDay, viewModel.startMonth, viewModel.startYear, viewModel.startHour, viewModel.startMinute) else "",
+                                isSet = viewModel.startYear > 0,
+                                badgeColor = Color(0xFFEFF6FF),
+                                iconColor = MaterialTheme.colorScheme.primary,
+                                onClick = {
+                                    showDateTimePicker(context, calendar) { year, month, day, hour, minute ->
+                                        viewModel.startYear = year
+                                        viewModel.startMonth = month
+                                        viewModel.startDay = day
+                                        viewModel.startHour = hour
+                                        viewModel.startMinute = minute
+                                    }
                                 }
-                            }
-                        )
+                            )
 
-                        ActivityDatePickerField(
-                            label = "Data e Ora Fine",
-                            dateText = if (viewModel.endYear > 0) String.format("%02d/%02d/%d alle %02d:%02d", viewModel.endDay, viewModel.endMonth, viewModel.endYear, viewModel.endHour, viewModel.endMinute) else "",
-                            isSet = viewModel.endYear > 0,
-                            badgeColor = Color(0xFFFEF2F2),
-                            iconColor = Color(0xFFEF4444),
-                            onClick = {
-                                showDateTimePicker(context, calendar) { year, month, day, hour, minute ->
-                                    viewModel.endYear = year
-                                    viewModel.endMonth = month
-                                    viewModel.endDay = day
-                                    viewModel.endHour = hour
-                                    viewModel.endMinute = minute
+                            ActivityDatePickerField(
+                                label = "Data e Ora Fine",
+                                dateText = if (viewModel.endYear > 0) String.format("%02d/%02d/%d alle %02d:%02d", viewModel.endDay, viewModel.endMonth, viewModel.endYear, viewModel.endHour, viewModel.endMinute) else "",
+                                isSet = viewModel.endYear > 0,
+                                badgeColor = Color(0xFFFEF2F2),
+                                iconColor = Color(0xFFEF4444),
+                                onClick = {
+                                    showDateTimePicker(context, calendar) { year, month, day, hour, minute ->
+                                        viewModel.endYear = year
+                                        viewModel.endMonth = month
+                                        viewModel.endDay = day
+                                        viewModel.endHour = hour
+                                        viewModel.endMinute = minute
+                                    }
+                                }
+                            )
+                        } else {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Box(modifier = Modifier.weight(1f)) {
+                                    ActivityDatePickerField(
+                                        label = "Inizio Periodo",
+                                        dateText = if (viewModel.startYear > 0) String.format("%02d/%02d/%d", viewModel.startDay, viewModel.startMonth, viewModel.startYear) else "",
+                                        isSet = viewModel.startYear > 0,
+                                        badgeColor = Color(0xFFEFF6FF),
+                                        iconColor = MaterialTheme.colorScheme.primary,
+                                        onClick = {
+                                            DatePickerDialog(context, { _, year, month, day ->
+                                                viewModel.startYear = year
+                                                viewModel.startMonth = month + 1
+                                                viewModel.startDay = day
+                                            }, calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH)).show()
+                                        }
+                                    )
+                                }
+                                Box(modifier = Modifier.weight(1f)) {
+                                    ActivityDatePickerField(
+                                        label = "Fine Periodo",
+                                        dateText = if (viewModel.endYear > 0) String.format("%02d/%02d/%d", viewModel.endDay, viewModel.endMonth, viewModel.endYear) else "",
+                                        isSet = viewModel.endYear > 0,
+                                        badgeColor = Color(0xFFFEF2F2),
+                                        iconColor = Color(0xFFEF4444),
+                                        onClick = {
+                                            DatePickerDialog(context, { _, year, month, day ->
+                                                viewModel.endYear = year
+                                                viewModel.endMonth = month + 1
+                                                viewModel.endDay = day
+                                            }, calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH)).show()
+                                        }
+                                    )
                                 }
                             }
-                        )
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            Text(
+                                "Giorni della settimana *",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF1E293B)
+                            )
+                            val daysList = listOf(
+                                "MONDAY" to "Lun",
+                                "TUESDAY" to "Mar",
+                                "WEDNESDAY" to "Mer",
+                                "THURSDAY" to "Gio",
+                                "FRIDAY" to "Ven",
+                                "SATURDAY" to "Sab",
+                                "SUNDAY" to "Dom"
+                            )
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                daysList.forEach { (dayKey, dayLabel) ->
+                                    val isSelected = viewModel.selectedDaysOfWeek.contains(dayKey)
+                                    FilterChip(
+                                        selected = isSelected,
+                                        onClick = { viewModel.toggleDayOfWeek(dayKey) },
+                                        label = { Text(dayLabel, fontSize = 11.sp, fontWeight = FontWeight.Bold) },
+                                        colors = FilterChipDefaults.filterChipColors(
+                                            selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                            selectedLabelColor = Color.White
+                                        ),
+                                        shape = RoundedCornerShape(12.dp)
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    "Fasce Orarie *",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF1E293B)
+                                )
+                                TextButton(
+                                    onClick = {
+                                        TimePickerDialog(context, { _, sh, sm ->
+                                            TimePickerDialog(context, { _, eh, em ->
+                                                viewModel.addTimeSlot(sh, sm, eh, em)
+                                            }, sh + 2, sm, true).show()
+                                        }, 14, 0, true).show()
+                                    }
+                                ) {
+                                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("Aggiungi Orario")
+                                }
+                            }
+
+                            viewModel.timeSlots.forEachIndexed { index, slot ->
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = CardDefaults.cardColors(containerColor = Color(0xFFF1F5F9)),
+                                    shape = RoundedCornerShape(8.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = "${slot.startTime} - ${slot.endTime}",
+                                            fontWeight = FontWeight.Medium,
+                                            color = Color(0xFF334155),
+                                            fontSize = 14.sp
+                                        )
+                                        IconButton(
+                                            onClick = { viewModel.removeTimeSlot(index) },
+                                            modifier = Modifier.size(32.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Delete,
+                                                contentDescription = "Rimuovi",
+                                                tint = Color(0xFFEF4444)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }

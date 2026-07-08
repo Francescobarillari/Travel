@@ -393,7 +393,7 @@ fun CompanyDashboardScreenPreview() {
         val mockViewModel = remember {
             CompanyDashboardViewModel(
                 activityRepository = object : com.travel.app.domain.repository.ActivityRepository {
-                    override suspend fun createActivity(activity: it.unical.ea.dtos.activity.ActivityDto) = Result.success(activity)
+                    override suspend fun createActivity(activity: it.unical.ea.dtos.activity.CreateActivityRequestDto) = Result.success(it.unical.ea.dtos.activity.ActivityTemplateDto())
                     override suspend fun getActivities() = Result.success(emptyList<it.unical.ea.dtos.activity.ActivityDto>())
                 },
                 userRepository = object : com.travel.app.domain.repository.UserRepository {

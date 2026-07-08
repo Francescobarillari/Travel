@@ -376,7 +376,17 @@ fun EsploraScreen(
                                 )
                             }
                             items(viewModel.activities.size) { index ->
-                                val activity = viewModel.activities[index]
+                                val template = viewModel.activities[index]
+                                val activity = ActivityDto().apply {
+                                    id = template.sessions?.firstOrNull()?.id ?: template.id
+                                    name = template.name
+                                    description = template.description
+                                    location = template.location
+                                    price = template.sessions?.firstOrNull()?.price
+                                    startTime = template.sessions?.firstOrNull()?.startTime
+                                    endTime = template.sessions?.firstOrNull()?.endTime
+                                    tags = template.tags
+                                }
                                 val actId = activity.id?.toString() ?: ""
                                 val isFav = favoriteActivities[actId] == true
                                 ActivityCard(
@@ -512,10 +522,10 @@ fun EsploraScreenPreview() {
         val mockViewModel = remember {
             EsploraViewModel(
                 activityRepository = object : com.travel.app.domain.repository.ActivityRepository {
-                    override suspend fun createActivity(activity: ActivityDto) = Result.success(activity)
+                    override suspend fun createActivity(activity: it.unical.ea.dtos.activity.CreateActivityRequestDto) = Result.success(it.unical.ea.dtos.activity.ActivityTemplateDto())
                     override suspend fun getActivities() = Result.success(emptyList<ActivityDto>())
                     override suspend fun getActivityById(id: String) = Result.failure<ActivityDto>(Exception("Not implemented"))
-                    override suspend fun searchActivities(query: String, minPrice: Double?, maxPrice: Double?, page: Int, size: Int) = Result.success(it.unical.ea.dtos.common.PageDto<ActivityDto>(emptyList<ActivityDto>(), 0L, 0, 10, 0))
+                    override suspend fun searchActivities(query: String, minStartTime: String?, page: Int, size: Int) = Result.success(it.unical.ea.dtos.common.PageDto<it.unical.ea.dtos.activity.ActivityTemplateDto>(emptyList(), 0L, 0, 10, 0))
                 },
                 localitaRepository = object : com.travel.app.domain.repository.LocalitaRepository {
                     override suspend fun getLocalitaById(id: String) = Result.failure<it.unical.ea.dtos.location.LocationDto>(Exception("Not implemented"))

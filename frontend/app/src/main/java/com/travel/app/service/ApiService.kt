@@ -14,6 +14,8 @@ import it.unical.ea.dtos.user.UserDTO
 import retrofit2.http.DELETE
 import retrofit2.http.Path
 import it.unical.ea.dtos.activity.ActivityDto
+import it.unical.ea.dtos.activity.ActivityTemplateDto
+import it.unical.ea.dtos.activity.CreateActivityRequestDto
 import it.unical.ea.dtos.itinerary.ItineraryDto
 import it.unical.ea.dtos.itinerary.CreateItineraryRequest
 import it.unical.ea.dtos.payment.PaymentIntentResponseDto
@@ -63,9 +65,9 @@ interface ApiService {
         @Part file: MultipartBody.Part
     ): UserDTO
 
-    // Chiamata per creare una nuova attività
-    @POST("activity")
-    suspend fun createActivity(@Body request: ActivityDto): ActivityDto
+    // Chiamata per creare una nuova attività (batch ricorrente)
+    @POST("activity/batch")
+    suspend fun createActivity(@Body request: CreateActivityRequestDto): ActivityTemplateDto
 
     @PUT("activity/{id}")
     suspend fun updateActivity(@Path("id") id: String, @Body request: ActivityDto): ActivityDto
@@ -83,12 +85,10 @@ interface ApiService {
     @GET("activity/search")
     suspend fun searchActivities(
         @retrofit2.http.Query("query") query: String,
-        @retrofit2.http.Query("minPrice") minPrice: Double? = null,
-        @retrofit2.http.Query("maxPrice") maxPrice: Double? = null,
         @retrofit2.http.Query("minStartTime") minStartTime: String? = null,
         @retrofit2.http.Query("page") page: Int = 0,
         @retrofit2.http.Query("size") size: Int = 10
-    ): it.unical.ea.dtos.common.PageDto<ActivityDto>
+    ): it.unical.ea.dtos.common.PageDto<ActivityTemplateDto>
 
     @GET("api/location/search")
     suspend fun searchLocalita(
@@ -190,13 +190,13 @@ open class MockApiService : ApiService {
     override suspend fun updateMe(request: UserDTO): UserDTO = throw NotImplementedError()
     override suspend fun deleteUser(id: String) {}
     override suspend fun uploadAvatar(id: String, file: MultipartBody.Part): UserDTO = throw NotImplementedError()
-    override suspend fun createActivity(request: ActivityDto): ActivityDto = throw NotImplementedError()
+    override suspend fun createActivity(request: CreateActivityRequestDto): ActivityTemplateDto = throw NotImplementedError()
     override suspend fun updateActivity(id: String, request: ActivityDto): ActivityDto = throw NotImplementedError()
     override suspend fun getBookedUsers(id: String): List<UserDTO> = throw NotImplementedError()
     override suspend fun getActivities(): List<ActivityDto> = throw NotImplementedError()
     override suspend fun searchActivities(
-        query: String, minPrice: Double?, maxPrice: Double?, page: Int, size: Int
-    ): it.unical.ea.dtos.common.PageDto<ActivityDto> = throw NotImplementedError()
+        query: String, minStartTime: String?, page: Int, size: Int
+    ): it.unical.ea.dtos.common.PageDto<ActivityTemplateDto> = throw NotImplementedError()
     override suspend fun searchLocalita(
         query: String, includeExternal: Boolean, page: Int, size: Int
     ): it.unical.ea.dtos.common.PageDto<it.unical.ea.dtos.location.LocationDto> = throw NotImplementedError()

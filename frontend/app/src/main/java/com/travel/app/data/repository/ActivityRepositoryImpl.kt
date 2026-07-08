@@ -5,6 +5,8 @@ import com.travel.app.data.dto.ErrorResponseDto
 import com.travel.app.domain.repository.ActivityRepository
 import com.travel.app.service.ApiService
 import it.unical.ea.dtos.activity.ActivityDto
+import it.unical.ea.dtos.activity.ActivityTemplateDto
+import it.unical.ea.dtos.activity.CreateActivityRequestDto
 import retrofit2.HttpException
 import java.io.IOException
 
@@ -12,7 +14,7 @@ class ActivityRepositoryImpl(
     private val apiService: ApiService
 ) : ActivityRepository {
 
-    override suspend fun createActivity(activity: ActivityDto): Result<ActivityDto> {
+    override suspend fun createActivity(activity: CreateActivityRequestDto): Result<ActivityTemplateDto> {
         return try {
             val result = apiService.createActivity(activity)
             Result.success(result)
@@ -39,9 +41,9 @@ class ActivityRepositoryImpl(
         }
     }
 
-    override suspend fun searchActivities(query: String, minPrice: Double?, maxPrice: Double?, minStartTime: String?, page: Int, size: Int): Result<it.unical.ea.dtos.common.PageDto<ActivityDto>> {
+    override suspend fun searchActivities(query: String, minStartTime: String?, page: Int, size: Int): Result<it.unical.ea.dtos.common.PageDto<ActivityTemplateDto>> {
         return try {
-            val result = apiService.searchActivities(query, minPrice, maxPrice, minStartTime, page, size)
+            val result = apiService.searchActivities(query, minStartTime, page, size)
             Result.success(result)
         } catch (e: Exception) {
             Result.failure(Exception(handleError(e)))
