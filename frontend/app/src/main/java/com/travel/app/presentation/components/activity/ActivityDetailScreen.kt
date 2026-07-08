@@ -109,7 +109,6 @@ fun ActivityDetailScreen(
                 isLoading = false
             }
         )
-        currentUserEmail = AppContainer.sessionManager.getSessionUser()?.email.orEmpty()
     }
 
     LaunchedEffect(selectedSession) {
@@ -893,6 +892,90 @@ fun ActivityDetailScreen(
             onConfirm = {},
             onCancel = { showReceiptDialog = false },
             isReadOnly = true
+        )
+    }
+
+    if (showDateSelectorDialog && activity != null && currentSession != null) {
+        val sessionsList = activity?.sessions.orEmpty()
+        AlertDialog(
+            onDismissRequest = { showDateSelectorDialog = false },
+            title = { Text("Seleziona una data", fontWeight = FontWeight.Bold) },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 300.dp)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    for (session in sessionsList) {
+                        val start = session.startTime
+                        val end = session.endTime
+                        val isSelected = session.id == currentSession!!.id
+                        
+                        val formattedDate = if (start != null) formatDate(start) else "N/D"
+                        val formattedTime = if (start != null && end != null) "${formatTime(start)} - ${formatTime(end)}" else "N/D"
+                        val current = session.currentParticipants ?: 0
+                        val total = session.participants ?: 0
+                        val spotsLeft = total - current
+
+                        Surface(
+                            onClick = {
+                                selectedSession = session
+                                showDateSelectorDialog = false
+                            },
+                            color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                            shape = RoundedCornerShape(12.dp),
+                            border = BorderStroke(
+                                width = 1.dp,
+                                color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent
+                            ),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = formattedDate,
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = formattedTime,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = "Posti disponibili: $spotsLeft / $total",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                if (isSelected) {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = "Selezionata",
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showDateSelectorDialog = false }) {
+                    Text("Annulla")
+                }
+            }
         )
     }
 
