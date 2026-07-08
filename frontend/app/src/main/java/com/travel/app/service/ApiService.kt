@@ -135,6 +135,19 @@ interface ApiService {
     @POST("itinerary/booking/{bookingId}/confirm")
     suspend fun confirmItineraryBooking(@Path("bookingId") bookingId: String)
 
+    @DELETE("itinerary/{id}/book")
+    suspend fun cancelItineraryBooking(@Path("id") id: String)
+
+    @GET("activity/{id}/isBooked")
+    suspend fun isActivityBooked(@Path("id") id: String): Boolean
+
+
+    @POST("activity/booking/{bookingId}/confirm")
+    suspend fun confirmActivityBooking(@Path("bookingId") bookingId: String)
+
+    @DELETE("activity/{id}/book")
+    suspend fun cancelActivityBooking(@Path("id") id: String)
+
     // Chiamata per aggiornare la visibilità di un itinerario
     @PUT("itinerary/{id}/visibility")
     suspend fun updateItineraryVisibility(
@@ -226,5 +239,9 @@ open class MockApiService : ApiService {
     override suspend fun bookItinerary(id: String): PaymentIntentResponseDto = throw NotImplementedError()
     override suspend fun isItineraryBooked(id: String): Boolean = throw NotImplementedError()
     override suspend fun confirmItineraryBooking(bookingId: String) {}
+    override suspend fun cancelItineraryBooking(id: String) {}
+    override suspend fun isActivityBooked(id: String): Boolean = throw NotImplementedError()
     override suspend fun bookActivity(id: String): PaymentIntentResponseDto = throw NotImplementedError()
+    override suspend fun confirmActivityBooking(bookingId: String) {}
+    override suspend fun cancelActivityBooking(id: String) {}
 }

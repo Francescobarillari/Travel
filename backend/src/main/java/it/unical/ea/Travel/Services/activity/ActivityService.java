@@ -366,6 +366,41 @@ public class ActivityService {
         activityBookingRepository.delete(booking);
         activityBookingRepository.flush();
         auditLogService.log("CANCEL_BOOKING", "ActivityBooking", booking.getId().toString(), "User " + userEmail + " cancelled booking for activity: " + activity.getTemplate().getName());
+    }    @Transactional(readOnly = true)
+    public boolean isActivityBooked(String activityId, String userEmail) {
+        User user = userRepository.getUserByEmail(userEmail).orElse(null);
+        if (user == null) return false;
+
+        UUID uuid = UUID.fromString(activityId);
+
+        // Prima cerca come session ID diretto
+        Optional<ActivityBooking> existingBookingOpt = activityBookingRepository.findByUserIdAndActivityId(user.getId(), uuid);
+        if (existingBookingOpt.isPresent() && existingBookingOpt.get().getStatus() == BookingStatus.CONFIRMED) {
+            return true;
+        }
+
+        // Fallback: se è un template ID, controlla tutte le sessioni del template
+        Optional<ActivityTemplate> templateOpt = activityTemplateRepository.findById(uuid);
+        if (templateOpt.isPresent()) {
+            List<Activity> sessions = activityRepository.findSessionsByTemplate(templateOpt.get().getId(), null);
+            for (Activity session : sessions) {
+                Optional<ActivityBooking> sessionBooking = activityBookingRepository.findByUserIdAndActivityId(user.getId(), session.getId());
+                if (sessionBooking.isPresent() && sessionBooking.get().getStatus() == BookingStatus.CONFIRMED) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    @Transactional
+    public void confirmActivityBooking(String bookingId) {
+        ActivityBooking booking = activityBookingRepository.findById(UUID.fromString(bookingId))
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "activity.booking.notFound"));
+        booking.setStatus(BookingStatus.CONFIRMED);
+        activityBookingRepository.save(booking);
+        auditLogService.log("CONFIRM_ACTIVITY_BOOKING", "ActivityBooking", booking.getId().toString(), "Activity booking confirmed client-side");
     }
 
     // Carica una o più immagini per l'attività specificata

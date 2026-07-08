@@ -51,6 +51,7 @@ import com.travel.app.presentation.components.review.AddReviewInline
 import kotlinx.coroutines.launch
 import com.travel.app.utils.CalendarExportUtil
 import androidx.compose.material.icons.filled.Handyman
+import com.travel.app.presentation.components.checkout.CheckoutSummaryScreen
 
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -89,6 +90,8 @@ fun ItineraryDetailScreen(
     }
 
     val clientSecret by viewModel.paymentClientSecret.collectAsState()
+    val showCheckoutSummary by viewModel.showCheckoutSummary.collectAsState()
+    val bookingId by viewModel.bookingId.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
     val isBooked by viewModel.isBooked.collectAsState()
@@ -117,11 +120,13 @@ fun ItineraryDetailScreen(
         )
     }
 
-    LaunchedEffect(clientSecret) {
-        clientSecret?.let { orderId ->
+    var startPayPalCheckout by remember { mutableStateOf(false) }
+    LaunchedEffect(startPayPalCheckout, clientSecret) {
+        if (startPayPalCheckout && clientSecret != null) {
             PayPalCheckout.startCheckout(com.paypal.checkout.createorder.CreateOrder { createOrderActions ->
-                createOrderActions.set(orderId)
+                createOrderActions.set(clientSecret!!)
             })
+            startPayPalCheckout = false
         }
     }
 
@@ -670,6 +675,30 @@ fun ItineraryDetailScreen(
                 }
             }
         }
+    }
+
+    if (showCheckoutSummary && bookingId != null) {
+        CheckoutSummaryScreen(
+            bookingId = bookingId!!,
+            title = itinerary.getTitle() ?: "Itinerario",
+            totalPrice = totalPrice,
+            isItinerary = true,
+            activities = itinerary.getActivities() ?: emptyList(),
+            userEmail = currentUser?.email.orEmpty(),
+            isConfirming = isLoading,
+            onConfirm = {
+                if (clientSecret != null) {
+                    startPayPalCheckout = true
+                } else {
+                    viewModel.confirmBooking()
+                }
+            },
+            onCancel = {
+                itinerary.getId()?.toString()?.let {
+                    viewModel.cancelBooking(it)
+                }
+            }
+        )
     }
 }
 

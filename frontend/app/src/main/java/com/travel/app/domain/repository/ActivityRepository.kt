@@ -12,4 +12,8 @@ interface ActivityRepository {
     suspend fun updateActivity(id: String, activity: ActivityDto): Result<ActivityDto> = throw NotImplementedError()
     suspend fun getBookedUsers(id: String): Result<List<it.unical.ea.dtos.user.UserDTO>> = throw NotImplementedError()
     suspend fun deleteActivity(id: String): Result<Unit> = throw NotImplementedError()
+    suspend fun isActivityBooked(id: String): Result<Boolean> = throw NotImplementedError()
+    suspend fun bookActivity(id: String): Result<it.unical.ea.dtos.payment.PaymentIntentResponseDto> = throw NotImplementedError()
+    suspend fun confirmActivityBooking(bookingId: String): Result<Unit> = throw NotImplementedError()
+    suspend fun cancelActivityBooking(id: String): Result<Unit> = throw NotImplementedError()
 }

@@ -138,7 +138,16 @@ public class ActivityController {
         return enrichImageUrls(updated);
     }
 
-    // --- Endpoints Prenotazione ---
+    @Operation(summary = "Verifica se l'utente ha prenotato l'attività")
+    @GetMapping("/{stringId}/isBooked")
+    public ResponseEntity<Boolean> isActivityBooked(
+            @Parameter(description = "ID dell'attività", schema = @Schema(format = "uuid")) @PathVariable String stringId,
+            @AuthenticationPrincipal Jwt jwt) {
+        if (jwt == null) return ResponseEntity.ok(false);
+        String email = jwt.getClaimAsString("email");
+        boolean isBooked = activityService.isActivityBooked(stringId, email);
+        return ResponseEntity.ok(isBooked);
+    }
 
     @Operation(summary = "Prenota un'attività", description = "Prenota l'attività per l'utente autenticato")
     @PostMapping("/{stringId}/book")
@@ -164,6 +173,14 @@ public class ActivityController {
         String email = jwt.getClaimAsString("email");
         activityService.cancelActivityBooking(stringId, email);
         return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "Conferma la prenotazione di un'attività", description = "Conferma la prenotazione dell'attività in seguito a un pagamento andato a buon fine")
+    @PostMapping("/booking/{bookingId}/confirm")
+    public ResponseEntity<Void> confirmActivityBooking(
+            @PathVariable String bookingId) {
+        activityService.confirmActivityBooking(bookingId);
+        return ResponseEntity.ok().build();
     }
 
     @Operation(summary = "Ottieni gli iscritti ad un'attività", description = "Restituisce la lista degli utenti iscritti ad una specifica attività")

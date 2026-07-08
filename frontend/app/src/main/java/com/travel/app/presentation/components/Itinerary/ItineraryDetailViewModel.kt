@@ -14,6 +14,12 @@ class ItineraryDetailViewModel : ViewModel() {
     private val _paymentClientSecret = MutableStateFlow<String?>(null)
     val paymentClientSecret: StateFlow<String?> = _paymentClientSecret
 
+    private val _showCheckoutSummary = MutableStateFlow(false)
+    val showCheckoutSummary: StateFlow<Boolean> = _showCheckoutSummary
+
+    private val _bookingId = MutableStateFlow<String?>(null)
+    val bookingId: StateFlow<String?> = _bookingId
+
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
@@ -47,15 +53,11 @@ class ItineraryDetailViewModel : ViewModel() {
             _error.value = null
             try {
                 val response = apiService.bookItinerary(itineraryId)
-                if (response.clientSecret != null) {
-                    currentBookingId = response.bookingId
-                    _paymentClientSecret.value = response.clientSecret
-                } else {
-                    // It was a free itinerary, mock payment or something
-                    _isBooked.value = true
-                    _showSummaryDialog.value = true
-                    _error.value = "Prenotazione confermata!"
-                }
+                currentBookingId = response.bookingId
+                _bookingId.value = response.bookingId
+                _paymentClientSecret.value = response.clientSecret
+                // Mostra sempre il checkout summary (sia gratuito che a pagamento)
+                _showCheckoutSummary.value = true
             } catch (e: Exception) {
                 _error.value = "Errore durante la prenotazione: ${e.message}"
             } finally {
@@ -64,7 +66,7 @@ class ItineraryDetailViewModel : ViewModel() {
         }
     }
 
-    fun confirmPaymentSuccess() {
+    fun confirmBooking() {
         val bookingId = currentBookingId ?: return
         viewModelScope.launch {
             _isLoading.value = true
@@ -73,19 +75,43 @@ class ItineraryDetailViewModel : ViewModel() {
                 _isBooked.value = true
                 _showSummaryDialog.value = true
                 _error.value = "Prenotazione confermata!"
+                _showCheckoutSummary.value = false
             } catch (e: Exception) {
                 _error.value = "Errore durante la conferma: ${e.message}"
             } finally {
                 _isLoading.value = false
                 currentBookingId = null
+                _bookingId.value = null
                 _paymentClientSecret.value = null
             }
         }
     }
 
+    fun cancelBooking(itineraryId: String) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                apiService.cancelItineraryBooking(itineraryId)
+            } catch (_: Exception) {
+                // Ignora errori, chiudi comunque la schermata
+            } finally {
+                _showCheckoutSummary.value = false
+                currentBookingId = null
+                _bookingId.value = null
+                _paymentClientSecret.value = null
+                _isLoading.value = false
+            }
+        }
+    }
+
+    fun confirmPaymentSuccess() {
+        confirmBooking()
+    }
+
     fun clearClientSecret() {
         _paymentClientSecret.value = null
         currentBookingId = null
+        _bookingId.value = null
     }
 
     fun onSummaryDialogDismissed() {

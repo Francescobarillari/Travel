@@ -39,6 +39,12 @@ import com.travel.app.presentation.components.review.ReviewCard
 import com.travel.app.presentation.components.review.AddReviewInline
 import kotlinx.coroutines.launch
 import com.travel.app.utils.CalendarExportUtil
+import android.widget.Toast
+import com.paypal.checkout.PayPalCheckout
+import com.paypal.checkout.approve.OnApprove
+import com.paypal.checkout.cancel.OnCancel
+import com.paypal.checkout.error.OnError
+import com.travel.app.presentation.components.checkout.CheckoutSummaryScreen
 
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -53,6 +59,12 @@ fun ActivityDetailScreen(
     var activity by remember { mutableStateOf<ActivityDto?>(null) }
     var isLoading by remember { mutableStateOf(true) }
     var errorMsg by remember { mutableStateOf<String?>(null) }
+    
+    var isBooked by remember { mutableStateOf(false) }
+    var paymentClientSecret by remember { mutableStateOf<String?>(null) }
+    var currentBookingId by remember { mutableStateOf<String?>(null) }
+    var showCheckoutSummary by remember { mutableStateOf(false) }
+    var currentUserEmail by remember { mutableStateOf("") }
     
     var reviews by remember { mutableStateOf<List<ReviewDto>>(emptyList()) }
     val scope = rememberCoroutineScope()
@@ -71,6 +83,11 @@ fun ActivityDetailScreen(
                 isLoading = false
             }
         )
+        val bookedResult = AppContainer.activityRepository.isActivityBooked(activityId)
+        if (bookedResult.isSuccess) {
+            isBooked = bookedResult.getOrDefault(false)
+        }
+        currentUserEmail = AppContainer.sessionManager.getSessionUser()?.email.orEmpty()
         val reviewsResult = AppContainer.reviewRepository.getReviewsForActivity(activityId)
         if (reviewsResult.isSuccess) {
             reviews = reviewsResult.getOrNull() ?: emptyList()
@@ -78,6 +95,51 @@ fun ActivityDetailScreen(
     }
 
     val context = androidx.compose.ui.platform.LocalContext.current
+
+    LaunchedEffect(Unit) {
+        PayPalCheckout.registerCallbacks(
+            onApprove = OnApprove { approval ->
+                Toast.makeText(context, "Pagamento completato!", Toast.LENGTH_SHORT).show()
+                scope.launch {
+                    val bId = currentBookingId
+                    if (bId != null) {
+                        isLoading = true
+                        val confirmRes = AppContainer.activityRepository.confirmActivityBooking(bId)
+                        isLoading = false
+                        if (confirmRes.isSuccess) {
+                            isBooked = true
+                            showCheckoutSummary = false
+                            Toast.makeText(context, "Prenotazione confermata!", Toast.LENGTH_LONG).show()
+                        } else {
+                            Toast.makeText(context, "Errore nella conferma: ${confirmRes.exceptionOrNull()?.message}", Toast.LENGTH_LONG).show()
+                        }
+                    }
+                    paymentClientSecret = null
+                    currentBookingId = null
+                }
+            },
+            onCancel = OnCancel {
+                Toast.makeText(context, "Pagamento annullato", Toast.LENGTH_SHORT).show()
+                paymentClientSecret = null
+                currentBookingId = null
+            },
+            onError = OnError { errorInfo ->
+                Toast.makeText(context, "Errore nel pagamento: ${errorInfo.error.message}", Toast.LENGTH_LONG).show()
+                paymentClientSecret = null
+                currentBookingId = null
+            }
+        )
+    }
+
+    var startPayPalCheckout by remember { mutableStateOf(false) }
+    LaunchedEffect(startPayPalCheckout, paymentClientSecret) {
+        if (startPayPalCheckout && paymentClientSecret != null) {
+            PayPalCheckout.startCheckout(com.paypal.checkout.createorder.CreateOrder { createOrderActions ->
+                createOrderActions.set(paymentClientSecret!!)
+            })
+            startPayPalCheckout = false
+        }
+    }
 
     Scaffold(
         modifier = modifier,
@@ -113,16 +175,56 @@ fun ActivityDetailScreen(
                         }
                         Button(
                             onClick = {
-                                android.widget.Toast.makeText(
-                                    context,
-                                    "Prenotazione non ancora disponibile!",
-                                    android.widget.Toast.LENGTH_SHORT
-                                ).show()
+                                if (isBooked) {
+                                    scope.launch {
+                                        isLoading = true
+                                        val cancelRes = AppContainer.activityRepository.cancelActivityBooking(activityId)
+                                        isLoading = false
+                                        cancelRes.fold(
+                                            onSuccess = {
+                                                isBooked = false
+                                                Toast.makeText(context, "Prenotazione cancellata!", Toast.LENGTH_LONG).show()
+                                            },
+                                            onFailure = {
+                                                Toast.makeText(context, "Errore nella cancellazione: ${it.message}", Toast.LENGTH_LONG).show()
+                                            }
+                                        )
+                                    }
+                                } else {
+                                    scope.launch {
+                                        isLoading = true
+                                        val bookRes = AppContainer.activityRepository.bookActivity(activityId)
+                                        isLoading = false
+                                        bookRes.fold(
+                                            onSuccess = { response ->
+                                                if (response.clientSecret != null) {
+                                                    // Pagamento reale → mostra checkout summary
+                                                    currentBookingId = response.bookingId
+                                                    paymentClientSecret = response.clientSecret
+                                                    showCheckoutSummary = true
+                                                } else {
+                                                    // Gratuito / mock → già confermato
+                                                    isBooked = true
+                                                    Toast.makeText(context, "Prenotazione confermata!", Toast.LENGTH_LONG).show()
+                                                }
+                                            },
+                                            onFailure = {
+                                                Toast.makeText(context, "Errore nella prenotazione: ${it.message}", Toast.LENGTH_LONG).show()
+                                            }
+                                        )
+                                    }
+                                }
                             },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (isBooked) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+                            ),
                             modifier = Modifier.height(48.dp),
                             shape = RoundedCornerShape(24.dp)
                         ) {
-                            Text("Prenota", fontWeight = FontWeight.Bold)
+                            Text(
+                                text = if (isBooked) "Annulla Prenotazione" else "Prenota",
+                                fontWeight = FontWeight.Bold
+                            )
                         }
                     }
                 }
@@ -577,6 +679,53 @@ fun ActivityDetailScreen(
                 }
             }
         }
+    }
+
+    if (showCheckoutSummary && currentBookingId != null && activity != null) {
+        CheckoutSummaryScreen(
+            bookingId = currentBookingId!!,
+            title = activity!!.name ?: "Attività",
+            totalPrice = activity!!.price?.toDouble() ?: 0.0,
+            isItinerary = false,
+            activities = listOf(activity!!),
+            userEmail = currentUserEmail,
+            isConfirming = isLoading,
+            onConfirm = {
+                if (paymentClientSecret != null) {
+                    startPayPalCheckout = true
+                } else {
+                    scope.launch {
+                        val bId = currentBookingId
+                        if (bId != null) {
+                            isLoading = true
+                            val confirmRes = AppContainer.activityRepository.confirmActivityBooking(bId)
+                            isLoading = false
+                            if (confirmRes.isSuccess) {
+                                isBooked = true
+                                showCheckoutSummary = false
+                                Toast.makeText(context, "Prenotazione confermata!", Toast.LENGTH_LONG).show()
+                            } else {
+                                Toast.makeText(context, "Errore nella conferma: ${confirmRes.exceptionOrNull()?.message}", Toast.LENGTH_LONG).show()
+                            }
+                        }
+                    }
+                }
+            },
+            onCancel = {
+                scope.launch {
+                    isLoading = true
+                    try {
+                        AppContainer.activityRepository.cancelActivityBooking(activityId)
+                    } catch (_: Exception) {
+                        // Ignora errori, chiudi comunque
+                    }
+                    showCheckoutSummary = false
+                    currentBookingId = null
+                    paymentClientSecret = null
+                    isLoading = false
+                }
+            }
+        )
     }
 }
 

@@ -77,6 +77,42 @@ class ActivityRepositoryImpl(
         }
     }
 
+    override suspend fun isActivityBooked(id: String): Result<Boolean> {
+        return try {
+            val result = apiService.isActivityBooked(id)
+            Result.success(result)
+        } catch (e: Exception) {
+            Result.failure(Exception(handleError(e)))
+        }
+    }
+
+    override suspend fun bookActivity(id: String): Result<it.unical.ea.dtos.payment.PaymentIntentResponseDto> {
+        return try {
+            val result = apiService.bookActivity(id)
+            Result.success(result)
+        } catch (e: Exception) {
+            Result.failure(Exception(handleError(e)))
+        }
+    }
+
+    override suspend fun confirmActivityBooking(bookingId: String): Result<Unit> {
+        return try {
+            apiService.confirmActivityBooking(bookingId)
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(Exception(handleError(e)))
+        }
+    }
+
+    override suspend fun cancelActivityBooking(id: String): Result<Unit> {
+        return try {
+            apiService.cancelActivityBooking(id)
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(Exception(handleError(e)))
+        }
+    }
+
     private fun handleError(e: Exception): String {
         return when (e) {
             is HttpException -> {
