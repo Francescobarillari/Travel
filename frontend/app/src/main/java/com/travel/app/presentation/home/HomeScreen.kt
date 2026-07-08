@@ -37,7 +37,7 @@ fun HomeScreen(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    var selectedTab by remember { mutableStateOf(HomeTab.ESPLORA) }
+    var selectedTab by remember { mutableStateOf(HomeTab.HOME) }
     var selectedItemId by remember { mutableStateOf<String?>(null) }
     var selectedItemIsTrip by remember { mutableStateOf(true) }
     var selectedActivityIdForBookings by remember { mutableStateOf<String?>(null) }
@@ -75,8 +75,8 @@ fun HomeScreen(
         )
     }
 
-    val esploraViewModel = remember {
-        EsploraViewModel(
+    val cercaViewModel = remember {
+        CercaViewModel(
             activityRepository = AppContainer.activityRepository,
             localitaRepository = AppContainer.localitaRepository,
             userRepository = AppContainer.userRepository,
@@ -104,7 +104,7 @@ fun HomeScreen(
         // Always compose the main content to preserve state (like scroll position)
         Box(modifier = Modifier.fillMaxSize()) {
             when (selectedTab) {
-                HomeTab.ESPLORA -> {
+                HomeTab.HOME -> {
                     if (isSocieta) {
                         if (selectedActivityIdForBookings != null) {
                             CompanyActivityBookingsScreen(
@@ -129,21 +129,41 @@ fun HomeScreen(
                             )
                         }
                     } else {
-                        EsploraScreen(
-                            viewModel = esploraViewModel,
+                        HomeFeedScreen(
+                            onLocalitaClick = { localitaName ->
+                                AppContainer.sessionManager.incrementLocationScore(localitaName, 1)
+                                cercaViewModel.onSearchQueryChanged(localitaName, saveToHistory = false)
+                                selectedTab = HomeTab.CERCA
+                            },
+                            onActivityClick = { activityId ->
+                                selectedItemId = activityId
+                                selectedItemIsTrip = false
+                            },
+                            onItineraryClick = { itinerary ->
+                                selectedItinerary = itinerary
+                            },
+                            favoritesTrigger = favoritesTrigger
+                        )
+                    }
+                }
+                
+                HomeTab.CERCA -> {
+                    if (!isSocieta) {
+                        CercaScreen(
+                            viewModel = cercaViewModel,
                             favoritesTrigger = favoritesTrigger,
                             onItemClick = { id, isTrip ->
                                 selectedItemId = id
                                 selectedItemIsTrip = isTrip
                                 if (isTrip) {
-                                    val found = esploraViewModel.filteredItineraries.find { it.id?.toString() == id }
+                                    val found = cercaViewModel.filteredItineraries.find { it.id?.toString() == id }
                                     if (found != null) {
                                         selectedItinerary = found
                                     }
                                 }
                             },
-                            onUserClick = { user ->
-                                selectedProfileUser = user
+                            onUserClick = { u ->
+                                selectedProfileUser = u
                             }
                         )
                     }
@@ -153,7 +173,7 @@ fun HomeScreen(
                     if (isSocieta) {
                         CompanyAddOfferScreen(
                             viewModel = companyAddOfferViewModel,
-                            onNavigateBack = { selectedTab = HomeTab.ESPLORA }
+                            onNavigateBack = { selectedTab = HomeTab.HOME }
                         )
                     } else {
                         PreferitiScreen(
@@ -181,7 +201,7 @@ fun HomeScreen(
                     user = currentUser,
                     isDarkMode = isDarkMode,
                     onDarkModeChange = onDarkModeChange,
-                    onBack = { selectedTab = HomeTab.ESPLORA },
+                    onBack = { selectedTab = HomeTab.HOME },
                     onNavigateToProfile = { selectedTab = HomeTab.PROFILO },
                     onNavigateToSecurity = { selectedTab = HomeTab.SICUREZZA },
                     onLogout = onLogout,
@@ -264,6 +284,13 @@ fun HomeScreen(
             val itineraryId = selectedItinerary!!.id?.toString() ?: ""
             var isFav by remember(itineraryId, favoritesTrigger) { 
                 mutableStateOf(AppContainer.sessionManager.isFavoriteItinerary(itineraryId)) 
+            }
+            LaunchedEffect(itineraryId) {
+                selectedItinerary!!.activities?.mapNotNull { it.location?.split(",")?.firstOrNull()?.trim() }
+                    ?.distinct()
+                    ?.forEach { city ->
+                        AppContainer.sessionManager.incrementLocationScore(city, 1)
+                    }
             }
             ItineraryDetailScreen(
                 itinerary = selectedItinerary!!,

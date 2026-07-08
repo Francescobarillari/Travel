@@ -46,3 +46,4 @@ uploads/
 frontend/app/libs/common-dtos-1.0.0.jar
 
 backend/logs/
+/logs/*.log

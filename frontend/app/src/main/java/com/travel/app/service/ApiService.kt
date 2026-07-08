@@ -75,6 +75,13 @@ interface ApiService {
     @POST("activity/{id}/book")
     suspend fun bookActivity(@Path("id") id: String): PaymentIntentResponseDto
 
+    @Multipart
+    @POST("activity/{id}/images")
+    suspend fun uploadActivityImages(
+        @Path("id") id: String,
+        @Part files: List<MultipartBody.Part>
+    ): ActivityDto
+
     @GET("activity/{id}/bookings")
     suspend fun getBookedUsers(@Path("id") id: String): List<UserDTO>
 
@@ -205,6 +212,7 @@ open class MockApiService : ApiService {
     override suspend fun uploadAvatar(id: String, file: MultipartBody.Part): UserDTO = throw NotImplementedError()
     override suspend fun createActivity(request: CreateActivityRequestDto): ActivityTemplateDto = throw NotImplementedError()
     override suspend fun updateActivity(id: String, request: ActivityDto): ActivityDto = throw NotImplementedError()
+    override suspend fun uploadActivityImages(id: String, files: List<MultipartBody.Part>): ActivityDto = throw NotImplementedError()
     override suspend fun getBookedUsers(id: String): List<UserDTO> = throw NotImplementedError()
     override suspend fun getActivities(): List<ActivityDto> = throw NotImplementedError()
     override suspend fun searchActivities(

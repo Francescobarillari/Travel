@@ -8,7 +8,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
@@ -57,20 +57,44 @@ fun FloatingBottomNavBar(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            HomeTabItem(
-                icon = if (isSocieta) Icons.Default.Dashboard else Icons.Default.Search,
-                label = if (isSocieta) "Dashboard" else "Esplora",
-                isSelected = selectedTab == HomeTab.ESPLORA,
-                onClick = { onTabSelected(HomeTab.ESPLORA) },
-                modifier = Modifier.weight(1f)
-            )
-            HomeTabItem(
-                icon = if (isSocieta) Icons.Default.Add else Icons.Default.Favorite,
-                label = if (isSocieta) "Aggiungi" else "Preferiti",
-                isSelected = selectedTab == HomeTab.PREFERITI,
-                onClick = { onTabSelected(HomeTab.PREFERITI) },
-                modifier = Modifier.weight(1f)
-            )
+            if (isSocieta) {
+                HomeTabItem(
+                    icon = Icons.Default.Dashboard,
+                    label = "Dashboard",
+                    isSelected = selectedTab == HomeTab.HOME,
+                    onClick = { onTabSelected(HomeTab.HOME) },
+                    modifier = Modifier.weight(1f)
+                )
+                HomeTabItem(
+                    icon = Icons.Default.Add,
+                    label = "Aggiungi",
+                    isSelected = selectedTab == HomeTab.PREFERITI,
+                    onClick = { onTabSelected(HomeTab.PREFERITI) },
+                    modifier = Modifier.weight(1f)
+                )
+            } else {
+                HomeTabItem(
+                    icon = Icons.Default.Home,
+                    label = "Home",
+                    isSelected = selectedTab == HomeTab.HOME,
+                    onClick = { onTabSelected(HomeTab.HOME) },
+                    modifier = Modifier.weight(1f)
+                )
+                HomeTabItem(
+                    icon = Icons.Default.Search,
+                    label = "Cerca",
+                    isSelected = selectedTab == HomeTab.CERCA,
+                    onClick = { onTabSelected(HomeTab.CERCA) },
+                    modifier = Modifier.weight(1f)
+                )
+                HomeTabItem(
+                    icon = Icons.Default.Favorite,
+                    label = "Preferiti",
+                    isSelected = selectedTab == HomeTab.PREFERITI,
+                    onClick = { onTabSelected(HomeTab.PREFERITI) },
+                    modifier = Modifier.weight(1f)
+                )
+            }
             HomeTabItem(
                 icon = Icons.Default.Menu,
                 label = "Menù",

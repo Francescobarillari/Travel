@@ -396,6 +396,15 @@ fun ItineraryDetailScreen(
                         fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
+                    itinerary.getCreatorName()?.let { creatorName ->
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Organizzato da: $creatorName",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium,
+                            color = Color.White.copy(alpha = 0.9f)
+                        )
+                    }
                 }
             }
 

@@ -14,6 +14,7 @@ import java.util.List;
 public interface ItineraryMapper {
 
     @Mapping(target = "creatorId", source = "creator.id")
+    @Mapping(target = "creatorName", expression = "java(itinerary.getCreator() != null ? (itinerary.getCreator().getUserType() == it.unical.ea.enums.UserType.SOCIETA ? itinerary.getCreator().getCompanyName() : (itinerary.getCreator().getFirstName() + \" \" + itinerary.getCreator().getLastName()).trim()) : null)")
     @Mapping(target = "imageUrl", ignore = true)
     ItineraryDto toDTO(Itinerary itinerary);
 

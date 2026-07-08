@@ -26,6 +26,8 @@ public class ItineraryDto {
     private LocalDateTime endDateTime;
     @Schema(format = "uuid", example = "550e8400-e29b-41d4-a716-446655440000")
     private UUID creatorId;
+    @Schema(example = "Travel Company S.r.l.")
+    private String creatorName;
     private List<ActivityDto> activities;
     @Schema(type = "string", format = "date-time", example = "2025-06-25T10:30:00")
     private LocalDateTime createdAt;

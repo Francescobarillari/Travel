@@ -139,7 +139,7 @@ class CompanyAddOfferViewModel(
         errorMessage = null
     }
 
-    fun submitActivity() {
+    fun submitActivity(context: android.content.Context) {
         // Validation
         if (title.isBlank()) {
             errorMessage = "Il titolo dell'attività è obbligatorio"
@@ -220,9 +220,34 @@ class CompanyAddOfferViewModel(
                     createRequest.setOrganizer(defaultOrganizer)
                     activityRepository.createActivity(createRequest)
                 }
-                result.onSuccess {
-                    showSuccessDialog = true
-                    resetForm()
+                
+                result.onSuccess { createdOrUpdated ->
+                    if (selectedImages.isNotEmpty()) {
+                        val imageParts = selectedImages.mapNotNull { uri ->
+                            try {
+                                context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                                    val bytes = inputStream.readBytes()
+                                    val mimeType = context.contentResolver.getType(uri) ?: "image/jpeg"
+                                    val fileName = "image_${System.currentTimeMillis()}.jpg"
+                                    Triple(bytes, mimeType, fileName)
+                                }
+                            } catch (e: Exception) {
+                                null
+                            }
+                        }
+                        
+                        if (imageParts.isNotEmpty()) {
+                            val uploadResult = activityRepository.uploadActivityImages(createdOrUpdated.id.toString(), imageParts)
+                            uploadResult.onFailure {
+                                errorMessage = "L'attività è stata salvata, ma c'è stato un errore nel caricare le immagini."
+                            }
+                        }
+                    }
+                    
+                    if (errorMessage == null) {
+                        showSuccessDialog = true
+                        resetForm()
+                    }
                 }.onFailure { e ->
                     errorMessage = e.message ?: "Si è verificato un errore durante la pubblicazione"
                 }

@@ -5,8 +5,12 @@ import android.content.SharedPreferences
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import com.travel.app.domain.model.User
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 
 class SessionManager(context: Context) {
+
+    private val gson = Gson()
 
     private val masterKey = MasterKey.Builder(context)
         .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
@@ -137,6 +141,41 @@ class SessionManager(context: Context) {
         return getFavoriteItineraryIds().contains(id)
     }
 
+    fun saveLastSearchQuery(query: String) {
+        prefs.edit().putString("last_search_query", query).apply()
+    }
+
+    fun getLastSearchQuery(): String? {
+        return prefs.getString("last_search_query", null)
+    }
+
+    fun incrementLocationScore(location: String, amount: Int = 1) {
+        val normalized = location.split(",").first().trim().lowercase()
+            .replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+        if (normalized.isBlank()) return
+
+        val currentScores = getLocationScores().toMutableMap()
+        val currentScore = currentScores[normalized] ?: 0
+        currentScores[normalized] = currentScore + amount
+        
+        prefs.edit().putString(KEY_LOCATION_SCORES, gson.toJson(currentScores)).apply()
+    }
+
+    fun getLocationScores(): Map<String, Int> {
+        val json = prefs.getString(KEY_LOCATION_SCORES, null) ?: return emptyMap()
+        return try {
+            val type = object : TypeToken<Map<String, Int>>() {}.type
+            gson.fromJson(json, type)
+        } catch (e: Exception) {
+            emptyMap()
+        }
+    }
+
+    fun getMostInteractedLocation(): String? {
+        val scores = getLocationScores()
+        return scores.maxByOrNull { it.value }?.key
+    }
+
     companion object {
         private const val PREFS_NAME = "travel_app_prefs_encrypted"
         private const val KEY_TOKEN = "jwt_token"
@@ -150,5 +189,6 @@ class SessionManager(context: Context) {
         private const val KEY_DARK_MODE = "dark_mode"
         private const val KEY_FAVORITE_ACTIVITIES = "favorite_activities"
         private const val KEY_FAVORITE_ITINERARIES = "favorite_itineraries"
+        private const val KEY_LOCATION_SCORES = "location_scores"
     }
 }

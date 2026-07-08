@@ -579,7 +579,7 @@ fun CompanyAddOfferScreen(
                                 Button(
                                     onClick = {
                                         showSaveConfirm = false
-                                        viewModel.submitActivity()
+                                        viewModel.submitActivity(context)
                                     },
                                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                                 ) {
@@ -640,7 +640,7 @@ fun CompanyAddOfferScreen(
                 }
             } else {
                 Button(
-                    onClick = { viewModel.submitActivity() },
+                    onClick = { viewModel.submitActivity(context) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(52.dp),
