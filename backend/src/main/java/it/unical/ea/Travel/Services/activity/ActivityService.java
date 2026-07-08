@@ -664,9 +664,25 @@ public class ActivityService {
 
     public List<UserDTO> getBookedUsers(String activityId) {
         UUID uuid = UUID.fromString(activityId);
-        List<ActivityBooking> bookings = activityBookingRepository.findByActivityId(uuid);
-        return bookings.stream()
-                .map(ActivityBooking::getUser)
+
+        // L'ID ricevuto può essere di una singola sessione o del template:
+        // gli iscritti vanno raccolti su tutte le sessioni (date) dell'attività.
+        UUID templateId = activityRepository.findById(uuid)
+                .map(activity -> activity.getTemplate().getId())
+                .orElse(uuid);
+
+        List<Activity> sessions = activityRepository.findSessionsByTemplate(templateId, null);
+
+        java.util.Map<UUID, User> uniqueUsers = new java.util.LinkedHashMap<>();
+        for (Activity session : sessions) {
+            for (ActivityBooking booking : activityBookingRepository.findByActivityId(session.getId())) {
+                if (booking.getStatus() != BookingStatus.FAILED) {
+                    uniqueUsers.putIfAbsent(booking.getUser().getId(), booking.getUser());
+                }
+            }
+        }
+
+        return uniqueUsers.values().stream()
                 .map(userMapper::toDTO)
                 .toList();
     }
