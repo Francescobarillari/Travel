@@ -34,6 +34,7 @@ fun MyBookingsScreen(
     onBack: () -> Unit,
     onActivityClick: (String) -> Unit,
     onItineraryClick: (ItineraryDto) -> Unit,
+    refreshTrigger: Int = 0,
     modifier: Modifier = Modifier
 ) {
     var bookedActivities by remember { mutableStateOf<List<ActivityDto>>(emptyList()) }
@@ -69,7 +70,7 @@ fun MyBookingsScreen(
         }
     }
 
-    LaunchedEffect(user?.id) {
+    LaunchedEffect(user?.id, refreshTrigger) {
         fetchBookings()
     }
 

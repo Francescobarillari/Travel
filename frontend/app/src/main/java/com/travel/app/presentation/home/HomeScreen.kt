@@ -45,6 +45,7 @@ fun HomeScreen(
     var personalizingItinerary by remember { mutableStateOf<ItineraryDto?>(null) }
     var selectedProfileUser by remember { mutableStateOf<User?>(null) }
     var itinerariesRefreshTrigger by remember { mutableStateOf(0) }
+    var bookingsRefreshTrigger by remember { mutableStateOf(0) }
     var favoritesTrigger by remember { mutableStateOf(0) }
 
     var currentUser by remember(user) { 
@@ -219,7 +220,8 @@ fun HomeScreen(
                         },
                         onItineraryClick = { itinerary ->
                             selectedItinerary = itinerary
-                        }
+                        },
+                        refreshTrigger = bookingsRefreshTrigger
                     )
                 }
             }
@@ -281,7 +283,10 @@ fun HomeScreen(
             }
             ItineraryDetailScreen(
                 itinerary = selectedItinerary!!,
-                onNavigateBack = { selectedItinerary = null },
+                onNavigateBack = { 
+                    selectedItinerary = null
+                    bookingsRefreshTrigger++
+                },
                 onActivityClick = { activityId ->
                     selectedItinerary = null
                     selectedItemId = activityId
@@ -311,7 +316,10 @@ fun HomeScreen(
             }
             ActivityDetailScreen(
                 activityId = activityId,
-                onNavigateBack = { selectedItemId = null },
+                onNavigateBack = { 
+                    selectedItemId = null
+                    bookingsRefreshTrigger++
+                },
                 isFavorite = isFav,
                 onFavoriteClick = {
                     AppContainer.sessionManager.toggleFavoriteActivity(activityId)

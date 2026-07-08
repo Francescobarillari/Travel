@@ -70,6 +70,8 @@ fun ActivityDetailScreen(
     var showCheckoutSummary by remember { mutableStateOf(false) }
     var currentUserEmail by remember { mutableStateOf("") }
     var showSuccessDialog by remember { mutableStateOf(false) }
+    var showCancelConfirmationDialog by remember { mutableStateOf(false) }
+    var showCancelSuccessDialog by remember { mutableStateOf(false) }
     
     var reviews by remember { mutableStateOf<List<ReviewDto>>(emptyList()) }
     val scope = rememberCoroutineScope()
@@ -181,20 +183,7 @@ fun ActivityDetailScreen(
                         Button(
                             onClick = {
                                 if (isBooked) {
-                                    scope.launch {
-                                        isLoading = true
-                                        val cancelRes = AppContainer.activityRepository.cancelActivityBooking(activity?.id?.toString() ?: activityId)
-                                        isLoading = false
-                                        cancelRes.fold(
-                                            onSuccess = {
-                                                isBooked = false
-                                                Toast.makeText(context, "Prenotazione cancellata!", Toast.LENGTH_LONG).show()
-                                            },
-                                            onFailure = {
-                                                Toast.makeText(context, "Errore nella cancellazione: ${it.message}", Toast.LENGTH_LONG).show()
-                                            }
-                                        )
-                                    }
+                                    showCancelConfirmationDialog = true
                                 } else {
                                     scope.launch {
                                         isLoading = true
@@ -730,6 +719,57 @@ fun ActivityDetailScreen(
         SuccessAnimationScreen(
             title = activity!!.name ?: "Attività",
             onDismiss = { showSuccessDialog = false }
+        )
+    }
+
+    if (showCancelConfirmationDialog) {
+        AlertDialog(
+            onDismissRequest = { showCancelConfirmationDialog = false },
+            title = { Text("Annulla Prenotazione", fontWeight = FontWeight.Bold) },
+            text = { Text("Sei sicuro di voler annullare la prenotazione per l'attività \"${activity?.name}\"? L'azione non è reversibile.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showCancelConfirmationDialog = false
+                        scope.launch {
+                            isLoading = true
+                            val cancelRes = AppContainer.activityRepository.cancelActivityBooking(activity?.id?.toString() ?: activityId)
+                            isLoading = false
+                            cancelRes.fold(
+                                onSuccess = {
+                                    isBooked = false
+                                    showCancelSuccessDialog = true
+                                },
+                                onFailure = {
+                                    Toast.makeText(context, "Errore nella cancellazione: ${it.message}", Toast.LENGTH_LONG).show()
+                                }
+                            )
+                        }
+                    }
+                ) {
+                    Text("Sì, annulla", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showCancelConfirmationDialog = false }) {
+                    Text("No, mantieni")
+                }
+            }
+        )
+    }
+
+    if (showCancelSuccessDialog) {
+        AlertDialog(
+            onDismissRequest = { showCancelSuccessDialog = false },
+            title = { Text("Prenotazione Annullata", fontWeight = FontWeight.Bold) },
+            text = { Text("La tua prenotazione è stata annullata con successo.") },
+            confirmButton = {
+                Button(
+                    onClick = { showCancelSuccessDialog = false }
+                ) {
+                    Text("Chiudi")
+                }
+            }
         )
     }
 }

@@ -100,6 +100,8 @@ fun ItineraryDetailScreen(
     val error by viewModel.error.collectAsState()
     val isBooked by viewModel.isBooked.collectAsState()
     val showSummaryDialog by viewModel.showSummaryDialog.collectAsState()
+    val showCancelSuccessDialog by viewModel.showCancelSuccessDialog.collectAsState()
+    var showCancelConfirmationDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(itinerary.getId()) {
         itinerary.getId()?.let {
@@ -144,6 +146,46 @@ fun ItineraryDetailScreen(
         SuccessAnimationScreen(
             title = itinerary.getTitle() ?: "N/D",
             onDismiss = { viewModel.onSummaryDialogDismissed() }
+        )
+    }
+
+    if (showCancelConfirmationDialog) {
+        AlertDialog(
+            onDismissRequest = { showCancelConfirmationDialog = false },
+            title = { Text("Annulla Prenotazione", fontWeight = FontWeight.Bold) },
+            text = { Text("Sei sicuro di voler annullare la prenotazione per l'itinerario \"${itinerary.getTitle()}\" e tutte le attività collegate? L'azione non è reversibile.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showCancelConfirmationDialog = false
+                        itinerary.getId()?.toString()?.let {
+                            viewModel.cancelBooking(it)
+                        }
+                    }
+                ) {
+                    Text("Sì, annulla", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showCancelConfirmationDialog = false }) {
+                    Text("No, mantieni")
+                }
+            }
+        )
+    }
+
+    if (showCancelSuccessDialog) {
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissCancelSuccess() },
+            title = { Text("Prenotazione Annullata", fontWeight = FontWeight.Bold) },
+            text = { Text("La tua prenotazione è stata annullata con successo.") },
+            confirmButton = {
+                Button(
+                    onClick = { viewModel.dismissCancelSuccess() }
+                ) {
+                    Text("Chiudi")
+                }
+            }
         )
     }
 
@@ -195,9 +237,7 @@ fun ItineraryDetailScreen(
                     if (isBooked) {
                         Button(
                             onClick = {
-                                itinerary.getId()?.toString()?.let {
-                                    viewModel.cancelBooking(it)
-                                }
+                                showCancelConfirmationDialog = true
                             },
                             enabled = !isLoading,
                             colors = ButtonDefaults.buttonColors(
