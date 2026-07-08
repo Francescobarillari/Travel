@@ -129,7 +129,21 @@ fun HomeScreen(
                             )
                         }
                     } else {
-                        HomeFeedScreen()
+                        HomeFeedScreen(
+                            onLocalitaClick = { localitaName ->
+                                AppContainer.sessionManager.incrementLocationScore(localitaName, 1)
+                                cercaViewModel.onSearchQueryChanged(localitaName, saveToHistory = false)
+                                selectedTab = HomeTab.CERCA
+                            },
+                            onActivityClick = { activityId ->
+                                selectedItemId = activityId
+                                selectedItemIsTrip = false
+                            },
+                            onItineraryClick = { itinerary ->
+                                selectedItinerary = itinerary
+                            },
+                            favoritesTrigger = favoritesTrigger
+                        )
                     }
                 }
                 
@@ -270,6 +284,13 @@ fun HomeScreen(
             val itineraryId = selectedItinerary!!.id?.toString() ?: ""
             var isFav by remember(itineraryId, favoritesTrigger) { 
                 mutableStateOf(AppContainer.sessionManager.isFavoriteItinerary(itineraryId)) 
+            }
+            LaunchedEffect(itineraryId) {
+                selectedItinerary!!.activities?.mapNotNull { it.location?.split(",")?.firstOrNull()?.trim() }
+                    ?.distinct()
+                    ?.forEach { city ->
+                        AppContainer.sessionManager.incrementLocationScore(city, 1)
+                    }
             }
             ItineraryDetailScreen(
                 itinerary = selectedItinerary!!,

@@ -52,7 +52,7 @@ fun CercaScreen(
     modifier: Modifier = Modifier
 ) {
     val focusManager = LocalFocusManager.current
-    var isSearchActive by remember { mutableStateOf(false) }
+    var isSearchActive by remember(viewModel.searchQuery) { mutableStateOf(viewModel.searchQuery.isNotEmpty()) }
 
     val favoriteActivities = remember { mutableStateMapOf<String, Boolean>() }
     val favoriteItineraries = remember { mutableStateMapOf<String, Boolean>() }
@@ -144,10 +144,6 @@ fun CercaScreen(
                             )
                         }
                     } else {
-                    Icon(
-                        imageVector = Icons.Default.Search, 
-                        contentDescription = "Cerca", 
-                        tint = MaterialTheme.colorScheme.primary 
                         Icon(
                             imageVector = Icons.Default.Search, 
                             contentDescription = "Cerca", 
@@ -164,7 +160,6 @@ fun CercaScreen(
                                 tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                             )
                         }
-                    }
                     }
                 },
                 singleLine = true,

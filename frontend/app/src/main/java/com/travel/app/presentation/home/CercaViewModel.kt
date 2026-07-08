@@ -37,10 +37,13 @@ class CercaViewModel(
     var searchQuery by mutableStateOf("")
         private set
     
-    fun onSearchQueryChanged(query: String) {
+    fun onSearchQueryChanged(query: String, saveToHistory: Boolean = true) {
         searchQuery = query
         filterItinerariesLocally()
         debouncedSearch()
+        if (saveToHistory && query.isNotBlank()) {
+            com.travel.app.data.AppContainer.sessionManager.saveLastSearchQuery(query)
+        }
     }
     var minPrice by mutableStateOf<Double?>(null)
         private set

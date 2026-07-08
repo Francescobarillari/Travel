@@ -65,6 +65,10 @@ fun ActivityDetailScreen(
             onSuccess = {
                 activity = it
                 isLoading = false
+                // Increment location score when viewed
+                it.location?.split(",")?.firstOrNull()?.trim()?.let { city ->
+                    AppContainer.sessionManager.incrementLocationScore(city, 1)
+                }
             },
             onFailure = {
                 errorMsg = it.message ?: "Impossibile caricare i dettagli dell'attività"
@@ -237,7 +241,14 @@ fun ActivityDetailScreen(
                             
                             // Favorite Button
                             IconButton(
-                                onClick = onFavoriteClick,
+                                onClick = {
+                                    onFavoriteClick()
+                                    if (!isFavorite) {
+                                        act.location?.split(",")?.firstOrNull()?.trim()?.let { city ->
+                                            AppContainer.sessionManager.incrementLocationScore(city, 3)
+                                        }
+                                    }
+                                },
                                 modifier = Modifier
                                     .size(44.dp)
                                     .background(Color.Black.copy(alpha = 0.5f), CircleShape)
