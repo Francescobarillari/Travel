@@ -398,6 +398,9 @@ public class ActivityService {
     public void confirmActivityBooking(String bookingId) {
         ActivityBooking booking = activityBookingRepository.findById(UUID.fromString(bookingId))
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "activity.booking.notFound"));
+        if (booking.getStatus() == BookingStatus.CONFIRMED) {
+            return;
+        }
         booking.setStatus(BookingStatus.CONFIRMED);
         activityBookingRepository.save(booking);
         auditLogService.log("CONFIRM_ACTIVITY_BOOKING", "ActivityBooking", booking.getId().toString(), "Activity booking confirmed client-side");

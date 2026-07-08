@@ -197,16 +197,9 @@ fun ActivityDetailScreen(
                                         isLoading = false
                                         bookRes.fold(
                                             onSuccess = { response ->
-                                                if (response.clientSecret != null) {
-                                                    // Pagamento reale → mostra checkout summary
-                                                    currentBookingId = response.bookingId
-                                                    paymentClientSecret = response.clientSecret
-                                                    showCheckoutSummary = true
-                                                } else {
-                                                    // Gratuito / mock → già confermato
-                                                    isBooked = true
-                                                    Toast.makeText(context, "Prenotazione confermata!", Toast.LENGTH_LONG).show()
-                                                }
+                                                currentBookingId = response.bookingId
+                                                paymentClientSecret = response.clientSecret
+                                                showCheckoutSummary = true
                                             },
                                             onFailure = {
                                                 Toast.makeText(context, "Errore nella prenotazione: ${it.message}", Toast.LENGTH_LONG).show()

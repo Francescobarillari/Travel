@@ -293,6 +293,9 @@ public class ItineraryService {
     public void confirmItineraryBooking(String bookingId) {
         ItineraryBooking booking = itineraryBookingRepository.findById(UUID.fromString(bookingId))
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "itinerary.booking.notFound"));
+        if (booking.getStatus() == BookingStatus.CONFIRMED) {
+            return;
+        }
         booking.setStatus(BookingStatus.CONFIRMED);
         itineraryBookingRepository.save(booking);
 
