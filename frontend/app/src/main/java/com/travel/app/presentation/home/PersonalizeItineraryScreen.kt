@@ -1,6 +1,7 @@
 package com.travel.app.presentation.home
 
 import android.widget.Toast
+import android.net.Uri
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -45,15 +46,18 @@ import kotlinx.coroutines.launch
 @Composable
 fun PersonalizeItineraryScreen(
     itinerary: ItineraryDto,
+    initialCity: String? = null,
+    coverImageUri: Uri? = null,
     onNavigateBack: () -> Unit,
-    onPersonalizeSuccess: () -> Unit
+    onPersonalizeSuccess: () -> Unit,
+    onActivityClick: (String) -> Unit
 ) {
     val focusManager = LocalFocusManager.current
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
     val city = remember(itinerary) {
-        itinerary.activities?.firstOrNull()?.location?.split(",")?.firstOrNull()?.trim() ?: ""
+        initialCity ?: itinerary.activities?.firstOrNull()?.location?.split(",")?.firstOrNull()?.trim() ?: ""
     }
 
     var isLoading by remember { mutableStateOf(true) }
@@ -165,10 +169,30 @@ fun PersonalizeItineraryScreen(
                                     visibility = "PRIVATE"
                                 }
                                 val res = AppContainer.itineraryRepository.createItinerary(req)
+                                if (res.isSuccess && coverImageUri != null) {
+                                    val createdItin = res.getOrNull()
+                                    val itinId = createdItin?.id?.toString()
+                                    if (itinId != null) {
+                                        try {
+                                            val inputStream = context.contentResolver.openInputStream(coverImageUri)
+                                            val bytes = inputStream?.readBytes()
+                                            inputStream?.close()
+                                            if (bytes != null) {
+                                                val mimeType = context.contentResolver.getType(coverImageUri) ?: "image/jpeg"
+                                                val uploadRes = AppContainer.itineraryRepository.uploadItineraryImage(itinId, bytes, mimeType, "cover.jpg")
+                                                if (uploadRes.isFailure) {
+                                                    Toast.makeText(context, "Errore caricamento immagine copertina: ${uploadRes.exceptionOrNull()?.message}", Toast.LENGTH_SHORT).show()
+                                                }
+                                            }
+                                        } catch (e: Exception) {
+                                            Toast.makeText(context, "Impossibile leggere l'immagine di copertina", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                }
                                 isSaving = false
                                 res.fold(
                                     onSuccess = {
-                                        Toast.makeText(context, "Itinerario personalizzato creato!", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, "Itinerario creato con successo!", Toast.LENGTH_SHORT).show()
                                         onPersonalizeSuccess()
                                     },
                                     onFailure = { err ->
@@ -280,7 +304,9 @@ fun PersonalizeItineraryScreen(
                                     ) { activity ->
                                         val actId = activity.id?.toString() ?: ""
                                         Card(
-                                            modifier = Modifier.fillMaxWidth(),
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clickable { onActivityClick(actId) },
                                             shape = RoundedCornerShape(16.dp),
                                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -363,7 +389,14 @@ fun PersonalizeItineraryScreen(
                             ) {
                                 items(filtered) { activity ->
                                     Card(
-                                        modifier = Modifier.fillMaxWidth(),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clickable {
+                                                val actId = activity.id?.toString()
+                                                if (actId != null) {
+                                                    onActivityClick(actId)
+                                                }
+                                            },
                                         shape = RoundedCornerShape(16.dp),
                                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                                     ) {

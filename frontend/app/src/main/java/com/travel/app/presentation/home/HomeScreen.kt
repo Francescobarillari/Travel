@@ -1,6 +1,7 @@
 package com.travel.app.presentation.home
 
 import android.os.Build
+import android.net.Uri
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -47,6 +48,11 @@ fun HomeScreen(
     var itinerariesRefreshTrigger by remember { mutableStateOf(0) }
     var bookingsRefreshTrigger by remember { mutableStateOf(0) }
     var favoritesTrigger by remember { mutableStateOf(0) }
+
+    // State for itinerary creation flow
+    var newItineraryMetadata by remember { mutableStateOf<ItineraryDto?>(null) }
+    var newItineraryCity by remember { mutableStateOf("") }
+    var newItineraryImageUri by remember { mutableStateOf<Uri?>(null) }
 
     var currentUser by remember(user) { 
         mutableStateOf(user ?: User(
@@ -104,12 +110,12 @@ fun HomeScreen(
         selectedItinerary != null ||
         (selectedItemId != null && !selectedItemIsTrip) ||
         personalizingItinerary != null ||
+        newItineraryMetadata != null ||
         selectedActivityIdForBookings != null ||
         selectedTab != HomeTab.HOME
     androidx.activity.compose.BackHandler(enabled = hasSomethingToPop) {
         when {
             // Overlay, dal più in alto al più in basso nello stack visivo
-            personalizingItinerary != null -> personalizingItinerary = null
             selectedItemId != null && !selectedItemIsTrip -> {
                 selectedItemId = null
                 bookingsRefreshTrigger++
@@ -119,6 +125,8 @@ fun HomeScreen(
                 bookingsRefreshTrigger++
             }
             selectedProfileUser != null -> selectedProfileUser = null
+            personalizingItinerary != null -> personalizingItinerary = null
+            newItineraryMetadata != null -> newItineraryMetadata = null
             // Sotto-schermata prenotazioni azienda (dentro il tab HOME)
             selectedActivityIdForBookings != null -> selectedActivityIdForBookings = null
             // Qualsiasi altro tab: torna alla Home
@@ -194,6 +202,19 @@ fun HomeScreen(
                             },
                             onUserClick = { u ->
                                 selectedProfileUser = u
+                            }
+                        )
+                    }
+                }
+
+                HomeTab.CREA_ITINERARIO -> {
+                    if (!isSocieta) {
+                        CreateItineraryScreen(
+                            onNavigateBack = { selectedTab = HomeTab.HOME },
+                            onNext = { itinerary, city, imageUri ->
+                                newItineraryMetadata = itinerary
+                                newItineraryCity = city
+                                newItineraryImageUri = imageUri
                             }
                         )
                     }
@@ -275,27 +296,67 @@ fun HomeScreen(
                 }
             }
 
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-            ) {
-                FloatingBottomNavBar(
-                    selectedTab = selectedTab,
-                    isSocieta = isSocieta,
-                    onTabSelected = { 
-                        if (it == HomeTab.PREFERITI && isSocieta) {
-                            companyAddOfferViewModel.resetForm()
+            if (selectedTab != HomeTab.CREA_ITINERARIO) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                ) {
+                    FloatingBottomNavBar(
+                        selectedTab = selectedTab,
+                        isSocieta = isSocieta,
+                        onTabSelected = { 
+                            if (it == HomeTab.PREFERITI && isSocieta) {
+                                companyAddOfferViewModel.resetForm()
+                            }
+                            selectedTab = it 
                         }
-                        selectedTab = it 
-                    }
-                )
+                    )
+                }
             }
         }
 
         // Overlay detail screens on top of the main content
         
         // 1. User Profile Overlay (composed first, so details render on top of it)
+        // 1. Personalize Overlay
+        if (personalizingItinerary != null) {
+            PersonalizeItineraryScreen(
+                itinerary = personalizingItinerary!!,
+                onNavigateBack = { personalizingItinerary = null },
+                onPersonalizeSuccess = {
+                    personalizingItinerary = null
+                    selectedItinerary = null
+                },
+                onActivityClick = { activityId ->
+                    selectedItemId = activityId
+                    selectedItemIsTrip = false
+                }
+            )
+        }
+
+        // 2. Create Itinerary Overlay (Activity selection step)
+        if (newItineraryMetadata != null) {
+            PersonalizeItineraryScreen(
+                itinerary = newItineraryMetadata!!,
+                initialCity = newItineraryCity,
+                coverImageUri = newItineraryImageUri,
+                onNavigateBack = { newItineraryMetadata = null },
+                onPersonalizeSuccess = {
+                    newItineraryMetadata = null
+                    newItineraryCity = ""
+                    newItineraryImageUri = null
+                    selectedTab = HomeTab.I_MIEI_ITINERARI
+                    itinerariesRefreshTrigger++
+                },
+                onActivityClick = { activityId ->
+                    selectedItemId = activityId
+                    selectedItemIsTrip = false
+                }
+            )
+        }
+
+        // 3. User Profile Overlay (composed first, so details render on top of it)
         if (selectedProfileUser != null) {
             UserProfileScreen(
                 user = selectedProfileUser!!,
@@ -324,7 +385,7 @@ fun HomeScreen(
             )
         }
 
-        // 2. Itinerary Detail Overlay
+        // 4. Itinerary Detail Overlay
         if (selectedItinerary != null) {
             val itineraryId = selectedItinerary!!.id?.toString() ?: ""
             var isFav by remember(itineraryId, favoritesTrigger) { 
@@ -364,7 +425,7 @@ fun HomeScreen(
             )
         }
 
-        // 3. Activity Detail Overlay
+        // 5. Activity Detail Overlay
         if (selectedItemId != null && !selectedItemIsTrip) {
             val activityId = selectedItemId!!
             var isFav by remember(activityId, favoritesTrigger) { 
@@ -381,18 +442,6 @@ fun HomeScreen(
                     AppContainer.sessionManager.toggleFavoriteActivity(activityId)
                     isFav = !isFav
                     favoritesTrigger++
-                }
-            )
-        }
-
-        // 4. Personalize Overlay
-        if (personalizingItinerary != null) {
-            PersonalizeItineraryScreen(
-                itinerary = personalizingItinerary!!,
-                onNavigateBack = { personalizingItinerary = null },
-                onPersonalizeSuccess = {
-                    personalizingItinerary = null
-                    selectedItinerary = null
                 }
             )
         }

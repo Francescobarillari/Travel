@@ -8,6 +8,9 @@ import it.unical.ea.dtos.itinerary.ItineraryDto
 import it.unical.ea.dtos.itinerary.CreateItineraryRequest
 import retrofit2.HttpException
 import java.io.IOException
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.toRequestBody
 
 class ItineraryRepositoryImpl(
     private val apiService: ApiService
@@ -34,6 +37,17 @@ class ItineraryRepositoryImpl(
     override suspend fun createItinerary(request: CreateItineraryRequest): Result<ItineraryDto> {
         return try {
             val result = apiService.createItinerary(request)
+            Result.success(result)
+        } catch (e: Exception) {
+            Result.failure(Exception(handleError(e)))
+        }
+    }
+
+    override suspend fun uploadItineraryImage(id: String, imageBytes: ByteArray, mimeType: String, fileName: String): Result<ItineraryDto> {
+        return try {
+            val requestBody = imageBytes.toRequestBody(mimeType.toMediaTypeOrNull())
+            val part = MultipartBody.Part.createFormData("file", fileName, requestBody)
+            val result = apiService.uploadItineraryImage(id, part)
             Result.success(result)
         } catch (e: Exception) {
             Result.failure(Exception(handleError(e)))

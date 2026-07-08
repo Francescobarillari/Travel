@@ -50,8 +50,8 @@ public class LocationDataSeeder implements CommandLineRunner {
         List<String> cities = Arrays.asList(
             "Roma, Italia", "Parigi, Francia", "Londra, Regno Unito", "New York, USA", "Tokyo, Giappone",
             "Barcellona, Spagna", "Venezia, Italia", "Firenze, Italia", "Sydney, Australia", "Rio de Janeiro, Brasile",
-            "Cairo, Egitto", "Atene, Grecia", "Amsterdam, Paesi Bassi", "Dubai, Emirati Arabi Uniti", "Istanbul, Turchia",
-            "Nairobi, Kenya", "Trentino-Alto Adige", "Città del Capo, Sudafrica", "Praga, Repubblica Ceca", "San Francisco, USA"
+            "Cairo, Egitto", "Atene, Grecia", "Amsterdam, Paesi Basi", "Dubai, Emirati Arabi Uniti", "Istanbul, Turchia",
+            "Nairobi, Kenya", "Trentino-Alto Adige, Italia", "Città del Capo, Sudafrica", "Praga, Repubblica Ceca", "San Francisco, USA"
         );
         for (String city : cities) {
             locationService.getOrCreateLocation(city);

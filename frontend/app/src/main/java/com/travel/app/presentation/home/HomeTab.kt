@@ -3,6 +3,7 @@ package com.travel.app.presentation.home
 enum class HomeTab {
     HOME,
     CERCA,
+    CREA_ITINERARIO,
     PREFERITI,
     PROFILO,
     MENU,

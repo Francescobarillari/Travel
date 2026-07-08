@@ -78,6 +78,7 @@ fun CercaScreen(
     }
 
     LaunchedEffect(Unit) {
+        viewModel.selectedTab = CercaTab.TUTTI
         viewModel.performSearch()
     }
 
@@ -226,9 +227,9 @@ fun CercaScreen(
         androidx.compose.animation.AnimatedVisibility(visible = isSearchActive || viewModel.searchQuery.isNotEmpty()) {
             val tabIndex = when (viewModel.selectedTab) {
                 CercaTab.TUTTI -> 0
-                CercaTab.ATTIVITA -> 1
-                CercaTab.ITINERARI -> 2
-                CercaTab.UTENTI -> 3
+                CercaTab.UTENTI -> 1
+                CercaTab.ATTIVITA -> 2
+                CercaTab.ITINERARI -> 3
                 else -> 0
             }
             TabRow(
