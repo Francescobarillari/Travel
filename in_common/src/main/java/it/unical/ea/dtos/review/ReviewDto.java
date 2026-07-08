@@ -14,7 +14,7 @@ public class ReviewDto {
     private UUID id;
     private String authorName;
     private Boolean isEditable;
-    private Integer rating;
+    private Double rating;
     private String comment;
     private LocalDateTime createdAt;
     

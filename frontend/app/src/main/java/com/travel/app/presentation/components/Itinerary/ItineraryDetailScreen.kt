@@ -80,7 +80,8 @@ fun ItineraryDetailScreen(
     var reviews by remember { mutableStateOf<List<ReviewDto>>(emptyList()) }
     val scope = rememberCoroutineScope()
 
-    val currentUser = remember { AppContainer.sessionManager.getSessionUser() }
+    val isPreview = androidx.compose.ui.platform.LocalInspectionMode.current
+    val currentUser = remember { if (isPreview) null else AppContainer.sessionManager.getSessionUser() }
     val isViaggiatore = currentUser?.userType == "VIAGGIATORE"
 
     LaunchedEffect(itinerary.id) {
@@ -394,17 +395,20 @@ fun ItineraryDetailScreen(
                     }
 
                     // Floating Circular Favorite Button
-                    IconButton(
-                        onClick = onFavoriteClick,
-                        modifier = Modifier
-                            .size(44.dp)
-                            .background(Color.Black.copy(alpha = 0.5f), CircleShape)
-                    ) {
-                        Icon(
-                            imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                            contentDescription = "Preferito",
-                            tint = if (isFavorite) Color.Red else Color.White
-                        )
+                    val isMyItinerary = itinerary.creatorId?.toString() == currentUser?.id
+                    if (!isMyItinerary) {
+                        IconButton(
+                            onClick = onFavoriteClick,
+                            modifier = Modifier
+                                .size(44.dp)
+                                .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                        ) {
+                            Icon(
+                                imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                contentDescription = "Preferito",
+                                tint = if (isFavorite) Color.Red else Color.White
+                            )
+                        }
                     }
                 }
 

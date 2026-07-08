@@ -41,7 +41,7 @@ public class Review extends AuditBaseEntity {
     private Itinerary itinerary;
 
     @Column(name = "rating", nullable = false)
-    private Integer rating;
+    private Double rating;
 
     @Column(name = "comment", length = 2000)
     private String comment;
