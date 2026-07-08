@@ -359,55 +359,73 @@ fun CompanyAddOfferScreen(
                                 }
                             )
                         } else {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                Box(modifier = Modifier.weight(1f)) {
-                                    ActivityDatePickerField(
-                                        label = "Inizio Periodo",
-                                        dateText = if (startYearState > 0) String.format("%02d/%02d/%d", startDayState, startMonthState, startYearState) else "",
-                                        isSet = startYearState > 0,
-                                        badgeColor = Color(0xFFEFF6FF),
-                                        iconColor = MaterialTheme.colorScheme.primary,
-                                        onClick = {
-                                            val initYear = if (startYearState > 0) startYearState else calendar.get(Calendar.YEAR)
-                                            val initMonth = if (startYearState > 0) startMonthState - 1 else calendar.get(Calendar.MONTH)
-                                            val initDay = if (startYearState > 0) startDayState else calendar.get(Calendar.DAY_OF_MONTH)
-                                            DatePickerDialog(context, { _, year, month, day ->
-                                                viewModel.startYear = year
-                                                viewModel.startMonth = month + 1
-                                                viewModel.startDay = day
-                                                startYearState = year
-                                                startMonthState = month + 1
-                                                startDayState = day
-                                            }, initYear, initMonth, initDay).show()
-                                        }
-                                    )
-                                }
-                                Box(modifier = Modifier.weight(1f)) {
-                                    ActivityDatePickerField(
-                                        label = "Fine Periodo",
-                                        dateText = if (endYearState > 0) String.format("%02d/%02d/%d", endDayState, endMonthState, endYearState) else "",
-                                        isSet = endYearState > 0,
-                                        badgeColor = Color(0xFFFEF2F2),
-                                        iconColor = Color(0xFFEF4444),
-                                        onClick = {
-                                            val initYear = if (endYearState > 0) endYearState else calendar.get(Calendar.YEAR)
-                                            val initMonth = if (endYearState > 0) endMonthState - 1 else calendar.get(Calendar.MONTH)
-                                            val initDay = if (endYearState > 0) endDayState else calendar.get(Calendar.DAY_OF_MONTH)
-                                            DatePickerDialog(context, { _, year, month, day ->
+                            // Campi a piena larghezza (impilati) così la data scelta è sempre
+                            // leggibile all'interno del bottone.
+                            ActivityDatePickerField(
+                                label = "Inizio Periodo",
+                                dateText = if (startYearState > 0) String.format("%02d/%02d/%d", startDayState, startMonthState, startYearState) else "",
+                                isSet = startYearState > 0,
+                                badgeColor = Color(0xFFEFF6FF),
+                                iconColor = MaterialTheme.colorScheme.primary,
+                                onClick = {
+                                    val initYear = if (startYearState > 0) startYearState else calendar.get(Calendar.YEAR)
+                                    val initMonth = if (startYearState > 0) startMonthState - 1 else calendar.get(Calendar.MONTH)
+                                    val initDay = if (startYearState > 0) startDayState else calendar.get(Calendar.DAY_OF_MONTH)
+                                    val dialog = DatePickerDialog(context, { _, year, month, day ->
+                                        viewModel.startYear = year
+                                        viewModel.startMonth = month + 1
+                                        viewModel.startDay = day
+                                        startYearState = year
+                                        startMonthState = month + 1
+                                        startDayState = day
+                                        // Se la fine è ora precedente all'inizio, la riallineiamo
+                                        if (endYearState > 0) {
+                                            val startCal = Calendar.getInstance().apply { set(year, month, day, 0, 0, 0) }
+                                            val endCal = Calendar.getInstance().apply { set(endYearState, endMonthState - 1, endDayState, 0, 0, 0) }
+                                            if (endCal.before(startCal)) {
                                                 viewModel.endYear = year
                                                 viewModel.endMonth = month + 1
                                                 viewModel.endDay = day
                                                 endYearState = year
                                                 endMonthState = month + 1
                                                 endDayState = day
-                                            }, initYear, initMonth, initDay).show()
+                                            }
                                         }
-                                    )
+                                    }, initYear, initMonth, initDay)
+                                    // Non si possono creare attività nel passato
+                                    dialog.datePicker.minDate = System.currentTimeMillis() - 1000
+                                    dialog.show()
                                 }
-                            }
+                            )
+                            ActivityDatePickerField(
+                                label = "Fine Periodo",
+                                dateText = if (endYearState > 0) String.format("%02d/%02d/%d", endDayState, endMonthState, endYearState) else "",
+                                isSet = endYearState > 0,
+                                badgeColor = Color(0xFFFEF2F2),
+                                iconColor = Color(0xFFEF4444),
+                                onClick = {
+                                    val initYear = if (endYearState > 0) endYearState else if (startYearState > 0) startYearState else calendar.get(Calendar.YEAR)
+                                    val initMonth = if (endYearState > 0) endMonthState - 1 else if (startYearState > 0) startMonthState - 1 else calendar.get(Calendar.MONTH)
+                                    val initDay = if (endYearState > 0) endDayState else if (startYearState > 0) startDayState else calendar.get(Calendar.DAY_OF_MONTH)
+                                    val dialog = DatePickerDialog(context, { _, year, month, day ->
+                                        viewModel.endYear = year
+                                        viewModel.endMonth = month + 1
+                                        viewModel.endDay = day
+                                        endYearState = year
+                                        endMonthState = month + 1
+                                        endDayState = day
+                                    }, initYear, initMonth, initDay)
+                                    // La fine non può precedere l'inizio (né essere nel passato)
+                                    dialog.datePicker.minDate = if (startYearState > 0) {
+                                        Calendar.getInstance().apply {
+                                            set(startYearState, startMonthState - 1, startDayState, 0, 0, 0)
+                                        }.timeInMillis
+                                    } else {
+                                        System.currentTimeMillis() - 1000
+                                    }
+                                    dialog.show()
+                                }
+                            )
 
                             Spacer(modifier = Modifier.height(8.dp))
 

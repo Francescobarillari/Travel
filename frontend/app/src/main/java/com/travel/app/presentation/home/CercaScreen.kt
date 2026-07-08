@@ -378,6 +378,8 @@ fun CercaScreen(
                                     startTime = template.sessions?.firstOrNull()?.startTime
                                     endTime = template.sessions?.firstOrNull()?.endTime
                                     tags = template.tags
+                                    images = template.images?.takeIf { it.isNotEmpty() }
+                                        ?: template.sessions?.firstOrNull()?.images
                                 }
                                 val actId = activity.id?.toString() ?: ""
                                 val isFav = favoriteActivities[actId] == true

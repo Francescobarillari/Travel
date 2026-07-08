@@ -26,6 +26,8 @@ import androidx.compose.material.icons.filled.LocationOn
 import java.time.format.DateTimeFormatter
 import it.unical.ea.dtos.activity.ActivityDto
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
 import com.travel.app.presentation.home.components.CompanyKpiCard
 import com.travel.app.presentation.home.components.OccupancyProgressRing
 import com.travel.app.presentation.home.components.ActivityFillRateBar
@@ -247,6 +249,20 @@ fun ActivityDashboardCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
     ) {
+        Column {
+        // Anteprima immagine dell'attività (se presente)
+        val imageUrl = activity.images?.firstOrNull()
+        if (imageUrl != null) {
+            AsyncImage(
+                model = imageUrl,
+                contentDescription = "Immagine di ${activity.name ?: "attività"}",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(150.dp)
+                    .clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)),
+                contentScale = ContentScale.Crop
+            )
+        }
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -381,6 +397,7 @@ fun ActivityDashboardCard(
                     }
                 }
             }
+        }
         }
     }
 }
