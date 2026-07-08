@@ -31,6 +31,12 @@ fun AdminHomeScreen(
 ) {
     var selectedTab by remember { mutableStateOf(AdminTab.DASHBOARD) }
 
+    // Il back di sistema (pulsante e swipe dai bordi) riporta alla Dashboard invece di
+    // uscire dall'app quando si è su un altro tab.
+    androidx.activity.compose.BackHandler(enabled = selectedTab != AdminTab.DASHBOARD) {
+        selectedTab = AdminTab.DASHBOARD
+    }
+
     TravelTheme(darkTheme = isDarkMode) {
         Box(
             modifier = Modifier
