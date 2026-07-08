@@ -193,16 +193,27 @@ fun ItineraryDetailScreen(
                         )
                     }
                     if (isBooked) {
-                        Surface(
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                            shape = RoundedCornerShape(16.dp)
+                        Button(
+                            onClick = {
+                                itinerary.getId()?.toString()?.let {
+                                    viewModel.cancelBooking(it)
+                                }
+                            },
+                            enabled = !isLoading,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer,
+                                contentColor = MaterialTheme.colorScheme.onErrorContainer
+                            ),
+                            modifier = Modifier
+                                .width(210.dp)
+                                .height(52.dp),
+                            shape = RoundedCornerShape(26.dp)
                         ) {
-                            Text(
-                                text = "Prenotato",
-                                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                            )
+                            if (isLoading) {
+                                CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onErrorContainer)
+                            } else {
+                                Text("Annulla Prenotazione", fontWeight = FontWeight.Bold)
+                            }
                         }
                     } else {
                         Button(

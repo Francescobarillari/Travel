@@ -113,6 +113,15 @@ class ActivityRepositoryImpl(
         }
     }
 
+    override suspend fun getBookedActivities(): Result<List<ActivityDto>> {
+        return try {
+            val result = apiService.getBookedActivities()
+            Result.success(result)
+        } catch (e: Exception) {
+            Result.failure(Exception(handleError(e)))
+        }
+    }
+
     private fun handleError(e: Exception): String {
         return when (e) {
             is HttpException -> {

@@ -138,6 +138,18 @@ public class ActivityController {
         return enrichImageUrls(updated);
     }
 
+    @Operation(summary = "Ottieni le attività prenotate dall'utente autenticato")
+    @GetMapping("/booked/me")
+    public List<ActivityDto> getBookedActivities(@AuthenticationPrincipal Jwt jwt) {
+        if (jwt == null) {
+            throw new it.unical.ea.Travel.Exception.ApiException(HttpStatus.UNAUTHORIZED, "User not authenticated");
+        }
+        String email = jwt.getClaimAsString("email");
+        return activityService.getBookedActivitiesForUser(email).stream()
+                .map(this::enrichImageUrls)
+                .toList();
+    }
+
     @Operation(summary = "Verifica se l'utente ha prenotato l'attività")
     @GetMapping("/{stringId}/isBooked")
     public ResponseEntity<Boolean> isActivityBooked(

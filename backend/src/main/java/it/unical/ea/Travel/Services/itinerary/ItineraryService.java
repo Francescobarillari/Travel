@@ -16,6 +16,7 @@ import it.unical.ea.Travel.Services.storage.FileStorageService;
 import it.unical.ea.Travel.Services.audit.AuditLogService;
 import it.unical.ea.Travel.Services.payment.PaymentGateway;
 import it.unical.ea.dtos.payment.PaymentIntentResponseDto;
+import it.unical.ea.dtos.itinerary.ItineraryDto;
 import it.unical.ea.Travel.Entities.payment.BookingStatus;
 import java.math.BigDecimal;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -321,6 +322,17 @@ public class ItineraryService {
 
         Optional<ItineraryBooking> existingBookingOpt = itineraryBookingRepository.findByUserIdAndItineraryId(user.getId(), UUID.fromString(itineraryId));
         return existingBookingOpt.isPresent() && existingBookingOpt.get().getStatus() == BookingStatus.CONFIRMED;
+    }
+
+    @Transactional(readOnly = true)
+    public List<Itinerary> getBookedItinerariesForUser(String userEmail) {
+        User user = userRepository.getUserByEmail(userEmail)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "user.notFound"));
+        List<ItineraryBooking> bookings = itineraryBookingRepository.findByUserId(user.getId());
+        return bookings.stream()
+                .filter(b -> b.getStatus() == BookingStatus.CONFIRMED)
+                .map(ItineraryBooking::getItinerary)
+                .toList();
     }
 
     public Itinerary updateVisibility(String stringId, String visibility) {

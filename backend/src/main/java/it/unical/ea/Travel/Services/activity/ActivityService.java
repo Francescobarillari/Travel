@@ -448,6 +448,21 @@ public class ActivityService {
         auditLogService.log("CONFIRM_ACTIVITY_BOOKING", "ActivityBooking", booking.getId().toString(), "Activity booking confirmed client-side");
     }
 
+    @Transactional(readOnly = true)
+    public List<ActivityDto> getBookedActivitiesForUser(String userEmail) {
+        User user = userRepository.getUserByEmail(userEmail)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "user.notFound"));
+        List<ActivityBooking> bookings = activityBookingRepository.findByUserId(user.getId());
+        return bookings.stream()
+                .filter(b -> b.getStatus() == BookingStatus.CONFIRMED)
+                .map(b -> {
+                    ActivityDto dto = activityMapper.toDTO(b.getActivity());
+                    dto.setCurrentParticipants(calculateCurrentParticipants(b.getActivity()));
+                    return dto;
+                })
+                .toList();
+    }
+
     // Carica una o più immagini per l'attività specificata
     @Transactional
     public ActivityDto uploadImages(String activityId, MultipartFile[] files) {

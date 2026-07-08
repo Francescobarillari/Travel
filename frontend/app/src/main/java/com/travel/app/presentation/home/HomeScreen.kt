@@ -185,7 +185,8 @@ fun HomeScreen(
                     onNavigateToProfile = { selectedTab = HomeTab.PROFILO },
                     onNavigateToSecurity = { selectedTab = HomeTab.SICUREZZA },
                     onLogout = onLogout,
-                    onNavigateToMyItineraries = { selectedTab = HomeTab.I_MIEI_ITINERARI }
+                    onNavigateToMyItineraries = { selectedTab = HomeTab.I_MIEI_ITINERARI },
+                    onNavigateToMyBookings = { selectedTab = HomeTab.I_MIEI_PRENOTATI }
                 )
                 HomeTab.SICUREZZA -> {
                     SecurityScreen(
@@ -206,6 +207,19 @@ fun HomeScreen(
                             selectedItinerary = itinerary
                         },
                         refreshTrigger = itinerariesRefreshTrigger
+                    )
+                }
+                HomeTab.I_MIEI_PRENOTATI -> {
+                    MyBookingsScreen(
+                        user = currentUser,
+                        onBack = { selectedTab = HomeTab.MENU },
+                        onActivityClick = { activityId ->
+                            selectedItemId = activityId
+                            selectedItemIsTrip = false
+                        },
+                        onItineraryClick = { itinerary ->
+                            selectedItinerary = itinerary
+                        }
                     )
                 }
             }

@@ -148,6 +148,12 @@ interface ApiService {
     @DELETE("activity/{id}/book")
     suspend fun cancelActivityBooking(@Path("id") id: String)
 
+    @GET("activity/booked/me")
+    suspend fun getBookedActivities(): List<ActivityDto>
+
+    @GET("itinerary/booked/me")
+    suspend fun getBookedItineraries(): List<ItineraryDto>
+
     // Chiamata per aggiornare la visibilità di un itinerario
     @PUT("itinerary/{id}/visibility")
     suspend fun updateItineraryVisibility(
@@ -244,4 +250,6 @@ open class MockApiService : ApiService {
     override suspend fun bookActivity(id: String): PaymentIntentResponseDto = throw NotImplementedError()
     override suspend fun confirmActivityBooking(bookingId: String) {}
     override suspend fun cancelActivityBooking(id: String) {}
+    override suspend fun getBookedActivities(): List<ActivityDto> = emptyList()
+    override suspend fun getBookedItineraries(): List<ItineraryDto> = emptyList()
 }

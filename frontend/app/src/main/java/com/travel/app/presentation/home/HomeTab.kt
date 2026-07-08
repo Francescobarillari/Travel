@@ -6,6 +6,7 @@ enum class HomeTab {
     PROFILO,
     MENU,
     SICUREZZA,
-    I_MIEI_ITINERARI
+    I_MIEI_ITINERARI,
+    I_MIEI_PRENOTATI
 }
 

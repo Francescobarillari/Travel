@@ -92,8 +92,9 @@ class ItineraryDetailViewModel : ViewModel() {
             _isLoading.value = true
             try {
                 apiService.cancelItineraryBooking(itineraryId)
-            } catch (_: Exception) {
-                // Ignora errori, chiudi comunque la schermata
+                _isBooked.value = false
+            } catch (e: Exception) {
+                _error.value = "Errore durante l'annullamento: ${e.message}"
             } finally {
                 _showCheckoutSummary.value = false
                 currentBookingId = null
