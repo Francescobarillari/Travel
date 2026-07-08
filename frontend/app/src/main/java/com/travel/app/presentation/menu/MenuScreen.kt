@@ -141,7 +141,7 @@ fun MenuScreen(
         )
 
         if (isSocieta) {
-            // COMPANY SPECIFIC 2x2 GRID
+            // COMPANY SPECIFIC GRID (1x2)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -153,28 +153,6 @@ fun MenuScreen(
                     iconBg = Color(0xFFEFF6FF),
                     modifier = Modifier.weight(1f),
                     onClick = onNavigateToProfile
-                )
-                MenuGridCard(
-                    title = "I Miei Annunci",
-                    icon = Icons.Default.LocalOffer,
-                    iconColor = Color(0xFF059669),
-                    iconBg = Color(0xFFECFDF5),
-                    modifier = Modifier.weight(1f),
-                    onClick = { Toast.makeText(context, "I Miei Annunci: Funzionalità in arrivo!", Toast.LENGTH_SHORT).show() }
-                )
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                MenuGridCard(
-                    title = "Fatturazione",
-                    icon = Icons.Default.Receipt,
-                    iconColor = Color(0xFFD97706),
-                    iconBg = Color(0xFFFFFBEB),
-                    modifier = Modifier.weight(1f),
-                    onClick = { Toast.makeText(context, "Fatturazione: Funzionalità in arrivo!", Toast.LENGTH_SHORT).show() }
                 )
                 MenuGridCard(
                     title = "Sicurezza",
