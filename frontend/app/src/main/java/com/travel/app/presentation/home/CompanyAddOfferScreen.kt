@@ -444,6 +444,38 @@ fun CompanyAddOfferScreen(
                                 "SATURDAY" to "Sab",
                                 "SUNDAY" to "Dom"
                             )
+
+                            // Giorni della settimana effettivamente presenti nel periodo scelto:
+                            // se il periodo copre meno di 7 giorni, quelli esclusi non sono selezionabili.
+                            val allDayKeys = daysList.map { it.first }.toSet()
+                            val admissibleDays = remember(
+                                startYearState, startMonthState, startDayState,
+                                endYearState, endMonthState, endDayState
+                            ) {
+                                if (startYearState > 0 && endYearState > 0) {
+                                    try {
+                                        val start = java.time.LocalDate.of(startYearState, startMonthState, startDayState)
+                                        val end = java.time.LocalDate.of(endYearState, endMonthState, endDayState)
+                                        val days = mutableSetOf<String>()
+                                        var d = start
+                                        while (!d.isAfter(end) && days.size < 7) {
+                                            days.add(d.dayOfWeek.name)
+                                            d = d.plusDays(1)
+                                        }
+                                        days.toSet()
+                                    } catch (e: Exception) {
+                                        allDayKeys
+                                    }
+                                } else {
+                                    allDayKeys
+                                }
+                            }
+
+                            // Se il periodo cambia, deseleziona i giorni diventati non ammissibili
+                            LaunchedEffect(admissibleDays) {
+                                viewModel.selectedDaysOfWeek.removeAll { it !in admissibleDays }
+                            }
+
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -453,13 +485,22 @@ fun CompanyAddOfferScreen(
                             ) {
                                 daysList.forEach { (dayKey, dayLabel) ->
                                     val isSelected = viewModel.selectedDaysOfWeek.contains(dayKey)
+                                    val isAdmissible = dayKey in admissibleDays
                                     FilterChip(
                                         selected = isSelected,
+                                        enabled = isAdmissible,
                                         onClick = { viewModel.toggleDayOfWeek(dayKey) },
                                         label = { Text(dayLabel, fontSize = 11.sp, fontWeight = FontWeight.Bold) },
                                         colors = FilterChipDefaults.filterChipColors(
                                             selectedContainerColor = MaterialTheme.colorScheme.primary,
-                                            selectedLabelColor = Color.White
+                                            selectedLabelColor = Color.White,
+                                            // Scuro: segnala che il giorno è fuori dal periodo e non cliccabile
+                                            disabledContainerColor = Color(0xFF334155),
+                                            disabledLabelColor = Color(0xFF64748B)
+                                        ),
+                                        border = if (!isAdmissible) null else FilterChipDefaults.filterChipBorder(
+                                            enabled = true,
+                                            selected = isSelected
                                         ),
                                         shape = RoundedCornerShape(12.dp)
                                     )
@@ -605,11 +646,12 @@ fun CompanyAddOfferScreen(
                         }
                         Box(modifier = Modifier.weight(1f)) {
                             ActivityInputField(
-                                label = "Prezzo (€) *",
-                                value = viewModel.priceText,
+                                label = if (viewModel.isFreeEvent) "Prezzo (€)" else "Prezzo (€) *",
+                                value = if (viewModel.isFreeEvent) "" else viewModel.priceText,
                                 onValueChange = { viewModel.priceText = it },
-                                placeholder = "es. 49.90",
+                                placeholder = if (viewModel.isFreeEvent) "Gratuito" else "es. 49.90",
                                 keyboardType = KeyboardType.Decimal,
+                                enabled = !viewModel.isFreeEvent,
                                 leadingIcon = {
                                     Text(
                                         text = "€",
@@ -620,6 +662,34 @@ fun CompanyAddOfferScreen(
                                 }
                             )
                         }
+                    }
+
+                    // L'agenzia può rendere l'evento gratuito invece di impostare un prezzo
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Evento gratuito",
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF334155)
+                            )
+                            Text(
+                                text = "I viaggiatori partecipano senza pagare",
+                                fontSize = 12.sp,
+                                color = Color(0xFF94A3B8)
+                            )
+                        }
+                        Switch(
+                            checked = viewModel.isFreeEvent,
+                            onCheckedChange = { viewModel.isFreeEvent = it },
+                            colors = SwitchDefaults.colors(
+                                checkedTrackColor = Color(0xFF16A34A)
+                            )
+                        )
                     }
                 }
             }
