@@ -165,10 +165,10 @@ public class DataSeeder implements CommandLineRunner {
                 });
 
         // --- Località 2: Alpi ---
-        Location loc2 = locationRepository.findByNameIgnoreCase("Trentino-Alto Adige")
+        Location loc2 = locationRepository.findByNameIgnoreCase("Trentino-Alto Adige, Italia")
                 .orElseGet(() -> {
                     Location loc = new Location();
-                    loc.setName("Trentino-Alto Adige");
+                    loc.setName("Trentino-Alto Adige, Italia");
                     loc.setDescription("Trekking, natura e relax in montagna. Per ricaricare le batterie lontano dalla città.");
                     loc.setImageUrl("https://img.icons8.com/color/500/mountain.png");
                     return locationRepository.save(loc);
@@ -212,7 +212,7 @@ public class DataSeeder implements CommandLineRunner {
         ActivityTemplate tpl1 = new ActivityTemplate();
         tpl1.setName("Visita al Colosseo");
         tpl1.setDescription("Tour guidato al Colosseo e Fori Imperiali.");
-        tpl1.setLocation("Roma");
+        tpl1.setLocation("Roma, Italia");
         tpl1.setLocationEntity(loc1);
         tpl1.setOrganizer(organizer);
         tpl1.setImages(List.of("https://images.unsplash.com/photo-1552832230-c0197dd311b5?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"));
@@ -229,7 +229,7 @@ public class DataSeeder implements CommandLineRunner {
         ActivityTemplate tpl2 = new ActivityTemplate();
         tpl2.setName("Cena a Trastevere");
         tpl2.setDescription("Cena tipica romana in una trattoria a Trastevere.");
-        tpl2.setLocation("Roma");
+        tpl2.setLocation("Roma, Italia");
         tpl2.setLocationEntity(loc1);
         tpl2.setOrganizer(organizer);
         tpl2.setTags(new HashSet<>(Arrays.asList(TravelTag.CULTURA, TravelTag.CIBO)));
@@ -245,7 +245,7 @@ public class DataSeeder implements CommandLineRunner {
         ActivityTemplate tpl3 = new ActivityTemplate();
         tpl3.setName("Trekking Tre Cime");
         tpl3.setDescription("Escursione panoramica alle Tre Cime di Lavaredo.");
-        tpl3.setLocation("Dolomiti");
+        tpl3.setLocation("Trentino-Alto Adige, Italia");
         tpl3.setLocationEntity(loc2);
         tpl3.setOrganizer(organizer);
         tpl3.setImages(List.of("https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"));
@@ -262,7 +262,7 @@ public class DataSeeder implements CommandLineRunner {
         ActivityTemplate tpl4 = new ActivityTemplate();
         tpl4.setName("Spa in Montagna");
         tpl4.setDescription("Giornata di relax alle terme alpine.");
-        tpl4.setLocation("Dolomiti");
+        tpl4.setLocation("Trentino-Alto Adige, Italia");
         tpl4.setLocationEntity(loc2);
         tpl4.setOrganizer(organizer);
         tpl4.setTags(new HashSet<>(Arrays.asList(TravelTag.RELAX, TravelTag.MONTAGNA)));
@@ -278,7 +278,7 @@ public class DataSeeder implements CommandLineRunner {
         ActivityTemplate tplSafari = new ActivityTemplate();
         tplSafari.setName("Game Drive");
         tplSafari.setDescription("Safari in Jeep per vedere i Big Five.");
-        tplSafari.setLocation("Masai Mara");
+        tplSafari.setLocation("Nairobi, Kenya");
         tplSafari.setLocationEntity(loc3);
         tplSafari.setOrganizer(organizer);
         tplSafari.setTags(new HashSet<>(Arrays.asList(TravelTag.AVVENTURA, TravelTag.SAFARI, TravelTag.NATURA, TravelTag.ANIMALI)));
@@ -294,7 +294,7 @@ public class DataSeeder implements CommandLineRunner {
         ActivityTemplate tpl5 = new ActivityTemplate();
         tpl5.setName("Corso di Cucina Italiana");
         tpl5.setDescription("Impara a fare pasta e pizza con uno chef locale.");
-        tpl5.setLocation("Firenze");
+        tpl5.setLocation("Firenze, Italia");
         tpl5.setLocationEntity(null);
         tpl5.setOrganizer(organizer);
         tpl5.setImages(List.of("https://images.unsplash.com/photo-1556910103-1c02745aae4d?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"));
@@ -311,7 +311,7 @@ public class DataSeeder implements CommandLineRunner {
         ActivityTemplate tpl6 = new ActivityTemplate();
         tpl6.setName("Giro in Gondola");
         tpl6.setDescription("Romantico giro nei canali di Venezia.");
-        tpl6.setLocation("Venezia");
+        tpl6.setLocation("Venezia, Italia");
         tpl6.setLocationEntity(null);
         tpl6.setOrganizer(organizer);
         tpl6.setTags(new HashSet<>(Arrays.asList(TravelTag.ROMANTICISMO, TravelTag.CULTURA)));
@@ -327,7 +327,7 @@ public class DataSeeder implements CommandLineRunner {
         ActivityTemplate tpl7 = new ActivityTemplate();
         tpl7.setName("Free Walking Tour");
         tpl7.setDescription("Tour a piedi gratuito per il centro storico (mancia consigliata).");
-        tpl7.setLocation("Milano");
+        tpl7.setLocation("Milano, Italia");
         tpl7.setLocationEntity(null);
         tpl7.setOrganizer(organizer);
         tpl7.setTags(new HashSet<>(Arrays.asList(TravelTag.CULTURA, TravelTag.CITTA)));

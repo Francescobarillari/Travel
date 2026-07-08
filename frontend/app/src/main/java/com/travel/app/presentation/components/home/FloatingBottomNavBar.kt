@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Dashboard
@@ -87,6 +88,27 @@ fun FloatingBottomNavBar(
                     onClick = { onTabSelected(HomeTab.CERCA) },
                     modifier = Modifier.weight(1f)
                 )
+                
+                // Pulsante '+' centrale di colore blu per creare itinerari
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .shadow(4.dp, CircleShape)
+                        .background(
+                            color = if (selectedTab == HomeTab.CREA_ITINERARIO) MaterialTheme.colorScheme.primary else Color(0xFF3B82F6),
+                            shape = CircleShape
+                        )
+                        .clickable { onTabSelected(HomeTab.CREA_ITINERARIO) },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Crea Itinerario",
+                        tint = Color.White,
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+
                 HomeTabItem(
                     icon = Icons.Default.Favorite,
                     label = "Preferiti",
