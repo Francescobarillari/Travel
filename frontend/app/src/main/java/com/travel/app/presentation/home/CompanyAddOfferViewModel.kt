@@ -82,6 +82,7 @@ class CompanyAddOfferViewModel(
 
     var maxParticipantsText by mutableStateOf("")
     var priceText by mutableStateOf("")
+    var isFreeEvent by mutableStateOf(false)
 
     // Selected images list
     val selectedImages = mutableStateListOf<Uri>()
@@ -142,6 +143,7 @@ class CompanyAddOfferViewModel(
         endMinute = 0
         maxParticipantsText = ""
         priceText = ""
+        isFreeEvent = false
         selectedImages.clear()
         selectedDaysOfWeek.clear()
         selectedTags.clear()
@@ -153,7 +155,7 @@ class CompanyAddOfferViewModel(
 
     fun submitActivity(context: android.content.Context) {
         val participants = maxParticipantsText.toIntOrNull()
-        val priceVal = priceText.toDoubleOrNull()
+        val priceVal = if (isFreeEvent) 0.0 else priceText.toDoubleOrNull()
 
         val startLocalDate = if (startYear > 0) java.time.LocalDate.of(startYear, startMonth, startDay) else null
         val endLocalDate = if (endYear > 0) java.time.LocalDate.of(endYear, endMonth, endDay) else null
@@ -285,6 +287,7 @@ class CompanyAddOfferViewModel(
                     }
                     maxParticipantsText = activity.participants?.toString() ?: ""
                     priceText = activity.price?.toString() ?: ""
+                    isFreeEvent = (activity.price?.toDouble() ?: 0.0) <= 0.0
                     activity.tags?.let { tags ->
                         selectedTags.clear()
                         selectedTags.addAll(tags)

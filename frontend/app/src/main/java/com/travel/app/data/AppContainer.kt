@@ -23,8 +23,11 @@ import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.converter.scalars.ScalarsConverterFactory
 import com.google.gson.TypeAdapter
 import com.google.gson.stream.JsonReader
+import com.google.gson.stream.JsonToken
 import com.google.gson.stream.JsonWriter
+import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
 class LocalDateTimeAdapter : TypeAdapter<LocalDateTime>() {
@@ -39,8 +42,57 @@ class LocalDateTimeAdapter : TypeAdapter<LocalDateTime>() {
     }
 
     override fun read(reader: JsonReader): LocalDateTime? {
+        if (reader.peek() == JsonToken.NULL) {
+            reader.nextNull()
+            return null
+        }
         val str = reader.nextString()
         return if (str.isNullOrBlank()) null else LocalDateTime.parse(str, formatter)
+    }
+}
+
+// Senza questi adapter Gson serializza LocalDate/LocalTime come oggetti
+// ({"year":...,"month":...}) invece che stringhe ISO, e il backend risponde 400
+// (es. in fase di creazione attività con startDate/endDate e fasce orarie).
+class LocalDateAdapter : TypeAdapter<LocalDate>() {
+    private val formatter = DateTimeFormatter.ISO_LOCAL_DATE
+
+    override fun write(out: JsonWriter, value: LocalDate?) {
+        if (value == null) {
+            out.nullValue()
+        } else {
+            out.value(formatter.format(value))
+        }
+    }
+
+    override fun read(reader: JsonReader): LocalDate? {
+        if (reader.peek() == JsonToken.NULL) {
+            reader.nextNull()
+            return null
+        }
+        val str = reader.nextString()
+        return if (str.isNullOrBlank()) null else LocalDate.parse(str, formatter)
+    }
+}
+
+class LocalTimeAdapter : TypeAdapter<LocalTime>() {
+    private val formatter = DateTimeFormatter.ISO_LOCAL_TIME
+
+    override fun write(out: JsonWriter, value: LocalTime?) {
+        if (value == null) {
+            out.nullValue()
+        } else {
+            out.value(formatter.format(value))
+        }
+    }
+
+    override fun read(reader: JsonReader): LocalTime? {
+        if (reader.peek() == JsonToken.NULL) {
+            reader.nextNull()
+            return null
+        }
+        val str = reader.nextString()
+        return if (str.isNullOrBlank()) null else LocalTime.parse(str, formatter)
     }
 }
 
@@ -69,6 +121,8 @@ object AppContainer {
 
     private val gson = com.google.gson.GsonBuilder()
         .registerTypeAdapter(LocalDateTime::class.java, LocalDateTimeAdapter())
+        .registerTypeAdapter(LocalDate::class.java, LocalDateAdapter())
+        .registerTypeAdapter(LocalTime::class.java, LocalTimeAdapter())
         .create()
 
     private val retrofit: Retrofit = Retrofit.Builder()
