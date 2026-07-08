@@ -10,4 +10,5 @@ interface ItineraryRepository {
     suspend fun updateItineraryVisibility(id: String, visibility: String): Result<ItineraryDto>
     suspend fun deleteItinerary(id: String): Result<Unit>
     suspend fun getItineraryById(id: String): Result<ItineraryDto> = Result.failure(Exception("Not implemented"))
+    suspend fun getBookedItineraries(): Result<List<ItineraryDto>> = Result.failure(Exception("Not implemented"))
 }

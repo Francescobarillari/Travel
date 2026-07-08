@@ -296,8 +296,27 @@ public class ActivityService {
 
     @Transactional
     public PaymentIntentResponseDto bookActivity(String activityId, String userEmail) {
-        Activity activity = activityRepository.findByIdForUpdate(UUID.fromString(activityId))
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "activity.notFound"));
+        UUID uuid = UUID.fromString(activityId);
+        Optional<Activity> activityOpt = activityRepository.findByIdForUpdate(uuid);
+        Activity activity;
+        if (activityOpt.isPresent()) {
+            activity = activityOpt.get();
+        } else {
+            // Fallback: se è un template ID, prendiamo la prima sessione disponibile per il template
+            Optional<ActivityTemplate> templateOpt = activityTemplateRepository.findById(uuid);
+            if (templateOpt.isPresent()) {
+                List<Activity> sessions = activityRepository.findSessionsByTemplate(templateOpt.get().getId(), null);
+                if (!sessions.isEmpty()) {
+                    UUID sessionId = sessions.get(0).getId();
+                    activity = activityRepository.findByIdForUpdate(sessionId)
+                            .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "activity.notFound"));
+                } else {
+                    throw new ApiException(HttpStatus.NOT_FOUND, "Nessuna sessione attiva trovata per questa attività");
+                }
+            } else {
+                throw new ApiException(HttpStatus.NOT_FOUND, "activity.notFound");
+            }
+        }
 
         // REGOLA DATI PASSATI: Blocco prenotazione per attività passate
         if (activity.getEndTime() != null && activity.getEndTime().isBefore(LocalDateTime.now())) {
@@ -349,19 +368,42 @@ public class ActivityService {
 
     @Transactional
     public void cancelActivityBooking(String activityId, String userEmail) {
-        Activity activity = activityRepository.findByIdForUpdate(UUID.fromString(activityId))
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "activity.notFound"));
+        UUID uuid = UUID.fromString(activityId);
+        User user = userRepository.getUserByEmail(userEmail)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "user.notFound"));
+
+        Optional<Activity> activityOpt = activityRepository.findByIdForUpdate(uuid);
+        Activity activity = null;
+        ActivityBooking booking = null;
+
+        if (activityOpt.isPresent()) {
+            activity = activityOpt.get();
+            booking = activityBookingRepository.findByUserIdAndActivityId(user.getId(), activity.getId())
+                    .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "activity.booking.notFound"));
+        } else {
+            // Fallback: se è un template ID, controlla tutte le sessioni del template per trovare quella prenotata dall'utente
+            Optional<ActivityTemplate> templateOpt = activityTemplateRepository.findById(uuid);
+            if (templateOpt.isPresent()) {
+                List<Activity> sessions = activityRepository.findSessionsByTemplate(templateOpt.get().getId(), null);
+                for (Activity session : sessions) {
+                    Optional<ActivityBooking> bOpt = activityBookingRepository.findByUserIdAndActivityId(user.getId(), session.getId());
+                    if (bOpt.isPresent()) {
+                        booking = bOpt.get();
+                        activity = session;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (activity == null || booking == null) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "activity.booking.notFound");
+        }
 
         // REGOLA DATI PASSATI: Blocco cancellazione per attività passate
         if (activity.getEndTime() != null && activity.getEndTime().isBefore(LocalDateTime.now())) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "activity.booking.pastEvent");
         }
-
-        User user = userRepository.getUserByEmail(userEmail)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "user.notFound"));
-
-        ActivityBooking booking = activityBookingRepository.findByUserIdAndActivityId(user.getId(), activity.getId())
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "activity.booking.notFound"));
 
         activityBookingRepository.delete(booking);
         activityBookingRepository.flush();
@@ -404,6 +446,21 @@ public class ActivityService {
         booking.setStatus(BookingStatus.CONFIRMED);
         activityBookingRepository.save(booking);
         auditLogService.log("CONFIRM_ACTIVITY_BOOKING", "ActivityBooking", booking.getId().toString(), "Activity booking confirmed client-side");
+    }
+
+    @Transactional(readOnly = true)
+    public List<ActivityDto> getBookedActivitiesForUser(String userEmail) {
+        User user = userRepository.getUserByEmail(userEmail)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "user.notFound"));
+        List<ActivityBooking> bookings = activityBookingRepository.findByUserId(user.getId());
+        return bookings.stream()
+                .filter(b -> b.getStatus() == BookingStatus.CONFIRMED)
+                .map(b -> {
+                    ActivityDto dto = activityMapper.toDTO(b.getActivity());
+                    dto.setCurrentParticipants(calculateCurrentParticipants(b.getActivity()));
+                    return dto;
+                })
+                .toList();
     }
 
     // Carica una o più immagini per l'attività specificata

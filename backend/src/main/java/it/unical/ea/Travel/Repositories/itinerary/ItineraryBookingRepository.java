@@ -10,4 +10,5 @@ import java.util.Optional;
 public interface ItineraryBookingRepository extends JpaRepository<ItineraryBooking, UUID> {
     Optional<ItineraryBooking> findByUserIdAndItineraryId(UUID userId, UUID itineraryId);
     java.util.List<ItineraryBooking> findByPaymentIntentId(String paymentIntentId);
+    java.util.List<ItineraryBooking> findByUserId(UUID userId);
 }

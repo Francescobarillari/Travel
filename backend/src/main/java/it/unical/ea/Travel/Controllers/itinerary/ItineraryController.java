@@ -148,6 +148,18 @@ public class ItineraryController {
         return toDTO(updated);
     }
 
+    @Operation(summary = "Ottieni gli itinerari prenotati dall'utente autenticato")
+    @GetMapping("/booked/me")
+    public List<ItineraryDto> getBookedItineraries(@AuthenticationPrincipal Jwt jwt) {
+        if (jwt == null) {
+            throw new it.unical.ea.Travel.Exception.ApiException(HttpStatus.UNAUTHORIZED, "User not authenticated");
+        }
+        String email = jwt.getClaimAsString("email");
+        return itineraryService.getBookedItinerariesForUser(email).stream()
+                .map(this::toDTO)
+                .toList();
+    }
+
     @Operation(summary = "Verifica se l'utente ha prenotato l'itinerario")
     @GetMapping("/{stringId}/isBooked")
     public ResponseEntity<Boolean> isItineraryBooked(

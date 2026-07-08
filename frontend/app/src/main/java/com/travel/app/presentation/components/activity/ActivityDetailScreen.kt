@@ -45,6 +45,10 @@ import com.paypal.checkout.approve.OnApprove
 import com.paypal.checkout.cancel.OnCancel
 import com.paypal.checkout.error.OnError
 import com.travel.app.presentation.components.checkout.CheckoutSummaryScreen
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -65,6 +69,9 @@ fun ActivityDetailScreen(
     var currentBookingId by remember { mutableStateOf<String?>(null) }
     var showCheckoutSummary by remember { mutableStateOf(false) }
     var currentUserEmail by remember { mutableStateOf("") }
+    var showSuccessDialog by remember { mutableStateOf(false) }
+    var showCancelConfirmationDialog by remember { mutableStateOf(false) }
+    var showCancelSuccessDialog by remember { mutableStateOf(false) }
     
     var reviews by remember { mutableStateOf<List<ReviewDto>>(emptyList()) }
     val scope = rememberCoroutineScope()
@@ -113,7 +120,7 @@ fun ActivityDetailScreen(
                         if (confirmRes.isSuccess) {
                             isBooked = true
                             showCheckoutSummary = false
-                            Toast.makeText(context, "Prenotazione confermata!", Toast.LENGTH_LONG).show()
+                            showSuccessDialog = true
                         } else {
                             Toast.makeText(context, "Errore nella conferma: ${confirmRes.exceptionOrNull()?.message}", Toast.LENGTH_LONG).show()
                         }
@@ -180,24 +187,11 @@ fun ActivityDetailScreen(
                         Button(
                             onClick = {
                                 if (isBooked) {
-                                    scope.launch {
-                                        isLoading = true
-                                        val cancelRes = AppContainer.activityRepository.cancelActivityBooking(activityId)
-                                        isLoading = false
-                                        cancelRes.fold(
-                                            onSuccess = {
-                                                isBooked = false
-                                                Toast.makeText(context, "Prenotazione cancellata!", Toast.LENGTH_LONG).show()
-                                            },
-                                            onFailure = {
-                                                Toast.makeText(context, "Errore nella cancellazione: ${it.message}", Toast.LENGTH_LONG).show()
-                                            }
-                                        )
-                                    }
+                                    showCancelConfirmationDialog = true
                                 } else {
                                     scope.launch {
                                         isLoading = true
-                                        val bookRes = AppContainer.activityRepository.bookActivity(activityId)
+                                        val bookRes = AppContainer.activityRepository.bookActivity(activity?.id?.toString() ?: activityId)
                                         isLoading = false
                                         bookRes.fold(
                                             onSuccess = { response ->
@@ -707,7 +701,7 @@ fun ActivityDetailScreen(
                             if (confirmRes.isSuccess) {
                                 isBooked = true
                                 showCheckoutSummary = false
-                                Toast.makeText(context, "Prenotazione confermata!", Toast.LENGTH_LONG).show()
+                                showSuccessDialog = true
                             } else {
                                 Toast.makeText(context, "Errore nella conferma: ${confirmRes.exceptionOrNull()?.message}", Toast.LENGTH_LONG).show()
                             }
@@ -719,7 +713,7 @@ fun ActivityDetailScreen(
                 scope.launch {
                     isLoading = true
                     try {
-                        AppContainer.activityRepository.cancelActivityBooking(activityId)
+                        AppContainer.activityRepository.cancelActivityBooking(activity?.id?.toString() ?: activityId)
                     } catch (_: Exception) {
                         // Ignora errori, chiudi comunque
                     }
@@ -727,6 +721,64 @@ fun ActivityDetailScreen(
                     currentBookingId = null
                     paymentClientSecret = null
                     isLoading = false
+                }
+            }
+        )
+    }
+
+    if (showSuccessDialog && activity != null) {
+        SuccessAnimationScreen(
+            title = activity!!.name ?: "Attività",
+            onDismiss = { showSuccessDialog = false }
+        )
+    }
+
+    if (showCancelConfirmationDialog) {
+        AlertDialog(
+            onDismissRequest = { showCancelConfirmationDialog = false },
+            title = { Text("Annulla Prenotazione", fontWeight = FontWeight.Bold) },
+            text = { Text("Sei sicuro di voler annullare la prenotazione per l'attività \"${activity?.name}\"? L'azione non è reversibile.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showCancelConfirmationDialog = false
+                        scope.launch {
+                            isLoading = true
+                            val cancelRes = AppContainer.activityRepository.cancelActivityBooking(activity?.id?.toString() ?: activityId)
+                            isLoading = false
+                            cancelRes.fold(
+                                onSuccess = {
+                                    isBooked = false
+                                    showCancelSuccessDialog = true
+                                },
+                                onFailure = {
+                                    Toast.makeText(context, "Errore nella cancellazione: ${it.message}", Toast.LENGTH_LONG).show()
+                                }
+                            )
+                        }
+                    }
+                ) {
+                    Text("Sì, annulla", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showCancelConfirmationDialog = false }) {
+                    Text("No, mantieni")
+                }
+            }
+        )
+    }
+
+    if (showCancelSuccessDialog) {
+        AlertDialog(
+            onDismissRequest = { showCancelSuccessDialog = false },
+            title = { Text("Prenotazione Annullata", fontWeight = FontWeight.Bold) },
+            text = { Text("La tua prenotazione è stata annullata con successo.") },
+            confirmButton = {
+                Button(
+                    onClick = { showCancelSuccessDialog = false }
+                ) {
+                    Text("Chiudi")
                 }
             }
         )
@@ -750,5 +802,129 @@ private fun formatTime(dateTime: LocalDateTime): String {
         dateTime.format(formatter)
     } catch (e: Exception) {
         dateTime.toString()
+    }
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+@Composable
+private fun SuccessAnimationScreen(
+    title: String,
+    onDismiss: () -> Unit
+) {
+    var checkmarkScale by remember { mutableStateOf(0f) }
+    var cardAlpha by remember { mutableStateOf(0f) }
+    var textAlpha by remember { mutableStateOf(0f) }
+
+    LaunchedEffect(Unit) {
+        kotlinx.coroutines.delay(100)
+        cardAlpha = 1f
+        kotlinx.coroutines.delay(200)
+        checkmarkScale = 1.2f
+        kotlinx.coroutines.delay(150)
+        checkmarkScale = 1.0f
+        kotlinx.coroutines.delay(100)
+        textAlpha = 1f
+    }
+
+    val scale by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = checkmarkScale,
+        animationSpec = androidx.compose.animation.core.spring(
+            dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy,
+            stiffness = androidx.compose.animation.core.Spring.StiffnessMedium
+        ),
+        label = "scale"
+    )
+
+    val alphaCard by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = cardAlpha,
+        animationSpec = androidx.compose.animation.core.tween(500),
+        label = "cardAlpha"
+    )
+
+    val alphaText by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = textAlpha,
+        animationSpec = androidx.compose.animation.core.tween(400),
+        label = "textAlpha"
+    )
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.6f * alphaCard)),
+            contentAlignment = Alignment.Center
+        ) {
+            Card(
+                modifier = Modifier
+                    .width(320.dp)
+                    .graphicsLayer(alpha = alphaCard, scaleX = alphaCard, scaleY = alphaCard),
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 12.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(80.dp)
+                            .graphicsLayer(scaleX = scale, scaleY = scale)
+                            .background(
+                                MaterialTheme.colorScheme.primaryContainer,
+                                shape = CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = "Success",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(48.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Text(
+                        text = "Prenotazione Confermata!",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        modifier = Modifier.graphicsLayer(alpha = alphaText)
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = "Hai prenotato con successo l'attività:\n$title",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        modifier = Modifier.graphicsLayer(alpha = alphaText)
+                    )
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Button(
+                        onClick = onDismiss,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp)
+                            .graphicsLayer(alpha = alphaText),
+                        shape = RoundedCornerShape(24.dp)
+                    ) {
+                        Text("Fantastico", fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
     }
 }

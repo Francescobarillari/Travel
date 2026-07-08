@@ -140,20 +140,26 @@ interface ApiService {
     suspend fun isItineraryBooked(@Path("id") id: String): Boolean
 
     @POST("itinerary/booking/{bookingId}/confirm")
-    suspend fun confirmItineraryBooking(@Path("bookingId") bookingId: String)
+    suspend fun confirmItineraryBooking(@Path("bookingId") bookingId: String): retrofit2.Response<Unit>
 
     @DELETE("itinerary/{id}/book")
-    suspend fun cancelItineraryBooking(@Path("id") id: String)
+    suspend fun cancelItineraryBooking(@Path("id") id: String): retrofit2.Response<Unit>
 
     @GET("activity/{id}/isBooked")
     suspend fun isActivityBooked(@Path("id") id: String): Boolean
 
 
     @POST("activity/booking/{bookingId}/confirm")
-    suspend fun confirmActivityBooking(@Path("bookingId") bookingId: String)
+    suspend fun confirmActivityBooking(@Path("bookingId") bookingId: String): retrofit2.Response<Unit>
 
     @DELETE("activity/{id}/book")
-    suspend fun cancelActivityBooking(@Path("id") id: String)
+    suspend fun cancelActivityBooking(@Path("id") id: String): retrofit2.Response<Unit>
+
+    @GET("activity/booked/me")
+    suspend fun getBookedActivities(): List<ActivityDto>
+
+    @GET("itinerary/booked/me")
+    suspend fun getBookedItineraries(): List<ItineraryDto>
 
     // Chiamata per aggiornare la visibilità di un itinerario
     @PUT("itinerary/{id}/visibility")
@@ -246,10 +252,12 @@ open class MockApiService : ApiService {
     
     override suspend fun bookItinerary(id: String): PaymentIntentResponseDto = throw NotImplementedError()
     override suspend fun isItineraryBooked(id: String): Boolean = throw NotImplementedError()
-    override suspend fun confirmItineraryBooking(bookingId: String) {}
-    override suspend fun cancelItineraryBooking(id: String) {}
+    override suspend fun confirmItineraryBooking(bookingId: String): retrofit2.Response<Unit> = retrofit2.Response.success(Unit)
+    override suspend fun cancelItineraryBooking(id: String): retrofit2.Response<Unit> = retrofit2.Response.success(Unit)
     override suspend fun isActivityBooked(id: String): Boolean = throw NotImplementedError()
     override suspend fun bookActivity(id: String): PaymentIntentResponseDto = throw NotImplementedError()
-    override suspend fun confirmActivityBooking(bookingId: String) {}
-    override suspend fun cancelActivityBooking(id: String) {}
+    override suspend fun confirmActivityBooking(bookingId: String): retrofit2.Response<Unit> = retrofit2.Response.success(Unit)
+    override suspend fun cancelActivityBooking(id: String): retrofit2.Response<Unit> = retrofit2.Response.success(Unit)
+    override suspend fun getBookedActivities(): List<ActivityDto> = emptyList()
+    override suspend fun getBookedItineraries(): List<ItineraryDto> = emptyList()
 }

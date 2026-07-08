@@ -52,6 +52,10 @@ import kotlinx.coroutines.launch
 import com.travel.app.utils.CalendarExportUtil
 import androidx.compose.material.icons.filled.Handyman
 import com.travel.app.presentation.components.checkout.CheckoutSummaryScreen
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -96,6 +100,8 @@ fun ItineraryDetailScreen(
     val error by viewModel.error.collectAsState()
     val isBooked by viewModel.isBooked.collectAsState()
     val showSummaryDialog by viewModel.showSummaryDialog.collectAsState()
+    val showCancelSuccessDialog by viewModel.showCancelSuccessDialog.collectAsState()
+    var showCancelConfirmationDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(itinerary.getId()) {
         itinerary.getId()?.let {
@@ -137,27 +143,49 @@ fun ItineraryDetailScreen(
     }
 
     if (showSummaryDialog) {
+        SuccessAnimationScreen(
+            title = itinerary.getTitle() ?: "N/D",
+            onDismiss = { viewModel.onSummaryDialogDismissed() }
+        )
+    }
+
+    if (showCancelConfirmationDialog) {
         AlertDialog(
-            onDismissRequest = { viewModel.onSummaryDialogDismissed() },
-            title = {
-                Text(text = "Prenotazione Confermata 🎉", fontWeight = FontWeight.Bold)
-            },
-            text = {
-                Column {
-                    Text("Hai prenotato con successo l'itinerario:")
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(text = itinerary.getTitle() ?: "N/D", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(text = "Totale: €${String.format("%.2f", totalPrice)}", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+            onDismissRequest = { showCancelConfirmationDialog = false },
+            title = { Text("Annulla Prenotazione", fontWeight = FontWeight.Bold) },
+            text = { Text("Sei sicuro di voler annullare la prenotazione per l'itinerario \"${itinerary.getTitle()}\" e tutte le attività collegate? L'azione non è reversibile.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showCancelConfirmationDialog = false
+                        itinerary.getId()?.toString()?.let {
+                            viewModel.cancelBooking(it)
+                        }
+                    }
+                ) {
+                    Text("Sì, annulla", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
                 }
             },
+            dismissButton = {
+                TextButton(onClick = { showCancelConfirmationDialog = false }) {
+                    Text("No, mantieni")
+                }
+            }
+        )
+    }
+
+    if (showCancelSuccessDialog) {
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissCancelSuccess() },
+            title = { Text("Prenotazione Annullata", fontWeight = FontWeight.Bold) },
+            text = { Text("La tua prenotazione è stata annullata con successo.") },
             confirmButton = {
-                Button(onClick = { viewModel.onSummaryDialogDismissed() }) {
+                Button(
+                    onClick = { viewModel.dismissCancelSuccess() }
+                ) {
                     Text("Chiudi")
                 }
-            },
-            shape = RoundedCornerShape(16.dp),
-            containerColor = MaterialTheme.colorScheme.surface
+            }
         )
     }
 
@@ -207,16 +235,25 @@ fun ItineraryDetailScreen(
                         )
                     }
                     if (isBooked) {
-                        Surface(
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                            shape = RoundedCornerShape(16.dp)
+                        Button(
+                            onClick = {
+                                showCancelConfirmationDialog = true
+                            },
+                            enabled = !isLoading,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer,
+                                contentColor = MaterialTheme.colorScheme.onErrorContainer
+                            ),
+                            modifier = Modifier
+                                .width(210.dp)
+                                .height(52.dp),
+                            shape = RoundedCornerShape(26.dp)
                         ) {
-                            Text(
-                                text = "Prenotato",
-                                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                            )
+                            if (isLoading) {
+                                CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onErrorContainer)
+                            } else {
+                                Text("Annulla Prenotazione", fontWeight = FontWeight.Bold)
+                            }
                         }
                     } else {
                         Button(
@@ -870,5 +907,129 @@ private fun formatDate(dateTime: LocalDateTime): String {
         dateTime.format(formatter)
     } catch (e: Exception) {
         dateTime.toString()
+    }
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+@Composable
+private fun SuccessAnimationScreen(
+    title: String,
+    onDismiss: () -> Unit
+) {
+    var checkmarkScale by remember { mutableStateOf(0f) }
+    var cardAlpha by remember { mutableStateOf(0f) }
+    var textAlpha by remember { mutableStateOf(0f) }
+
+    LaunchedEffect(Unit) {
+        kotlinx.coroutines.delay(100)
+        cardAlpha = 1f
+        kotlinx.coroutines.delay(200)
+        checkmarkScale = 1.2f
+        kotlinx.coroutines.delay(150)
+        checkmarkScale = 1.0f
+        kotlinx.coroutines.delay(100)
+        textAlpha = 1f
+    }
+
+    val scale by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = checkmarkScale,
+        animationSpec = androidx.compose.animation.core.spring(
+            dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy,
+            stiffness = androidx.compose.animation.core.Spring.StiffnessMedium
+        ),
+        label = "scale"
+    )
+
+    val alphaCard by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = cardAlpha,
+        animationSpec = androidx.compose.animation.core.tween(500),
+        label = "cardAlpha"
+    )
+
+    val alphaText by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = textAlpha,
+        animationSpec = androidx.compose.animation.core.tween(400),
+        label = "textAlpha"
+    )
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.6f * alphaCard)),
+            contentAlignment = Alignment.Center
+        ) {
+            Card(
+                modifier = Modifier
+                    .width(320.dp)
+                    .graphicsLayer(alpha = alphaCard, scaleX = alphaCard, scaleY = alphaCard),
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 12.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(80.dp)
+                            .graphicsLayer(scaleX = scale, scaleY = scale)
+                            .background(
+                                MaterialTheme.colorScheme.primaryContainer,
+                                shape = CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = "Success",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(48.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Text(
+                        text = "Prenotazione Confermata!",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        modifier = Modifier.graphicsLayer(alpha = alphaText)
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = "Hai prenotato con successo l'itinerario:\n$title",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        modifier = Modifier.graphicsLayer(alpha = alphaText)
+                    )
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Button(
+                        onClick = onDismiss,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp)
+                            .graphicsLayer(alpha = alphaText),
+                        shape = RoundedCornerShape(24.dp)
+                    ) {
+                        Text("Chiudi", fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
     }
 }

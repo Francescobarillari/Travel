@@ -113,8 +113,12 @@ class ActivityRepositoryImpl(
 
     override suspend fun confirmActivityBooking(bookingId: String): Result<Unit> {
         return try {
-            apiService.confirmActivityBooking(bookingId)
-            Result.success(Unit)
+            val response = apiService.confirmActivityBooking(bookingId)
+            if (response.isSuccessful) {
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception("Errore di rete: ${response.code()}"))
+            }
         } catch (e: Exception) {
             Result.failure(Exception(handleError(e)))
         }
@@ -122,8 +126,21 @@ class ActivityRepositoryImpl(
 
     override suspend fun cancelActivityBooking(id: String): Result<Unit> {
         return try {
-            apiService.cancelActivityBooking(id)
-            Result.success(Unit)
+            val response = apiService.cancelActivityBooking(id)
+            if (response.isSuccessful) {
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception("Errore di rete: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(Exception(handleError(e)))
+        }
+    }
+
+    override suspend fun getBookedActivities(): Result<List<ActivityDto>> {
+        return try {
+            val result = apiService.getBookedActivities()
+            Result.success(result)
         } catch (e: Exception) {
             Result.failure(Exception(handleError(e)))
         }

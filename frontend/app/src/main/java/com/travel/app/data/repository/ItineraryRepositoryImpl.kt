@@ -67,6 +67,15 @@ class ItineraryRepositoryImpl(
         }
     }
 
+    override suspend fun getBookedItineraries(): Result<List<ItineraryDto>> {
+        return try {
+            val result = apiService.getBookedItineraries()
+            Result.success(result)
+        } catch (e: Exception) {
+            Result.failure(Exception(handleError(e)))
+        }
+    }
+
     private fun handleError(e: Exception): String {
         return when (e) {
             is HttpException -> {

@@ -32,6 +32,9 @@ class ItineraryDetailViewModel : ViewModel() {
     private val _showSummaryDialog = MutableStateFlow(false)
     val showSummaryDialog: StateFlow<Boolean> = _showSummaryDialog
 
+    private val _showCancelSuccessDialog = MutableStateFlow(false)
+    val showCancelSuccessDialog: StateFlow<Boolean> = _showCancelSuccessDialog
+
     private var currentBookingId: String? = null
 
     fun checkIsBooked(itineraryId: String) {
@@ -71,11 +74,15 @@ class ItineraryDetailViewModel : ViewModel() {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                apiService.confirmItineraryBooking(bookingId)
-                _isBooked.value = true
-                _showSummaryDialog.value = true
-                _error.value = "Prenotazione confermata!"
-                _showCheckoutSummary.value = false
+                val response = apiService.confirmItineraryBooking(bookingId)
+                if (response.isSuccessful) {
+                    _isBooked.value = true
+                    _showSummaryDialog.value = true
+                    _error.value = "Prenotazione confermata!"
+                    _showCheckoutSummary.value = false
+                } else {
+                    _error.value = "Errore durante la conferma: ${response.code()}"
+                }
             } catch (e: Exception) {
                 _error.value = "Errore durante la conferma: ${e.message}"
             } finally {
@@ -91,9 +98,15 @@ class ItineraryDetailViewModel : ViewModel() {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                apiService.cancelItineraryBooking(itineraryId)
-            } catch (_: Exception) {
-                // Ignora errori, chiudi comunque la schermata
+                val response = apiService.cancelItineraryBooking(itineraryId)
+                if (response.isSuccessful) {
+                    _isBooked.value = false
+                    _showCancelSuccessDialog.value = true
+                } else {
+                    _error.value = "Errore durante l'annullamento: ${response.code()}"
+                }
+            } catch (e: Exception) {
+                _error.value = "Errore durante l'annullamento: ${e.message}"
             } finally {
                 _showCheckoutSummary.value = false
                 currentBookingId = null
@@ -102,6 +115,10 @@ class ItineraryDetailViewModel : ViewModel() {
                 _isLoading.value = false
             }
         }
+    }
+
+    fun dismissCancelSuccess() {
+        _showCancelSuccessDialog.value = false
     }
 
     fun confirmPaymentSuccess() {

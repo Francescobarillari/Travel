@@ -43,6 +43,7 @@ fun MenuScreen(
     onNavigateToSecurity: () -> Unit,
     onLogout: () -> Unit,
     onNavigateToMyItineraries: () -> Unit = {},
+    onNavigateToMyBookings: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val scrollState = rememberScrollState()
@@ -213,12 +214,12 @@ fun MenuScreen(
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 MenuGridCard(
-                    title = "Pagamenti",
-                    icon = Icons.Default.CreditCard,
+                    title = "I miei prenotati",
+                    icon = Icons.Default.Receipt,
                     iconColor = Color(0xFFD97706),
                     iconBg = Color(0xFFFFFBEB),
                     modifier = Modifier.weight(1f),
-                    onClick = { Toast.makeText(context, "Metodi di Pagamento: Funzionalità in arrivo!", Toast.LENGTH_SHORT).show() }
+                    onClick = onNavigateToMyBookings
                 )
                 MenuGridCard(
                     title = "Sicurezza",
