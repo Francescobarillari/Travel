@@ -18,6 +18,7 @@ import com.travel.app.presentation.profile.EditProfileViewModel
 import com.travel.app.presentation.profile.SecurityScreen
 import com.travel.app.presentation.profile.SecurityViewModel
 import com.travel.app.presentation.components.home.FloatingBottomNavBar
+import com.travel.app.presentation.components.common.swipeToGoBack
 import com.travel.app.presentation.theme.TravelTheme
 import com.travel.app.presentation.components.itinerary.ItineraryDetailScreen
 import com.travel.app.presentation.components.activity.ActivityDetailScreen
@@ -102,7 +103,18 @@ fun HomeScreen(
             .background(MaterialTheme.colorScheme.background)
     ) {
         // Always compose the main content to preserve state (like scroll position)
-        Box(modifier = Modifier.fillMaxSize()) {
+        // Swipe dal bordo sinistro: in tutti i casi diversi dagli overlay riporta alla Home,
+        // senza mai far uscire dall'app (disabilitato quando si è già sulla Home pulita).
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .swipeToGoBack(
+                    enabled = selectedTab != HomeTab.HOME || selectedActivityIdForBookings != null
+                ) {
+                    selectedActivityIdForBookings = null
+                    selectedTab = HomeTab.HOME
+                }
+        ) {
             when (selectedTab) {
                 HomeTab.HOME -> {
                     if (isSocieta) {
@@ -252,6 +264,7 @@ fun HomeScreen(
         
         // 1. User Profile Overlay (composed first, so details render on top of it)
         if (selectedProfileUser != null) {
+          Box(modifier = Modifier.fillMaxSize().swipeToGoBack { selectedProfileUser = null }) {
             UserProfileScreen(
                 user = selectedProfileUser!!,
                 onBack = { selectedProfileUser = null },
@@ -277,6 +290,7 @@ fun HomeScreen(
                     }
                 }
             )
+          }
         }
 
         // 2. Itinerary Detail Overlay
@@ -292,6 +306,7 @@ fun HomeScreen(
                         AppContainer.sessionManager.incrementLocationScore(city, 1)
                     }
             }
+            Box(modifier = Modifier.fillMaxSize().swipeToGoBack { selectedItinerary = null }) {
             ItineraryDetailScreen(
                 itinerary = selectedItinerary!!,
                 onNavigateBack = { selectedItinerary = null },
@@ -314,6 +329,7 @@ fun HomeScreen(
                     itinerariesRefreshTrigger++
                 }
             )
+            }
         }
 
         // 3. Activity Detail Overlay
@@ -322,6 +338,7 @@ fun HomeScreen(
             var isFav by remember(activityId, favoritesTrigger) { 
                 mutableStateOf(AppContainer.sessionManager.isFavoriteActivity(activityId)) 
             }
+            Box(modifier = Modifier.fillMaxSize().swipeToGoBack { selectedItemId = null }) {
             ActivityDetailScreen(
                 activityId = activityId,
                 onNavigateBack = { selectedItemId = null },
@@ -332,10 +349,12 @@ fun HomeScreen(
                     favoritesTrigger++
                 }
             )
+            }
         }
 
         // 4. Personalize Overlay
         if (personalizingItinerary != null) {
+          Box(modifier = Modifier.fillMaxSize().swipeToGoBack { personalizingItinerary = null }) {
             PersonalizeItineraryScreen(
                 itinerary = personalizingItinerary!!,
                 onNavigateBack = { personalizingItinerary = null },
@@ -344,6 +363,7 @@ fun HomeScreen(
                     selectedItinerary = null
                 }
             )
+          }
         }
     }
 }

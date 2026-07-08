@@ -11,6 +11,7 @@ import com.travel.app.domain.repository.ActivityRepository
 import com.travel.app.domain.repository.UserRepository
 import com.travel.app.domain.repository.LocalitaRepository
 import it.unical.ea.dtos.activity.ActivityDto
+import it.unical.ea.dtos.activity.ActivityTemplateDto
 import it.unical.ea.dtos.activity.CreateActivityRequestDto
 import it.unical.ea.dtos.activity.TimeSlotDto
 import it.unical.ea.dtos.location.LocationDto
@@ -237,7 +238,12 @@ class CompanyAddOfferViewModel(
                         }
                         
                         if (imageParts.isNotEmpty()) {
-                            val uploadResult = activityRepository.uploadActivityImages(createdOrUpdated.id.toString(), imageParts)
+                            val uploadId = when (createdOrUpdated) {
+                                is ActivityTemplateDto -> createdOrUpdated.id
+                                is ActivityDto -> createdOrUpdated.id
+                                else -> null
+                            }
+                            val uploadResult = activityRepository.uploadActivityImages(uploadId.toString(), imageParts)
                             uploadResult.onFailure {
                                 errorMessage = "L'attività è stata salvata, ma c'è stato un errore nel caricare le immagini."
                             }
