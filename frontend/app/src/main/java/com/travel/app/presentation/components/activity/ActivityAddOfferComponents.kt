@@ -399,21 +399,27 @@ fun showDateTimePicker(
     calendar: java.util.Calendar,
     onDateTimeSelected: (year: Int, month: Int, day: Int, hour: Int, minute: Int) -> Unit
 ) {
-    DatePickerDialog(
+    val dialog = DatePickerDialog(
         context,
-        { _, year, month, dayOfMonth ->
-            TimePickerDialog(
-                context,
-                { _, hourOfDay, minute ->
-                    onDateTimeSelected(year, month + 1, dayOfMonth, hourOfDay, minute)
-                },
-                calendar.get(java.util.Calendar.HOUR_OF_DAY),
-                calendar.get(java.util.Calendar.MINUTE),
-                true
-            ).show()
-        },
+        null,
         calendar.get(java.util.Calendar.YEAR),
         calendar.get(java.util.Calendar.MONTH),
         calendar.get(java.util.Calendar.DAY_OF_MONTH)
-    ).show()
+    )
+    dialog.setButton(android.content.DialogInterface.BUTTON_POSITIVE, "OK") { d, _ ->
+        val picker = (d as DatePickerDialog).datePicker
+        val year = picker.year
+        val month = picker.month
+        val dayOfMonth = picker.dayOfMonth
+        TimePickerDialog(
+            context,
+            { _, hourOfDay, minute ->
+                onDateTimeSelected(year, month + 1, dayOfMonth, hourOfDay, minute)
+            },
+            calendar.get(java.util.Calendar.HOUR_OF_DAY),
+            calendar.get(java.util.Calendar.MINUTE),
+            true
+        ).show()
+    }
+    dialog.show()
 }

@@ -36,6 +36,8 @@ import com.travel.app.presentation.components.activity.SectionHeader
 import com.travel.app.presentation.components.activity.ActivityDatePickerField
 import com.travel.app.presentation.components.activity.ActivityImageSelector
 import com.travel.app.presentation.components.activity.showDateTimePicker
+import com.travel.app.presentation.components.activity.TagSelectionSection
+import androidx.compose.foundation.horizontalScroll
 import java.util.Calendar
 
 
@@ -51,6 +53,39 @@ fun CompanyAddOfferScreen(
     val scrollState = rememberScrollState()
     val calendar = Calendar.getInstance()
     val focusManager = LocalFocusManager.current
+
+    var startYearState by remember { mutableStateOf(viewModel.startYear) }
+    var startMonthState by remember { mutableStateOf(viewModel.startMonth) }
+    var startDayState by remember { mutableStateOf(viewModel.startDay) }
+    var endYearState by remember { mutableStateOf(viewModel.endYear) }
+    var endMonthState by remember { mutableStateOf(viewModel.endMonth) }
+    var endDayState by remember { mutableStateOf(viewModel.endDay) }
+    var startHourState by remember { mutableStateOf(viewModel.startHour) }
+    var startMinuteState by remember { mutableStateOf(viewModel.startMinute) }
+    var endHourState by remember { mutableStateOf(viewModel.endHour) }
+    var endMinuteState by remember { mutableStateOf(viewModel.endMinute) }
+
+    LaunchedEffect(viewModel.startYear, viewModel.startMonth, viewModel.startDay) {
+        startYearState = viewModel.startYear
+        startMonthState = viewModel.startMonth
+        startDayState = viewModel.startDay
+    }
+
+    LaunchedEffect(viewModel.endYear, viewModel.endMonth, viewModel.endDay) {
+        endYearState = viewModel.endYear
+        endMonthState = viewModel.endMonth
+        endDayState = viewModel.endDay
+    }
+
+    LaunchedEffect(viewModel.startHour, viewModel.startMinute) {
+        startHourState = viewModel.startHour
+        startMinuteState = viewModel.startMinute
+    }
+
+    LaunchedEffect(viewModel.endHour, viewModel.endMinute) {
+        endHourState = viewModel.endHour
+        endMinuteState = viewModel.endMinute
+    }
 
     LaunchedEffect(scrollState.isScrollInProgress) {
         if (scrollState.isScrollInProgress) {
@@ -262,34 +297,64 @@ fun CompanyAddOfferScreen(
                         if (viewModel.isEditMode) {
                             ActivityDatePickerField(
                                 label = "Data e Ora Inizio",
-                                dateText = if (viewModel.startYear > 0) String.format("%02d/%02d/%d alle %02d:%02d", viewModel.startDay, viewModel.startMonth, viewModel.startYear, viewModel.startHour, viewModel.startMinute) else "",
-                                isSet = viewModel.startYear > 0,
+                                dateText = if (startYearState > 0) String.format("%02d/%02d/%d alle %02d:%02d", startDayState, startMonthState, startYearState, startHourState, startMinuteState) else "",
+                                isSet = startYearState > 0,
                                 badgeColor = Color(0xFFEFF6FF),
                                 iconColor = MaterialTheme.colorScheme.primary,
                                 onClick = {
+                                    if (startYearState > 0) {
+                                        calendar.set(Calendar.YEAR, startYearState)
+                                        calendar.set(Calendar.MONTH, startMonthState - 1)
+                                        calendar.set(Calendar.DAY_OF_MONTH, startDayState)
+                                        calendar.set(Calendar.HOUR_OF_DAY, startHourState)
+                                        calendar.set(Calendar.MINUTE, startMinuteState)
+                                    } else {
+                                        val now = Calendar.getInstance()
+                                        calendar.time = now.time
+                                    }
                                     showDateTimePicker(context, calendar) { year, month, day, hour, minute ->
                                         viewModel.startYear = year
                                         viewModel.startMonth = month
                                         viewModel.startDay = day
                                         viewModel.startHour = hour
                                         viewModel.startMinute = minute
+                                        startYearState = year
+                                        startMonthState = month
+                                        startDayState = day
+                                        startHourState = hour
+                                        startMinuteState = minute
                                     }
                                 }
                             )
 
                             ActivityDatePickerField(
                                 label = "Data e Ora Fine",
-                                dateText = if (viewModel.endYear > 0) String.format("%02d/%02d/%d alle %02d:%02d", viewModel.endDay, viewModel.endMonth, viewModel.endYear, viewModel.endHour, viewModel.endMinute) else "",
-                                isSet = viewModel.endYear > 0,
+                                dateText = if (endYearState > 0) String.format("%02d/%02d/%d alle %02d:%02d", endDayState, endMonthState, endYearState, endHourState, endMinuteState) else "",
+                                isSet = endYearState > 0,
                                 badgeColor = Color(0xFFFEF2F2),
                                 iconColor = Color(0xFFEF4444),
                                 onClick = {
+                                    if (endYearState > 0) {
+                                        calendar.set(Calendar.YEAR, endYearState)
+                                        calendar.set(Calendar.MONTH, endMonthState - 1)
+                                        calendar.set(Calendar.DAY_OF_MONTH, endDayState)
+                                        calendar.set(Calendar.HOUR_OF_DAY, endHourState)
+                                        calendar.set(Calendar.MINUTE, endMinuteState)
+                                    } else {
+                                        val now = Calendar.getInstance()
+                                        calendar.time = now.time
+                                    }
                                     showDateTimePicker(context, calendar) { year, month, day, hour, minute ->
                                         viewModel.endYear = year
                                         viewModel.endMonth = month
                                         viewModel.endDay = day
                                         viewModel.endHour = hour
                                         viewModel.endMinute = minute
+                                        endYearState = year
+                                        endMonthState = month
+                                        endDayState = day
+                                        endHourState = hour
+                                        endMinuteState = minute
                                     }
                                 }
                             )
@@ -301,32 +366,44 @@ fun CompanyAddOfferScreen(
                                 Box(modifier = Modifier.weight(1f)) {
                                     ActivityDatePickerField(
                                         label = "Inizio Periodo",
-                                        dateText = if (viewModel.startYear > 0) String.format("%02d/%02d/%d", viewModel.startDay, viewModel.startMonth, viewModel.startYear) else "",
-                                        isSet = viewModel.startYear > 0,
+                                        dateText = if (startYearState > 0) String.format("%02d/%02d/%d", startDayState, startMonthState, startYearState) else "",
+                                        isSet = startYearState > 0,
                                         badgeColor = Color(0xFFEFF6FF),
                                         iconColor = MaterialTheme.colorScheme.primary,
                                         onClick = {
+                                            val initYear = if (startYearState > 0) startYearState else calendar.get(Calendar.YEAR)
+                                            val initMonth = if (startYearState > 0) startMonthState - 1 else calendar.get(Calendar.MONTH)
+                                            val initDay = if (startYearState > 0) startDayState else calendar.get(Calendar.DAY_OF_MONTH)
                                             DatePickerDialog(context, { _, year, month, day ->
                                                 viewModel.startYear = year
                                                 viewModel.startMonth = month + 1
                                                 viewModel.startDay = day
-                                            }, calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH)).show()
+                                                startYearState = year
+                                                startMonthState = month + 1
+                                                startDayState = day
+                                            }, initYear, initMonth, initDay).show()
                                         }
                                     )
                                 }
                                 Box(modifier = Modifier.weight(1f)) {
                                     ActivityDatePickerField(
                                         label = "Fine Periodo",
-                                        dateText = if (viewModel.endYear > 0) String.format("%02d/%02d/%d", viewModel.endDay, viewModel.endMonth, viewModel.endYear) else "",
-                                        isSet = viewModel.endYear > 0,
+                                        dateText = if (endYearState > 0) String.format("%02d/%02d/%d", endDayState, endMonthState, endYearState) else "",
+                                        isSet = endYearState > 0,
                                         badgeColor = Color(0xFFFEF2F2),
                                         iconColor = Color(0xFFEF4444),
                                         onClick = {
+                                            val initYear = if (endYearState > 0) endYearState else calendar.get(Calendar.YEAR)
+                                            val initMonth = if (endYearState > 0) endMonthState - 1 else calendar.get(Calendar.MONTH)
+                                            val initDay = if (endYearState > 0) endDayState else calendar.get(Calendar.DAY_OF_MONTH)
                                             DatePickerDialog(context, { _, year, month, day ->
                                                 viewModel.endYear = year
                                                 viewModel.endMonth = month + 1
                                                 viewModel.endDay = day
-                                            }, calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH)).show()
+                                                endYearState = year
+                                                endMonthState = month + 1
+                                                endDayState = day
+                                            }, initYear, initMonth, initDay).show()
                                         }
                                     )
                                 }
@@ -352,8 +429,9 @@ fun CompanyAddOfferScreen(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
+                                    .horizontalScroll(rememberScrollState())
                                     .padding(vertical = 4.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 daysList.forEach { (dayKey, dayLabel) ->
                                     val isSelected = viewModel.selectedDaysOfWeek.contains(dayKey)
@@ -452,6 +530,25 @@ fun CompanyAddOfferScreen(
                     modifier = Modifier.padding(20.dp)
                 )
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            SectionHeader(
+                title = "Seleziona Categorie / Tag",
+                icon = Icons.Default.Sell,
+                iconColor = Color(0xFF8B5CF6),
+                badgeBgColor = Color(0xFFF3E8FF)
+            )
+
+            FormCardSection {
+                TagSelectionSection(
+                    selectedTags = viewModel.selectedTags.toSet(),
+                    onTagToggle = { viewModel.toggleTag(it) },
+                    modifier = Modifier.padding(20.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             // SECTION 4: DETTAGLI OFFERTA
             SectionHeader(
@@ -688,6 +785,7 @@ fun CompanyAddOfferScreen(
             }
         )
     }
+
 }
 
 

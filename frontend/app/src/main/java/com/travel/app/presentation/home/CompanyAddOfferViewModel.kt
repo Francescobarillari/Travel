@@ -98,6 +98,16 @@ class CompanyAddOfferViewModel(
         }
     }
 
+    val selectedTags = mutableStateListOf<it.unical.ea.enums.TravelTag>()
+
+    fun toggleTag(tag: it.unical.ea.enums.TravelTag) {
+        if (selectedTags.contains(tag)) {
+            selectedTags.remove(tag)
+        } else {
+            selectedTags.add(tag)
+        }
+    }
+
     fun addTimeSlot(startH: Int, startM: Int, endH: Int, endM: Int) {
         val start = java.time.LocalTime.of(startH, startM)
         val end = java.time.LocalTime.of(endH, endM)
@@ -134,6 +144,7 @@ class CompanyAddOfferViewModel(
         priceText = ""
         selectedImages.clear()
         selectedDaysOfWeek.clear()
+        selectedTags.clear()
         timeSlots.clear()
         // default time slot
         timeSlots.add(TimeSlotDto(java.time.LocalTime.of(14, 0), java.time.LocalTime.of(16, 0)))
@@ -141,51 +152,31 @@ class CompanyAddOfferViewModel(
     }
 
     fun submitActivity(context: android.content.Context) {
-        // Validation
-        if (title.isBlank()) {
-            errorMessage = "Il titolo dell'attività è obbligatorio"
-            return
-        }
-        if (location.isBlank()) {
-            errorMessage = "La posizione dell'attività è obbligatoria"
-            return
-        }
-        if (startYear == 0) {
-            errorMessage = "La data di inizio è obbligatoria"
-            return
-        }
-        if (endYear == 0) {
-            errorMessage = "La data di fine è obbligatoria"
-            return
-        }
-
-        val startLocalDate = java.time.LocalDate.of(startYear, startMonth, startDay)
-        val endLocalDate = java.time.LocalDate.of(endYear, endMonth, endDay)
-        if (startLocalDate.isAfter(endLocalDate)) {
-            errorMessage = "La data di inizio deve essere precedente alla data di fine"
-            return
-        }
-
-        if (!isEditMode) {
-            if (selectedDaysOfWeek.isEmpty()) {
-                errorMessage = "Seleziona almeno un giorno della settimana"
-                return
-            }
-            if (timeSlots.isEmpty()) {
-                errorMessage = "Seleziona almeno una fascia oraria"
-                return
-            }
-        }
-
         val participants = maxParticipantsText.toIntOrNull()
-        if (participants == null || participants < 1) {
-            errorMessage = "Il numero massimo di partecipanti deve essere almeno 1"
-            return
-        }
-
         val priceVal = priceText.toDoubleOrNull()
-        if (priceVal == null || priceVal < 0.0) {
-            errorMessage = "Il prezzo non può essere negativo o vuoto"
+
+        val startLocalDate = if (startYear > 0) java.time.LocalDate.of(startYear, startMonth, startDay) else null
+        val endLocalDate = if (endYear > 0) java.time.LocalDate.of(endYear, endMonth, endDay) else null
+
+        val startLdt = if (isEditMode && startYear > 0) java.time.LocalDateTime.of(startYear, startMonth, startDay, startHour, startMinute) else null
+        val endLdt = if (isEditMode && endYear > 0) java.time.LocalDateTime.of(endYear, endMonth, endDay, endHour, endMinute) else null
+
+        val validationError = ActivityFormValidator.validateActivityForm(
+            title = title,
+            location = location,
+            isEditMode = isEditMode,
+            startLdt = startLdt,
+            endLdt = endLdt,
+            startDate = startLocalDate,
+            endDate = endLocalDate,
+            selectedDays = selectedDaysOfWeek.toSet(),
+            timeSlots = timeSlots.toList(),
+            maxParticipants = participants,
+            price = priceVal
+        )
+
+        if (validationError != null) {
+            errorMessage = validationError
             return
         }
 
@@ -195,30 +186,30 @@ class CompanyAddOfferViewModel(
         viewModelScope.launch {
             try {
                 val result = if (isEditMode) {
-                    val startLdt = LocalDateTime.of(startYear, startMonth, startDay, startHour, startMinute)
-                    val endLdt = LocalDateTime.of(endYear, endMonth, endDay, endHour, endMinute)
                     val activityDto = ActivityDto()
                     activityDto.setName(title.trim())
                     activityDto.setDescription(if (description.isNotBlank()) description else null)
                     activityDto.setLocation(location)
-                    activityDto.setStartTime(startLdt)
-                    activityDto.setEndTime(endLdt)
-                    activityDto.setParticipants(participants)
-                    activityDto.setPrice(BigDecimal.valueOf(priceVal))
+                    activityDto.setStartTime(startLdt!!)
+                    activityDto.setEndTime(endLdt!!)
+                    activityDto.setParticipants(participants!!)
+                    activityDto.setPrice(BigDecimal.valueOf(priceVal!!))
                     activityDto.setOrganizer(defaultOrganizer)
+                    activityDto.setTags(selectedTags.toSet())
                     activityRepository.updateActivity(activityId!!, activityDto)
                 } else {
                     val createRequest = CreateActivityRequestDto()
                     createRequest.setName(title.trim())
                     createRequest.setDescription(if (description.isNotBlank()) description else null)
                     createRequest.setLocation(location)
-                    createRequest.setStartDate(startLocalDate)
-                    createRequest.setEndDate(endLocalDate)
+                    createRequest.setStartDate(startLocalDate!!)
+                    createRequest.setEndDate(endLocalDate!!)
                     createRequest.setDaysOfWeek(selectedDaysOfWeek.toSet())
                     createRequest.setTimeSlots(timeSlots.toList())
-                    createRequest.setParticipants(participants)
-                    createRequest.setPrice(BigDecimal.valueOf(priceVal))
+                    createRequest.setParticipants(participants!!)
+                    createRequest.setPrice(BigDecimal.valueOf(priceVal!!))
                     createRequest.setOrganizer(defaultOrganizer)
+                    createRequest.setTags(selectedTags.toSet())
                     activityRepository.createActivity(createRequest)
                 }
                 
@@ -294,6 +285,10 @@ class CompanyAddOfferViewModel(
                     }
                     maxParticipantsText = activity.participants?.toString() ?: ""
                     priceText = activity.price?.toString() ?: ""
+                    activity.tags?.let { tags ->
+                        selectedTags.clear()
+                        selectedTags.addAll(tags)
+                    }
                 }.onFailure { e ->
                     errorMessage = e.message ?: "Impossibile caricare i dati dell'attività"
                 }

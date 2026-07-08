@@ -211,6 +211,7 @@ public class ActivityService {
         
         it.unical.ea.Travel.Entities.location.Location locationEntity = locationService.getOrCreateLocation(activityDto.getLocation());
         template.setLocationEntity(locationEntity);
+        template.setTags(activityDto.getTags());
         activityTemplateRepository.save(template);
 
         Activity saved = activityRepository.save(activity);
