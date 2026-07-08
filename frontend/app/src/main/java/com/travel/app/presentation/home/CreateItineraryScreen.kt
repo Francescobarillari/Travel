@@ -414,7 +414,6 @@ fun CreateItineraryScreen(
                             )
                         }
                     }
-                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
