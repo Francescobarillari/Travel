@@ -5,6 +5,8 @@ import androidx.annotation.RequiresApi
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -52,7 +54,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 
 @RequiresApi(Build.VERSION_CODES.O)
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class, androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun ActivityDetailScreen(
     activityId: String,
@@ -295,13 +297,23 @@ fun ActivityDetailScreen(
                             .fillMaxWidth()
                             .height(280.dp)
                     ) {
-                        val imageUrl = act.images?.firstOrNull() ?: "https://images.unsplash.com/photo-1488646953014-85cb44e25828?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"
-                        AsyncImage(
-                            model = imageUrl,
-                            contentDescription = act.name,
-                            contentScale = ContentScale.Crop,
+                        val imagesList = act.images.orEmpty().ifEmpty {
+                            listOf("https://images.unsplash.com/photo-1488646953014-85cb44e25828?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80")
+                        }
+                        val pagerState = rememberPagerState(pageCount = { imagesList.size })
+
+                        HorizontalPager(
+                            state = pagerState,
                             modifier = Modifier.fillMaxSize()
-                        )
+                        ) { page ->
+                            val imageUrl = imagesList[page]
+                            AsyncImage(
+                                model = imageUrl,
+                                contentDescription = act.name,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
 
                         // Overlay Gradient
                         Box(
@@ -317,6 +329,28 @@ fun ActivityDetailScreen(
                                     )
                                 )
                         )
+
+                        // Pager Indicator (dot indicators)
+                        if (imagesList.size > 1) {
+                            Row(
+                                modifier = Modifier
+                                    .align(Alignment.BottomCenter)
+                                    .padding(bottom = 16.dp),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                repeat(imagesList.size) { index ->
+                                    val isSelected = pagerState.currentPage == index
+                                    Box(
+                                        modifier = Modifier
+                                            .size(8.dp)
+                                            .background(
+                                                color = if (isSelected) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.5f),
+                                                shape = CircleShape
+                                            )
+                                    )
+                                }
+                            }
+                        }
 
                         // Floating Circular Back Button
                         IconButton(
