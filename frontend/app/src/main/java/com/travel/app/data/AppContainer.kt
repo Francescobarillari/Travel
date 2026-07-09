@@ -101,23 +101,70 @@ object AppContainer {
 
     lateinit var sessionManager: SessionManager
         private set
+    lateinit var networkMonitor: NetworkMonitor
+        private set
+    lateinit var appContext: Context
+        private set
 
     val isInitialized: Boolean
         get() = ::sessionManager.isInitialized
 
     fun initialize(context: Context) {
-        sessionManager = SessionManager(context.applicationContext)
+        appContext = context.applicationContext
+        sessionManager = SessionManager(appContext)
+        networkMonitor = NetworkMonitor(appContext)
     }
 
     private val logging = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BODY
     }
 
-    private val client = OkHttpClient.Builder()
-        .addInterceptor(AuthInterceptor { sessionManager })
-        .authenticator(TokenAuthenticator { sessionManager })
-        .addInterceptor(logging)
-        .build()
+    private fun isNetworkAvailable(context: Context): Boolean {
+        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
+        val activeNetwork = connectivityManager.activeNetwork ?: return false
+        val capabilities = connectivityManager.getNetworkCapabilities(activeNetwork) ?: return false
+        return capabilities.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET)
+    }
+
+    private val client by lazy {
+        val cacheSize = 10 * 1024 * 1024L // 10 MB
+        val cache = okhttp3.Cache(appContext.cacheDir, cacheSize)
+
+        OkHttpClient.Builder()
+            .cache(cache)
+            .addInterceptor(AuthInterceptor { sessionManager })
+            .authenticator(TokenAuthenticator { sessionManager })
+            .addInterceptor { chain ->
+                var request = chain.request()
+                if (!isNetworkAvailable(appContext)) {
+                    request = request.newBuilder()
+                        .header("Cache-Control", "public, only-if-cached, max-stale=86400")
+                        .build()
+                } else {
+                    request = request.newBuilder()
+                        .header("Cache-Control", "public, max-age=5")
+                        .build()
+                }
+                chain.proceed(request)
+            }
+            .addNetworkInterceptor { chain ->
+                val response = chain.proceed(chain.request())
+                val cacheControl = response.header("Cache-Control")
+                if (cacheControl == null || cacheControl.contains("no-store") || cacheControl.contains("no-cache") ||
+                    cacheControl.contains("must-revalidate") || cacheControl.contains("max-age=0")
+                ) {
+                    response.newBuilder()
+                        .removeHeader("Pragma")
+                        .removeHeader("Cache-Control")
+                        .header("Cache-Control", "public, max-age=60")
+                        .build()
+                } else {
+                    response
+                }
+            }
+            .addInterceptor(logging)
+            .build()
+    }
 
     private val gson = com.google.gson.GsonBuilder()
         .registerTypeAdapter(LocalDateTime::class.java, LocalDateTimeAdapter())
@@ -125,12 +172,14 @@ object AppContainer {
         .registerTypeAdapter(LocalTime::class.java, LocalTimeAdapter())
         .create()
 
-    private val retrofit: Retrofit = Retrofit.Builder()
-        .baseUrl(BASE_URL)
-        .client(client)
-        .addConverterFactory(ScalarsConverterFactory.create())
-        .addConverterFactory(GsonConverterFactory.create(gson))
-        .build()
+    private val retrofit: Retrofit by lazy {
+        Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .client(client)
+            .addConverterFactory(ScalarsConverterFactory.create())
+            .addConverterFactory(GsonConverterFactory.create(gson))
+            .build()
+    }
 
     val reviewApiService: ReviewApiService by lazy {
         retrofit.create(ReviewApiService::class.java)
@@ -142,8 +191,8 @@ object AppContainer {
 
     val apiService: ApiService by lazy { retrofit.create(ApiService::class.java) }
 
-    val userRepository: UserRepository = UserRepositoryImpl(apiService, { sessionManager })
-    val activityRepository: ActivityRepository = ActivityRepositoryImpl(apiService)
-    val itineraryRepository: ItineraryRepository = ItineraryRepositoryImpl(apiService)
-    val localitaRepository: LocalitaRepository = LocalitaRepositoryImpl(apiService)
+    val userRepository: UserRepository by lazy { UserRepositoryImpl(apiService, { sessionManager }) }
+    val activityRepository: ActivityRepository by lazy { ActivityRepositoryImpl(apiService) }
+    val itineraryRepository: ItineraryRepository by lazy { ItineraryRepositoryImpl(apiService) }
+    val localitaRepository: LocalitaRepository by lazy { LocalitaRepositoryImpl(apiService) }
 }

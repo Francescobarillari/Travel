@@ -54,6 +54,7 @@ fun PersonalizeItineraryScreen(
 ) {
     val focusManager = LocalFocusManager.current
     val context = LocalContext.current
+    val isOnline by AppContainer.networkMonitor.isOnline.collectAsState(initial = true)
     val scope = rememberCoroutineScope()
 
     val city = remember(itinerary) {
@@ -148,6 +149,10 @@ fun PersonalizeItineraryScreen(
                     }
                     Button(
                         onClick = {
+                            if (!isOnline) {
+                                Toast.makeText(context, "Sei offline. Non è possibile salvare l'itinerario senza connessione.", Toast.LENGTH_SHORT).show()
+                                return@Button
+                            }
                             val userId = AppContainer.sessionManager.getSessionUser()?.id
                             if (userId == null) {
                                 Toast.makeText(context, "Errore: utente non loggato", Toast.LENGTH_SHORT).show()

@@ -1,16 +1,15 @@
 package com.travel.app.presentation.app
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CloudOff
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import com.travel.app.domain.model.User
 import com.travel.app.data.AppContainer
 import com.travel.app.presentation.auth.LoginViewModel
@@ -36,6 +35,7 @@ fun TravelApp(
     var currentUser by remember { mutableStateOf<User?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
+    val isOnline by AppContainer.networkMonitor.isOnline.collectAsState(initial = true)
 
     // Dalle schermate di registrazione / recupero password il back di sistema riporta
     // al Login invece di uscire dall'app.
@@ -78,86 +78,120 @@ fun TravelApp(
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { innerPadding ->
-        Surface(
-            modifier = Modifier.fillMaxSize().padding(innerPadding),
-            color = MaterialTheme.colorScheme.background
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
         ) {
-            if (isCheckingSession) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = androidx.compose.ui.Alignment.Center
+            AnimatedVisibility(visible = !isOnline) {
+                Surface(
+                    color = MaterialTheme.colorScheme.errorContainer,
+                    contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                }
-            } else {
-                when (currentScreen) {
-                Screen.LOGIN -> {
-                    // Scoped alla schermata, viene distrutto quando l'utente cambia screen (previene memorizzazione email/password passati)
-                    val loginViewModel = remember { LoginViewModel(userRepository) }
-                    LoginScreen(
-                        viewModel = loginViewModel,
-                        onNavigateToRegister = { currentScreen = Screen.REGISTER },
-                        onNavigateToForgotPassword = { currentScreen = Screen.FORGOT_PASSWORD },
-                        onLoginSuccess = { user ->
-                            currentUser = user
-                            currentScreen = if (user.userType == "ADMIN") Screen.ADMIN else Screen.HOME
-                        }
-                    )
-                }
-                Screen.REGISTER -> {
-                    // Scoped alla schermata per evitare state leakage
-                    val registerViewModel = remember { RegisterViewModel(userRepository) }
-                    RegisterScreen(
-                        viewModel = registerViewModel,
-                        onNavigateToLogin = { currentScreen = Screen.LOGIN },
-                        onRegisterSuccess = { user ->
-                            currentScreen = Screen.LOGIN
-                            coroutineScope.launch {
-                                val msg = if (user.userType == "SOCIETA") {
-                                    "Registrazione completata! Controlla la posta per validare l'account. Successivamente l'account dovrà essere approvato dall'amministratore."
-                                } else {
-                                    "Registrazione completata! Controlla la posta per validare l'account."
-                                }
-                                snackbarHostState.showSnackbar(msg)
-                            }
-                        }
-                    )
-                }
-                Screen.FORGOT_PASSWORD -> {
-                    val forgotPasswordViewModel = remember { ForgotPasswordViewModel(userRepository) }
-                    ForgotPasswordScreen(
-                        viewModel = forgotPasswordViewModel,
-                        onNavigateToLogin = { currentScreen = Screen.LOGIN }
-                    )
-                }
-                Screen.HOME -> {
-                    HomeScreen(
-                        user = currentUser,
-                        isDarkMode = isDarkMode,
-                        onDarkModeChange = onDarkModeChange,
-                        onLogout = {
-                            userRepository.logout()
-                            currentUser = null
-                            currentScreen = Screen.LOGIN
-                        }
-                    )
-                }
-                Screen.ADMIN -> {
-                    val adminViewModel = remember { AdminViewModel() }
-                    AdminHomeScreen(
-                        user = currentUser,
-                        viewModel = adminViewModel,
-                        isDarkMode = isDarkMode,
-                        onDarkModeChange = onDarkModeChange,
-                        onLogout = {
-                            userRepository.logout()
-                            currentUser = null
-                            currentScreen = Screen.LOGIN
-                        }
-                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp, horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CloudOff,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Sei offline.",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
-        }
+
+            Surface(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .weight(1f),
+                color = MaterialTheme.colorScheme.background
+            ) {
+                if (isCheckingSession) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                    }
+                } else {
+                    when (currentScreen) {
+                        Screen.LOGIN -> {
+                            val loginViewModel = remember { LoginViewModel(userRepository) }
+                            LoginScreen(
+                                viewModel = loginViewModel,
+                                onNavigateToRegister = { currentScreen = Screen.REGISTER },
+                                onNavigateToForgotPassword = { currentScreen = Screen.FORGOT_PASSWORD },
+                                onLoginSuccess = { user ->
+                                    currentUser = user
+                                    currentScreen = if (user.userType == "ADMIN") Screen.ADMIN else Screen.HOME
+                                }
+                            )
+                        }
+                        Screen.REGISTER -> {
+                            val registerViewModel = remember { RegisterViewModel(userRepository) }
+                            RegisterScreen(
+                                viewModel = registerViewModel,
+                                onNavigateToLogin = { currentScreen = Screen.LOGIN },
+                                onRegisterSuccess = { user ->
+                                    currentScreen = Screen.LOGIN
+                                    coroutineScope.launch {
+                                        val msg = if (user.userType == "SOCIETA") {
+                                            "Registrazione completata! Controlla la posta per validare l'account. Successivamente l'account dovrà essere approvato dall'amministratore."
+                                        } else {
+                                            "Registrazione completata! Controlla la posta per validare l'account."
+                                        }
+                                        snackbarHostState.showSnackbar(msg)
+                                    }
+                                }
+                            )
+                        }
+                        Screen.FORGOT_PASSWORD -> {
+                            val forgotPasswordViewModel = remember { ForgotPasswordViewModel(userRepository) }
+                            ForgotPasswordScreen(
+                                viewModel = forgotPasswordViewModel,
+                                onNavigateToLogin = { currentScreen = Screen.LOGIN }
+                            )
+                        }
+                        Screen.HOME -> {
+                            HomeScreen(
+                                user = currentUser,
+                                isDarkMode = isDarkMode,
+                                onDarkModeChange = onDarkModeChange,
+                                onLogout = {
+                                    userRepository.logout()
+                                    currentUser = null
+                                    currentScreen = Screen.LOGIN
+                                }
+                            )
+                        }
+                        Screen.ADMIN -> {
+                            val adminViewModel = remember { AdminViewModel() }
+                            AdminHomeScreen(
+                                user = currentUser,
+                                viewModel = adminViewModel,
+                                isDarkMode = isDarkMode,
+                                onDarkModeChange = onDarkModeChange,
+                                onLogout = {
+                                    userRepository.logout()
+                                    currentUser = null
+                                    currentScreen = Screen.LOGIN
+                                }
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }
