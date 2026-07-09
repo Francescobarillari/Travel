@@ -44,19 +44,13 @@ services:
     entrypoint: [ "/bin/sh", "/opt/keycloak/configure-realm.sh" ]
 
   backend:
-    image: maven:3.9.6-eclipse-temurin-21
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    image: travel-backend:1.0
     container_name: java_backend
-    working_dir: /app
     volumes:
-      - ./backend:/app
-      - ./in_common:/in_common
-      - maven_cache:/root/.m2
       - ./backend/uploads:/app/uploads
-    command: >
-      sh -c "
-        cd /in_common && mvn clean install -DskipTests -q &&
-        cd /app && mvn clean compile spring-boot:run -Dmaven.test.skip=true
-      "
     ports:
       - "8080:8080"
     depends_on:
@@ -93,4 +87,3 @@ services:
 
 volumes:
   postgres_data:
-  maven_cache:

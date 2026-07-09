@@ -36,7 +36,10 @@ PAYPAL_CLIENT_SECRET=INSERISCI_IL_TUO_CLIENT_SECRET_SANDBOX
 
 ---
 
-### 2. Allineamento e Compilazione della Libreria Condivisa (`in_common`)
+### 2. Allineamento e Compilazione della Libreria Condivisa (`in_common`) — solo per l'app Android
+
+> [!NOTE]
+> Questo passaggio serve **esclusivamente per l'app Android** (Android Studio compila il frontend fuori da Docker). Per il **backend non è necessario**: il `Dockerfile` compila `in_common` automaticamente all'interno dell'immagine.
 
 Poiché il file `.jar` compilato del modulo `in_common` è escluso dal controllo di versione (`.gitignore`), è necessario compilarlo manualmente la prima volta (e ogni volta che apporti modifiche ai DTO in `in_common`) per consentire ad Android Studio di riconoscerlo.
 
@@ -85,10 +88,29 @@ Questo comando avvierà i seguenti servizi:
 | **db** | `5433` (interna `5432`) | Database PostgreSQL per la persistenza locale. |
 | **keycloak** | `8081` (interna `8080`) | Server di identità e accessi OIDC. |
 | **keycloak-config** | *Temporaneo* | Script automatico che attende l'avvio di Keycloak, verifica l'importazione del realm e configura i permessi di amministrazione per il backend. |
-| **backend** | `8080` (interna `8080`) | Applicazione Spring Boot. All'avvio compila internamente il modulo `in_common` ed esegue l'app con profilo di sviluppo `dev`. |
+| **backend** | `8080` (interna `8080`) | Applicazione Spring Boot. Costruita da `backend/Dockerfile` (immagine multi-stage: build con Maven, runtime su JRE Alpine come utente non-root) ed eseguita come `.jar` precompilato. L'autenticazione OIDC è sempre attiva. |
+
+### Aggiornare il backend dopo una modifica al codice
+
+> [!IMPORTANT]
+> Il backend gira da un'**immagine** che contiene il `.jar` già compilato, **non** più montando i sorgenti dal disco. Di conseguenza, dopo aver modificato il codice del backend il semplice restart **non** basta: bisogna **ricostruire l'immagine**.
+
+| Cosa hai modificato | Comando |
+| :--- | :--- |
+| Codice backend (`.java`), `pom.xml`, `in_common` | `docker compose up -d --build backend` |
+| Solo variabili d'ambiente (`.env`) | `docker compose up -d backend` (senza `--build`) |
+| Codice Android | Nessuna azione Docker — si ricompila in Android Studio |
+
+La regola pratica: **dopo un `git pull` o una modifica al backend, usa sempre `--build`**. La prima build scarica le dipendenze Maven (qualche minuto); le successive sfruttano la cache e sono rapide.
+
+> [!TIP]
+> Se durante lo sviluppo il `--build` continuo è scomodo, si può creare un `docker-compose.override.yml` (non versionato) che rimonta i sorgenti ed esegue `mvn spring-boot:run`, mantenendo il `docker-compose.yml` ufficiale con l'immagine per la consegna. Docker Compose fonde automaticamente i due file.
 
 ### Ripristino dell'ambiente in caso di errori
 Se si riscontrano problemi di consistenza dei dati, modifiche al file realm o errori nei ruoli utente su Keycloak, è consigliabile eliminare i volumi Docker e riavviare da zero:
+
+> [!WARNING]
+> `docker compose down -v` elimina **anche il volume del database** (`postgres_data`): tutti i dati locali andranno persi. Per un semplice aggiornamento del codice usa `docker compose up -d --build`, non `down -v`.
 
 ```bash
 # Arresta e rimuove tutti i container e i volumi associati (incluso il DB)
