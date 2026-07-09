@@ -96,6 +96,13 @@ fun ActivityDetailScreen(
                 it.location?.split(",")?.firstOrNull()?.trim()?.let { city ->
                     AppContainer.sessionManager.incrementLocationScore(city, 1)
                 }
+                scope.launch {
+                    val targetTemplateId = it.templateId?.toString() ?: activityId
+                    val reviewsResult = AppContainer.reviewRepository.getReviewsForActivity(targetTemplateId)
+                    if (reviewsResult.isSuccess) {
+                        reviews = reviewsResult.getOrNull() ?: emptyList()
+                    }
+                }
             },
             onFailure = {
                 errorMsg = it.message ?: "Impossibile caricare i dettagli dell'attività"
@@ -103,10 +110,6 @@ fun ActivityDetailScreen(
             }
         )
         currentUserEmail = AppContainer.sessionManager.getSessionUser()?.email.orEmpty()
-        val reviewsResult = AppContainer.reviewRepository.getReviewsForActivity(activityId)
-        if (reviewsResult.isSuccess) {
-            reviews = reviewsResult.getOrNull() ?: emptyList()
-        }
     }
 
     LaunchedEffect(selectedSession) {
@@ -703,13 +706,14 @@ fun ActivityDetailScreen(
                                 AddReviewInline(
                                     onSubmit = { rating, comment ->
                                         scope.launch {
+                                            val targetId = activity?.templateId?.toString() ?: activityId
                                             val newReview = CreateReviewDto(
-                                                activityId = activityId,
+                                                activityId = targetId,
                                                 rating = rating,
                                                 comment = comment
                                             )
                                             AppContainer.reviewRepository.createReview(newReview)
-                                            val reviewsResult = AppContainer.reviewRepository.getReviewsForActivity(activityId)
+                                            val reviewsResult = AppContainer.reviewRepository.getReviewsForActivity(targetId)
                                             if (reviewsResult.isSuccess) {
                                                 reviews = reviewsResult.getOrNull() ?: emptyList()
                                             }
