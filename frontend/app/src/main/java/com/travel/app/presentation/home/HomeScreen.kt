@@ -311,6 +311,7 @@ fun HomeScreen(
                                 companyAddOfferViewModel.resetForm()
                             }
                             if (it == HomeTab.CERCA) {
+                                cercaViewModel.onSearchQueryChanged("", saveToHistory = false)
                                 cercaViewModel.selectedTab = CercaTab.TUTTI
                             }
                             selectedTab = it 

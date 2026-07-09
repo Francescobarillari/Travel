@@ -1,6 +1,8 @@
 package com.travel.app.presentation.home
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -74,13 +76,7 @@ fun CercaScreen(
         }
     }
 
-    var localMinPrice by remember { mutableStateOf(0f) }
-    var localMaxPrice by remember { mutableStateOf(500f) }
 
-    LaunchedEffect(viewModel.minPrice, viewModel.maxPrice) {
-        localMinPrice = viewModel.minPrice?.toFloat() ?: 0f
-        localMaxPrice = viewModel.maxPrice?.toFloat() ?: 500f
-    }
 
     LaunchedEffect(Unit) {
         viewModel.selectedTab = CercaTab.TUTTI
@@ -90,9 +86,6 @@ fun CercaScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .pointerInput(Unit) {
-                detectTapGestures(onTap = { focusManager.clearFocus() })
-            }
             .padding(top = 16.dp)
     ) {
 
@@ -197,7 +190,7 @@ fun CercaScreen(
             }
         }
 
-        androidx.compose.animation.AnimatedVisibility(visible = isFilterPanelVisible && (isSearchActive || viewModel.searchQuery.isNotEmpty())) {
+        androidx.compose.animation.AnimatedVisibility(visible = isFilterPanelVisible) {
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -206,10 +199,7 @@ fun CercaScreen(
                 shape = RoundedCornerShape(16.dp)
             ) {
                 Column(
-                    modifier = Modifier
-                        .padding(16.dp)
-                        .heightIn(max = 350.dp)
-                        .verticalScroll(rememberScrollState())
+                    modifier = Modifier.padding(16.dp)
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -236,84 +226,54 @@ fun CercaScreen(
                         fontWeight = FontWeight.Bold
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                    Row(
+                    androidx.compose.foundation.lazy.LazyRow(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 8.dp)
+                        contentPadding = PaddingValues(vertical = 6.dp, horizontal = 2.dp),
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        // Scrollable filter chips
-                        androidx.compose.foundation.lazy.LazyRow(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            item {
-                                FilterChip(
-                                    selected = viewModel.sortBy == CercaSortOption.NONE,
-                                    onClick = { viewModel.onSortByChanged(CercaSortOption.NONE) },
-                                    label = { Text("Nessuno") }
-                                )
-                            }
-                            item {
-                                FilterChip(
-                                    selected = viewModel.sortBy == CercaSortOption.PRICE_ASC,
-                                    onClick = { viewModel.onSortByChanged(CercaSortOption.PRICE_ASC) },
-                                    label = { Text("Prezzo: Crescente") }
-                                )
-                            }
-                            item {
-                                FilterChip(
-                                    selected = viewModel.sortBy == CercaSortOption.PRICE_DESC,
-                                    onClick = { viewModel.onSortByChanged(CercaSortOption.PRICE_DESC) },
-                                    label = { Text("Prezzo: Decrescente") }
-                                )
-                            }
-                            item {
-                                FilterChip(
-                                    selected = viewModel.sortBy == CercaSortOption.RATING_DESC,
-                                    onClick = { viewModel.onSortByChanged(CercaSortOption.RATING_DESC) },
-                                    label = { Text("Valutazione") }
-                                )
-                            }
-                            item {
-                                FilterChip(
-                                    selected = viewModel.sortBy == CercaSortOption.DATE_ASC,
-                                    onClick = { viewModel.onSortByChanged(CercaSortOption.DATE_ASC) },
-                                    label = { Text("Data: più vicina") }
-                                )
-                            }
-                            item {
-                                FilterChip(
-                                    selected = viewModel.sortBy == CercaSortOption.DATE_DESC,
-                                    onClick = { viewModel.onSortByChanged(CercaSortOption.DATE_DESC) },
-                                    label = { Text("Data: più lontana") }
-                                )
-                            }
+                        item {
+                            FilterChip(
+                                selected = viewModel.sortBy == CercaSortOption.NONE,
+                                onClick = { viewModel.onSortByChanged(CercaSortOption.NONE) },
+                                label = { Text("Nessuno") }
+                            )
+                        }
+                        item {
+                            FilterChip(
+                                selected = viewModel.sortBy == CercaSortOption.PRICE_ASC,
+                                onClick = { viewModel.onSortByChanged(CercaSortOption.PRICE_ASC) },
+                                label = { Text("Prezzo: Crescente") }
+                            )
+                        }
+                        item {
+                            FilterChip(
+                                selected = viewModel.sortBy == CercaSortOption.PRICE_DESC,
+                                onClick = { viewModel.onSortByChanged(CercaSortOption.PRICE_DESC) },
+                                label = { Text("Prezzo: Decrescente") }
+                            )
+                        }
+                        item {
+                            FilterChip(
+                                selected = viewModel.sortBy == CercaSortOption.RATING_DESC,
+                                onClick = { viewModel.onSortByChanged(CercaSortOption.RATING_DESC) },
+                                label = { Text("Valutazione") }
+                            )
+                        }
+                        item {
+                            FilterChip(
+                                selected = viewModel.sortBy == CercaSortOption.DATE_ASC,
+                                onClick = { viewModel.onSortByChanged(CercaSortOption.DATE_ASC) },
+                                label = { Text("Data: più vicina") }
+                            )
+                        }
+                        item {
+                            FilterChip(
+                                selected = viewModel.sortBy == CercaSortOption.DATE_DESC,
+                                onClick = { viewModel.onSortByChanged(CercaSortOption.DATE_DESC) },
+                                label = { Text("Data: più lontana") }
+                            )
                         }
                     }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    // Price Range Slider
-                    val maxDisplay = if (localMaxPrice >= 500f) "500+€" else "${localMaxPrice.toInt()}€"
-                    Text(
-                        text = "Fascia di prezzo (attività/itinerari): ${localMinPrice.toInt()}€ - $maxDisplay",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    RangeSlider(
-                        value = localMinPrice..localMaxPrice,
-                        onValueChange = { range ->
-                            localMinPrice = range.start
-                            localMaxPrice = range.endInclusive
-                        },
-                        valueRange = 0f..500f,
-                        onValueChangeFinished = {
-                            val maxP = if (localMaxPrice >= 500f) null else localMaxPrice.toDouble()
-                            viewModel.onPriceRangeChanged(localMinPrice.toDouble(), maxP)
-                        }
-                    )
 
                     Spacer(modifier = Modifier.height(16.dp))
 
@@ -324,11 +284,12 @@ fun CercaScreen(
                         fontWeight = FontWeight.Bold
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                    Row(
+                    androidx.compose.foundation.lazy.LazyRow(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        contentPadding = PaddingValues(vertical = 6.dp, horizontal = 2.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        listOf(null, 3.0, 4.0, 4.5).forEach { rating ->
+                        items(listOf(null, 3.0, 4.0, 4.5)) { rating ->
                             FilterChip(
                                 selected = viewModel.minRating == rating,
                                 onClick = { viewModel.onMinRatingChanged(rating) },
@@ -346,12 +307,12 @@ fun CercaScreen(
                         fontWeight = FontWeight.Bold
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                    FlowRow(
-                        modifier = Modifier.fillMaxWidth(),
+                    androidx.compose.foundation.lazy.LazyRow(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        contentPadding = PaddingValues(vertical = 6.dp, horizontal = 2.dp),
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        TravelTag.values().forEach { tag ->
+                        items(TravelTag.values().toList()) { tag ->
                             val isSelected = viewModel.selectedTags.contains(tag)
                             FilterChip(
                                 selected = isSelected,
@@ -366,41 +327,39 @@ fun CercaScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        androidx.compose.animation.AnimatedVisibility(visible = isSearchActive || viewModel.searchQuery.isNotEmpty()) {
-            val tabIndex = when (viewModel.selectedTab) {
-                CercaTab.TUTTI -> 0
-                CercaTab.UTENTI -> 1
-                CercaTab.ATTIVITA -> 2
-                CercaTab.ITINERARI -> 3
-                else -> 0
-            }
-            TabRow(
-                selectedTabIndex = tabIndex,
-                containerColor = Color.Transparent,
-                contentColor = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(horizontal = 20.dp)
-            ) {
-                Tab(
-                    selected = viewModel.selectedTab == CercaTab.TUTTI,
-                    onClick = { viewModel.onTabSelected(CercaTab.TUTTI) },
-                    text = { Text("Tutti") }
-                )
-                Tab(
-                    selected = viewModel.selectedTab == CercaTab.UTENTI,
-                    onClick = { viewModel.onTabSelected(CercaTab.UTENTI) },
-                    text = { Text("Utenti") }
-                )
-                Tab(
-                    selected = viewModel.selectedTab == CercaTab.ATTIVITA,
-                    onClick = { viewModel.onTabSelected(CercaTab.ATTIVITA) },
-                    text = { Text("Attività") }
-                )
-                Tab(
-                    selected = viewModel.selectedTab == CercaTab.ITINERARI,
-                    onClick = { viewModel.onTabSelected(CercaTab.ITINERARI) },
-                    text = { Text("Itinerari") }
-                )
-            }
+        val tabIndex = when (viewModel.selectedTab) {
+            CercaTab.TUTTI -> 0
+            CercaTab.UTENTI -> 1
+            CercaTab.ATTIVITA -> 2
+            CercaTab.ITINERARI -> 3
+            else -> 0
+        }
+        TabRow(
+            selectedTabIndex = tabIndex,
+            containerColor = Color.Transparent,
+            contentColor = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(horizontal = 20.dp)
+        ) {
+            Tab(
+                selected = viewModel.selectedTab == CercaTab.TUTTI,
+                onClick = { viewModel.onTabSelected(CercaTab.TUTTI) },
+                text = { Text("Tutti") }
+            )
+            Tab(
+                selected = viewModel.selectedTab == CercaTab.UTENTI,
+                onClick = { viewModel.onTabSelected(CercaTab.UTENTI) },
+                text = { Text("Utenti") }
+            )
+            Tab(
+                selected = viewModel.selectedTab == CercaTab.ATTIVITA,
+                onClick = { viewModel.onTabSelected(CercaTab.ATTIVITA) },
+                text = { Text("Attività") }
+            )
+            Tab(
+                selected = viewModel.selectedTab == CercaTab.ITINERARI,
+                onClick = { viewModel.onTabSelected(CercaTab.ITINERARI) },
+                text = { Text("Itinerari") }
+            )
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -434,24 +393,6 @@ fun CercaScreen(
             state = listState,
             contentPadding = PaddingValues(bottom = 110.dp)
         ) {
-            
-            // The placeholders are removed. Only search is allowed.
-            if (viewModel.searchQuery.isEmpty() && !isSearchActive) {
-                item {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 80.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "Inizia la tua ricerca.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                        )
-                    }
-                }
-            } else {
                 
                 if (viewModel.errorMessage != null) {
                     item {
@@ -489,7 +430,7 @@ fun CercaScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = if (viewModel.searchQuery.isBlank()) "Inizia la tua ricerca." else "Nessun risultato trovato.",
+                                text = "Nessun risultato trovato.",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                             )
@@ -607,7 +548,6 @@ fun CercaScreen(
                         }
                     }
                 }
-            }
         }
     } 
 } 
