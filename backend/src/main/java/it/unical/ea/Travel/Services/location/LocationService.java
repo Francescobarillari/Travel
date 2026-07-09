@@ -218,7 +218,9 @@ public class LocationService {
         if (lower.contains("venezia"))
             return "https://images.unsplash.com/photo-1527631746610-bca00a040d60?auto=format&fit=crop&w=800&q=80";
         if (lower.contains("firenze"))
-            return "https://images.unsplash.com/photo-1528114039593-4366cc08227d?auto=format&fit=crop&w=800&q=80";
+            return "https://images.unsplash.com/photo-1478147427282-58a87a120781?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("milano") || lower.contains("milan"))
+            return "https://images.unsplash.com/photo-1520175480921-4edfa2983e0f?auto=format&fit=crop&w=800&q=80";
         if (lower.contains("sydney"))
             return "https://images.unsplash.com/photo-1506973035872-a4ec16b8e8d9?auto=format&fit=crop&w=800&q=80";
         if (lower.contains("rio de janeiro"))
