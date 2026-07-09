@@ -388,7 +388,7 @@ public class DataSeeder implements CommandLineRunner {
             Review rev1 = new Review();
             rev1.setAuthor(reviewer);
             rev1.setActivityTemplate(tpl1);
-            rev1.setRating(5);
+            rev1.setRating(5.0);
             rev1.setComment("Attività fantastica, guida super preparata!");
             reviewRepository.save(rev1);
 
@@ -397,7 +397,7 @@ public class DataSeeder implements CommandLineRunner {
                 Review rev2 = new Review();
                 rev2.setAuthor(reviewer);
                 rev2.setActivityTemplate(tpl2);
-                rev2.setRating(4);
+                rev2.setRating(4.0);
                 rev2.setComment("Molto bello, ma faceva un po' freddo.");
                 reviewRepository.save(rev2);
             }
@@ -409,7 +409,7 @@ public class DataSeeder implements CommandLineRunner {
             Review revIti = new Review();
             revIti.setAuthor(reviewer);
             revIti.setItinerary(iti1);
-            revIti.setRating(5);
+            revIti.setRating(5.0);
             revIti.setComment("L'itinerario nel complesso è stato indimenticabile. Consigliatissimo!");
             reviewRepository.save(revIti);
         }

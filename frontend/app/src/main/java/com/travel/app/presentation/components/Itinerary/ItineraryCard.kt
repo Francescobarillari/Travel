@@ -9,6 +9,7 @@ import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -70,20 +71,26 @@ fun ItineraryCard(
                 )
 
                 // Heart icon in top-right corner
-                IconButton(
-                    onClick = onFavoriteClick,
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(12.dp)
-                        .size(36.dp)
-                        .background(Color.Black.copy(alpha = 0.4f), CircleShape)
-                ) {
-                    Icon(
-                        imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                        contentDescription = "Preferiti",
-                        tint = if (isFavorite) Color.Red else Color.White,
-                        modifier = Modifier.size(20.dp)
-                    )
+                val isPreview = androidx.compose.ui.platform.LocalInspectionMode.current
+                val currentUser = remember { if (isPreview) null else com.travel.app.data.AppContainer.sessionManager.getSessionUser() }
+                val isMyItinerary = itinerary.creatorId?.toString() == currentUser?.id
+
+                if (!isMyItinerary) {
+                    IconButton(
+                        onClick = onFavoriteClick,
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(12.dp)
+                            .size(36.dp)
+                            .background(Color.Black.copy(alpha = 0.4f), CircleShape)
+                    ) {
+                        Icon(
+                            imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                            contentDescription = "Preferiti",
+                            tint = if (isFavorite) Color.Red else Color.White,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
                 }
             }
 

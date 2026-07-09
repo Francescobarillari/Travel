@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.automirrored.filled.StarHalf
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.Star
@@ -12,6 +13,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.travel.app.domain.model.review.ReviewDto
@@ -20,7 +22,7 @@ import com.travel.app.domain.model.review.ReviewDto
 fun ReviewCard(
     review: ReviewDto,
     showActivityName: Boolean = false,
-    onUpdate: (rating: Int, comment: String) -> Unit = { _, _ -> },
+    onUpdate: (rating: Double, comment: String) -> Unit = { _, _ -> },
     onDelete: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
@@ -74,11 +76,19 @@ fun ReviewCard(
                     )
                     
                     Row(verticalAlignment = Alignment.CenterVertically) {
+                        val ratingValue = review.rating
                         repeat(5) { index ->
+                            val isFilled = index + 1.0 <= ratingValue
+                            val isHalf = index < ratingValue && index + 1.0 > ratingValue
+                            val starIcon = when {
+                                isFilled -> Icons.Filled.Star
+                                isHalf -> Icons.AutoMirrored.Filled.StarHalf
+                                else -> Icons.Outlined.Star
+                            }
                             Icon(
-                                imageVector = if (index < review.rating) Icons.Filled.Star else Icons.Outlined.Star,
+                                imageVector = starIcon,
                                 contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
+                                tint = if (isFilled || isHalf) Color(0xFFFFB300) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
                                 modifier = Modifier.size(16.dp)
                             )
                         }
@@ -148,9 +158,9 @@ fun ReviewCard(
 
 @Composable
 fun AddReviewInline(
-    initialRating: Int = 5,
+    initialRating: Double = 0.0,
     initialComment: String = "",
-    onSubmit: (rating: Int, comment: String) -> Unit,
+    onSubmit: (rating: Double, comment: String) -> Unit,
     onCancel: (() -> Unit)? = null
 ) {
     var rating by remember { mutableStateOf(initialRating) }
@@ -168,13 +178,28 @@ fun AddReviewInline(
         ) {
             repeat(5) { index ->
                 IconButton(
-                    onClick = { rating = index + 1 },
+                    onClick = {
+                        val targetRatingFull = (index + 1).toDouble()
+                        val targetRatingHalf = index + 0.5
+                        rating = if (rating == targetRatingFull) {
+                            targetRatingHalf
+                        } else {
+                            targetRatingFull
+                        }
+                    },
                     modifier = Modifier.size(32.dp)
                 ) {
+                    val isFilled = index + 1.0 <= rating
+                    val isHalf = index < rating && index + 1.0 > rating
+                    val starIcon = when {
+                        isFilled -> Icons.Filled.Star
+                        isHalf -> Icons.AutoMirrored.Filled.StarHalf
+                        else -> Icons.Outlined.Star
+                    }
                     Icon(
-                        imageVector = if (index < rating) Icons.Filled.Star else Icons.Outlined.Star,
+                        imageVector = starIcon,
                         contentDescription = "Voto ${index + 1}",
-                        tint = MaterialTheme.colorScheme.primary,
+                        tint = if (isFilled || isHalf) Color(0xFFFFB300) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
                         modifier = Modifier.size(28.dp)
                     )
                 }
@@ -199,7 +224,7 @@ fun AddReviewInline(
             )
         )
 
-        if (isFocused || comment.isNotEmpty() || onCancel != null) {
+        if (isFocused || comment.isNotEmpty() || rating > 0.0 || onCancel != null) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End,
@@ -212,7 +237,7 @@ fun AddReviewInline(
                 } else {
                     TextButton(onClick = { 
                         comment = ""
-                        rating = 5
+                        rating = 0.0
                         isFocused = false
                     }) {
                         Text("Annulla")
@@ -224,11 +249,11 @@ fun AddReviewInline(
                         onSubmit(rating, comment) 
                         if (onCancel == null) {
                             comment = ""
-                            rating = 5
+                            rating = 0.0
                             isFocused = false
                         }
                     },
-                    enabled = rating > 0
+                    enabled = rating > 0.0
                 ) {
                     Text(if (onCancel != null) "Salva" else "Pubblica")
                 }
