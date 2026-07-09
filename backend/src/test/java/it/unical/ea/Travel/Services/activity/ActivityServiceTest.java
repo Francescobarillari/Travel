@@ -218,10 +218,7 @@ class ActivityServiceTest {
         @Test
         @DisplayName("Dovrebbe bloccare la cancellazione per un'attività passata")
         void shouldBlockCancellationForPastActivity() {
-            when(userRepository.getUserByEmail(userEmail)).thenReturn(Optional.of(testUser));
             when(activityRepository.findByIdForUpdate(pastActivityId)).thenReturn(Optional.of(pastActivity));
-            when(activityBookingRepository.findByUserIdAndActivityId(userId, pastActivityId))
-                    .thenReturn(Optional.of(new ActivityBooking()));
 
             ApiException exception = assertThrows(ApiException.class,
                     () -> activityService.cancelActivityBooking(pastActivityId.toString(), userEmail));

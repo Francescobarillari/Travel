@@ -17,10 +17,6 @@ public class EmailService {
     @Value("${spring.mail.username:noreply@travel.com}")
     private String fromEmail;
 
-    @Value("${app.admin-email:admin-user@example.com}")
-    private String adminEmail;
-
-
     public void sendWelcomeEmail(String toEmail, String name, boolean isCompany) {
         MimeMessage message = mailSender.createMimeMessage();
         try {
@@ -112,31 +108,6 @@ public class EmailService {
             mailSender.send(message);
         } catch (MessagingException e) {
             throw new RuntimeException("Errore durante l'invio della mail di rifiuto agenzia", e);
-        }
-    }
-
-    public void sendAdminApprovalRequestEmail(String companyName, String companyEmail, String vatNumber) {
-        MimeMessage message = mailSender.createMimeMessage();
-        try {
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setFrom(fromEmail != null && !fromEmail.isBlank() ? fromEmail : "noreply@derive.com");
-            helper.setTo(adminEmail);
-            helper.setSubject("Nuova richiesta di approvazione Agenzia: " + companyName);
-            
-            String content = "<h1>Nuova registrazione Agenzia</h1>" +
-                             "<p>Una nuova agenzia si è registrata sulla piattaforma ed è in attesa di approvazione.</p>" +
-                             "<ul>" +
-                             "<li><strong>Nome Agenzia:</strong> " + companyName + "</li>" +
-                             "<li><strong>Email:</strong> " + companyEmail + "</li>" +
-                             "<li><strong>Partita IVA:</strong> " + vatNumber + "</li>" +
-                             "</ul>" +
-                             "<p>Puoi approvare o rifiutare questa richiesta accedendo al pannello di amministrazione.</p>" +
-                             "<br><p>Il team di Dèrive</p>";
-            
-            helper.setText(content, true);
-            mailSender.send(message);
-        } catch (MessagingException e) {
-            throw new RuntimeException("Errore durante l'invio della mail di notifica all'admin", e);
         }
     }
 }
