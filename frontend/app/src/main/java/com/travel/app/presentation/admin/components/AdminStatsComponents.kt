@@ -1,5 +1,6 @@
 package com.travel.app.presentation.admin.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -11,10 +12,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 @Composable
 fun KpiCard(
@@ -27,52 +32,72 @@ fun KpiCard(
 ) {
     Card(
         modifier = modifier.then(
-            if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier
+            if (onClick != null) Modifier.clip(RoundedCornerShape(16.dp)).clickable(onClick = onClick) else Modifier
         ),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
+                .padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = iconColor,
-                    modifier = Modifier.size(20.dp)
-                )
+                Box(
+                    modifier = Modifier
+                        .size(34.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(iconColor.copy(alpha = 0.12f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = iconColor,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
                 if (onClick != null) {
                     Icon(
                         imageVector = Icons.Default.ChevronRight,
                         contentDescription = "Dettagli",
-                        tint = Color.Gray,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(16.dp)
                     )
                 }
             }
-            Text(
-                text = value,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Text(
-                text = title,
-                style = MaterialTheme.typography.labelSmall,
-                color = Color.Gray
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    text = value,
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = title,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
         }
     }
 }
+
+private data class DonutSlice(
+    val label: String,
+    val count: Int,
+    val color: Color
+)
 
 @Composable
 fun CompanyStatusDonutChart(
@@ -81,123 +106,16 @@ fun CompanyStatusDonutChart(
     blockedCount: Int,
     modifier: Modifier = Modifier
 ) {
-    val total = approvedCount + pendingCount + blockedCount
-    if (total == 0) {
-        Box(
-            modifier = modifier.fillMaxWidth().height(160.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = "Nessuna agenzia registrata nel sistema",
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color.Gray
-            )
-        }
-        return
-    }
-
-    val approvedAngle = 360f * approvedCount / total
-    val pendingAngle = 360f * pendingCount / total
-    val blockedAngle = 360f * blockedCount / total
-
-    val approvedPct = (100 * approvedCount / total)
-    val pendingPct = (100 * pendingCount / total)
-    val blockedPct = 100 - approvedPct - pendingPct // evita errori di arrotolamento
-
-    Row(
+    StatusDonut(
+        slices = listOf(
+            DonutSlice("Approvate", approvedCount, AdminStatusColors.approved),
+            DonutSlice("In attesa", pendingCount, AdminStatusColors.pending),
+            DonutSlice("Bloccate", blockedCount, AdminStatusColors.blocked)
+        ),
+        emptyText = "Nessuna agenzia registrata nel sistema",
+        pendingCount = pendingCount,
         modifier = modifier
-            .fillMaxWidth()
-            .padding(8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(24.dp)
-    ) {
-        Box(
-            modifier = Modifier.size(120.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
-                val strokeWidth = 24.dp.toPx()
-                val radius = (size.minDimension - strokeWidth) / 2
-                val center = androidx.compose.ui.geometry.Offset(size.width / 2, size.height / 2)
-                val rect = androidx.compose.ui.geometry.Rect(center, radius)
-
-                var startAngle = -90f
-
-                // Approved (Green)
-                if (approvedAngle > 0) {
-                    drawArc(
-                        color = Color(0xFF2E7D32),
-                        startAngle = startAngle,
-                        sweepAngle = approvedAngle,
-                        useCenter = false,
-                        topLeft = rect.topLeft,
-                        size = rect.size,
-                        style = androidx.compose.ui.graphics.drawscope.Stroke(
-                            width = strokeWidth,
-                            cap = androidx.compose.ui.graphics.StrokeCap.Round
-                        )
-                    )
-                    startAngle += approvedAngle
-                }
-
-                // Pending (Orange)
-                if (pendingAngle > 0) {
-                    drawArc(
-                        color = Color(0xFFE65100),
-                        startAngle = startAngle,
-                        sweepAngle = pendingAngle,
-                        useCenter = false,
-                        topLeft = rect.topLeft,
-                        size = rect.size,
-                        style = androidx.compose.ui.graphics.drawscope.Stroke(
-                            width = strokeWidth,
-                            cap = androidx.compose.ui.graphics.StrokeCap.Round
-                        )
-                    )
-                    startAngle += pendingAngle
-                }
-
-                // Blocked (Red)
-                if (blockedAngle > 0) {
-                    drawArc(
-                        color = Color(0xFFC62828),
-                        startAngle = startAngle,
-                        sweepAngle = blockedAngle,
-                        useCenter = false,
-                        topLeft = rect.topLeft,
-                        size = rect.size,
-                        style = androidx.compose.ui.graphics.drawscope.Stroke(
-                            width = strokeWidth,
-                            cap = androidx.compose.ui.graphics.StrokeCap.Round
-                        )
-                    )
-                }
-            }
-
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = "$total",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    text = "Totali",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Color.Gray
-                )
-            }
-        }
-
-        Column(
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.weight(1f)
-        ) {
-            LegendItem(color = Color(0xFF2E7D32), label = "Approvate", count = approvedCount, percentage = approvedPct)
-            LegendItem(color = Color(0xFFE65100), label = "In Attesa", count = pendingCount, percentage = pendingPct)
-            LegendItem(color = Color(0xFFC62828), label = "Bloccate", count = blockedCount, percentage = blockedPct)
-        }
-    }
+    )
 }
 
 @Composable
@@ -206,101 +124,121 @@ fun ActivityStatusDonutChart(
     pendingCount: Int,
     modifier: Modifier = Modifier
 ) {
-    val total = approvedCount + pendingCount
+    StatusDonut(
+        slices = listOf(
+            DonutSlice("Approvate", approvedCount, AdminStatusColors.approved),
+            DonutSlice("In attesa", pendingCount, AdminStatusColors.pending)
+        ),
+        emptyText = "Nessuna attività registrata nel sistema",
+        pendingCount = pendingCount,
+        modifier = modifier
+    )
+}
+
+@Composable
+private fun StatusDonut(
+    slices: List<DonutSlice>,
+    emptyText: String,
+    pendingCount: Int,
+    modifier: Modifier = Modifier
+) {
+    val total = slices.sumOf { it.count }
     if (total == 0) {
         Box(
             modifier = modifier.fillMaxWidth().height(160.dp),
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "Nessuna attività registrata nel sistema",
+                text = emptyText,
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.Gray
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
         return
     }
 
-    val approvedAngle = 360f * approvedCount / total
-    val pendingAngle = 360f * pendingCount / total
+    val nonZeroSlices = slices.count { it.count > 0 }
+    // Piccolo gap tra le fette solo quando ce n'è più di una visibile
+    val gapAngle = if (nonZeroSlices > 1) 2.5f else 0f
+    val pendingColor = AdminStatusColors.pending
 
-    val approvedPct = (100 * approvedCount / total)
-    val pendingPct = 100 - approvedPct
-
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(24.dp)
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Box(
-            modifier = Modifier.size(120.dp),
-            contentAlignment = Alignment.Center
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
-                val strokeWidth = 24.dp.toPx()
-                val radius = (size.minDimension - strokeWidth) / 2
-                val center = androidx.compose.ui.geometry.Offset(size.width / 2, size.height / 2)
-                val rect = androidx.compose.ui.geometry.Rect(center, radius)
+            Box(
+                modifier = Modifier.size(120.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
+                    val strokeWidth = 22.dp.toPx()
+                    val radius = (size.minDimension - strokeWidth) / 2
+                    val center = androidx.compose.ui.geometry.Offset(size.width / 2, size.height / 2)
+                    val rect = androidx.compose.ui.geometry.Rect(center, radius)
 
-                var startAngle = -90f
-
-                // Approved (Green)
-                if (approvedAngle > 0) {
-                    drawArc(
-                        color = Color(0xFF2E7D32),
-                        startAngle = startAngle,
-                        sweepAngle = approvedAngle,
-                        useCenter = false,
-                        topLeft = rect.topLeft,
-                        size = rect.size,
-                        style = androidx.compose.ui.graphics.drawscope.Stroke(
-                            width = strokeWidth,
-                            cap = androidx.compose.ui.graphics.StrokeCap.Round
-                        )
-                    )
-                    startAngle += approvedAngle
+                    var startAngle = -90f
+                    slices.forEach { slice ->
+                        if (slice.count > 0) {
+                            val sweep = 360f * slice.count / total
+                            drawArc(
+                                color = slice.color,
+                                startAngle = startAngle + gapAngle / 2,
+                                sweepAngle = (sweep - gapAngle).coerceAtLeast(1f),
+                                useCenter = false,
+                                topLeft = rect.topLeft,
+                                size = rect.size,
+                                style = androidx.compose.ui.graphics.drawscope.Stroke(
+                                    width = strokeWidth,
+                                    cap = StrokeCap.Butt
+                                )
+                            )
+                            startAngle += sweep
+                        }
+                    }
                 }
 
-                // Pending (Orange)
-                if (pendingAngle > 0) {
-                    drawArc(
-                        color = Color(0xFFE65100),
-                        startAngle = startAngle,
-                        sweepAngle = pendingAngle,
-                        useCenter = false,
-                        topLeft = rect.topLeft,
-                        size = rect.size,
-                        style = androidx.compose.ui.graphics.drawscope.Stroke(
-                            width = strokeWidth,
-                            cap = androidx.compose.ui.graphics.StrokeCap.Round
-                        )
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = "$total",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = "Totali",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
 
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = "$total",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    text = "Totali",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Color.Gray
-                )
+            Column(
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.weight(1f)
+            ) {
+                slices.forEach { slice ->
+                    LegendItem(
+                        color = slice.color,
+                        label = slice.label,
+                        count = slice.count,
+                        percentage = 100 * slice.count / total
+                    )
+                }
             }
         }
 
-        Column(
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.weight(1f)
-        ) {
-            LegendItem(color = Color(0xFF2E7D32), label = "Approvate", count = approvedCount, percentage = approvedPct)
-            LegendItem(color = Color(0xFFE65100), label = "In Attesa", count = pendingCount, percentage = pendingPct)
+        if (pendingCount > 0) {
+            StatusPill(
+                text = "$pendingCount in attesa di revisione",
+                color = pendingColor
+            )
         }
     }
 }
@@ -332,7 +270,7 @@ fun LegendItem(
             Text(
                 text = "$count ($percentage%)",
                 style = MaterialTheme.typography.labelSmall,
-                color = Color.Gray
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }

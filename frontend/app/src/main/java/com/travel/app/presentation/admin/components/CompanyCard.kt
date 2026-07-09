@@ -1,30 +1,23 @@
 package com.travel.app.presentation.admin.components
 
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import coil.request.ImageRequest
-import com.travel.app.BuildConfig
-import com.travel.app.data.AppContainer
 import it.unical.ea.dtos.user.UserDTO
 
 @Composable
@@ -32,13 +25,15 @@ fun CompanyCard(
     company: UserDTO,
     onApprove: () -> Unit,
     onReject: () -> Unit,
-    onImageClick: (String) -> Unit
+    onImageClick: (String) -> Unit,
+    isActing: Boolean = false
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
         Column(
             modifier = Modifier
@@ -48,37 +43,40 @@ fun CompanyCard(
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text(
-                    text = company.companyName ?: "Ragione Sociale Non Specificata",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
+                AsyncImage(
+                    model = company.avatarUrl,
+                    contentDescription = "Logo di ${company.companyName ?: "agenzia"}",
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(RoundedCornerShape(12.dp)),
+                    contentScale = ContentScale.Crop
                 )
-                Surface(
-                    color = Color(0xFFFFF3E0),
-                    shape = RoundedCornerShape(6.dp)
-                ) {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "DA APPROVARE",
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                        style = MaterialTheme.typography.labelSmall,
+                        text = company.companyName ?: "Ragione Sociale Non Specificata",
+                        style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFFE65100)
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = company.email ?: "-",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
+                StatusPill(text = "IN ATTESA", color = AdminStatusColors.pending)
             }
 
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
-            // Info Grid
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                InfoRow(icon = Icons.Default.Email, label = "Email:", value = company.email ?: "-")
-                InfoRow(icon = Icons.Default.Badge, label = "Partita IVA:", value = company.vatNumber ?: "-")
-                InfoRow(icon = Icons.Default.Phone, label = "Telefono:", value = company.phone ?: "-")
-            }
+            InfoRow(icon = Icons.Default.Badge, label = "Partita IVA:", value = company.vatNumber ?: "-")
 
             // Sezione Foto Documenti
             if (!company.documentPhotos.isNullOrEmpty()) {
@@ -86,7 +84,7 @@ fun CompanyCard(
                     text = "Documenti caricati:",
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -121,10 +119,11 @@ fun CompanyCard(
             ) {
                 OutlinedButton(
                     onClick = onReject,
+                    enabled = !isActing,
                     modifier = Modifier.weight(1f).height(44.dp),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.error)
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = if (isActing) 0.4f else 1f))
                 ) {
                     Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(6.dp))
@@ -133,11 +132,23 @@ fun CompanyCard(
 
                 Button(
                     onClick = onApprove,
+                    enabled = !isActing,
                     modifier = Modifier.weight(1f).height(44.dp),
                     shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = Color.White)
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    )
                 ) {
-                    Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
+                    if (isActing) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp,
+                            color = LocalContentColor.current
+                        )
+                    } else {
+                        Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
+                    }
                     Spacer(modifier = Modifier.width(6.dp))
                     Text("Approva", style = MaterialTheme.typography.labelMedium)
                 }

@@ -1,10 +1,7 @@
 package com.travel.app.presentation.admin
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -14,34 +11,32 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
-import coil.compose.AsyncImage
-import coil.request.ImageRequest
-import com.travel.app.BuildConfig
-import com.travel.app.data.AppContainer
 import androidx.compose.ui.tooling.preview.Preview
-import com.travel.app.service.ApiService
 import com.travel.app.presentation.theme.TravelTheme
 import it.unical.ea.dtos.activity.ActivityDto
 import it.unical.ea.dtos.user.UserDTO
 import com.travel.app.presentation.admin.components.ZoomableImageDialog
-import java.time.format.DateTimeFormatter
 import com.travel.app.domain.model.User
+import com.travel.app.presentation.admin.components.AdminSectionLabel
+import com.travel.app.presentation.admin.components.AdminStatusColors
 import com.travel.app.presentation.admin.components.EmptyPlaceholder
 import com.travel.app.presentation.admin.components.CompanyCard
 import com.travel.app.presentation.admin.components.ActivityModerationCard
 import com.travel.app.presentation.admin.components.KpiCard
 import com.travel.app.presentation.admin.components.CompanyStatusDonutChart
 import com.travel.app.presentation.admin.components.ActivityStatusDonutChart
+import com.travel.app.presentation.admin.components.StatusPill
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 
@@ -63,6 +58,19 @@ fun AdminDashboardScreen(
     LaunchedEffect(Unit) {
         if (!isPreview) {
             viewModel.loadData()
+        }
+    }
+
+    // Stato pull-to-refresh condiviso da tutti i tab interni
+    val ptrState = rememberPullToRefreshState()
+    if (ptrState.isRefreshing) {
+        LaunchedEffect(true) {
+            viewModel.loadData()
+        }
+    }
+    LaunchedEffect(viewModel.isRefreshing, viewModel.isLoading) {
+        if (!viewModel.isRefreshing && !viewModel.isLoading) {
+            ptrState.endRefresh()
         }
     }
 
@@ -111,7 +119,10 @@ fun AdminDashboardScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { viewModel.loadData() }) {
+                    IconButton(
+                        onClick = { viewModel.loadData() },
+                        enabled = !viewModel.isRefreshing && !viewModel.isLoading
+                    ) {
                         Icon(
                             imageVector = Icons.Default.Refresh,
                             contentDescription = "Aggiorna",
@@ -130,27 +141,53 @@ fun AdminDashboardScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
+                .padding(bottom = 80.dp) // Lascia spazio per la navbar fluttuante
                 .background(MaterialTheme.colorScheme.background)
         ) {
-            // Error Banner
+            // Banner di errore con azione di retry
             viewModel.errorMessage?.let { msg ->
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
                 ) {
-                    Text(
-                        text = msg,
-                        color = MaterialTheme.colorScheme.onErrorContainer,
-                        modifier = Modifier.padding(16.dp),
-                        style = MaterialTheme.typography.bodyMedium
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ErrorOutline,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onErrorContainer,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            text = msg,
+                            color = MaterialTheme.colorScheme.onErrorContainer,
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.weight(1f)
+                        )
+                        TextButton(onClick = { viewModel.loadData() }) {
+                            Text(
+                                text = "Riprova",
+                                color = MaterialTheme.colorScheme.onErrorContainer,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
                 }
             }
 
-            Box(modifier = Modifier.fillMaxSize()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .nestedScroll(ptrState.nestedScrollConnection)
+            ) {
                 if (viewModel.isLoading) {
+                    // Spinner a schermo intero: solo al primo caricamento
                     CircularProgressIndicator(
                         modifier = Modifier.align(Alignment.Center),
                         color = MaterialTheme.colorScheme.primary
@@ -164,17 +201,24 @@ fun AdminDashboardScreen(
                         )
                         1 -> PendingCompaniesList(
                             companies = viewModel.pendingCompanies,
+                            actingIds = viewModel.actingIds,
                             onApprove = { viewModel.approveCompany(it) },
                             onReject = { viewModel.rejectCompany(it) },
                             onImageClick = { activeImageForZoom = it }
                         )
                         2 -> PendingActivitiesList(
                             activities = viewModel.pendingActivities,
+                            actingIds = viewModel.actingIds,
                             onApprove = { viewModel.approveActivity(it) },
                             onReject = { viewModel.rejectActivity(it) }
                         )
                     }
                 }
+
+                PullToRefreshContainer(
+                    state = ptrState,
+                    modifier = Modifier.align(Alignment.TopCenter)
+                )
             }
         }
     }
@@ -196,7 +240,7 @@ fun OverviewTabContent(
 ) {
     val totalCompanies = viewModel.allCompanies.size
     val approvedCompanies = viewModel.allCompanies.count { it.approved && !it.blocked }
-    val pendingCompanies = viewModel.allCompanies.count { !it.approved && !it.blocked }
+    val pendingCompaniesFromAll = viewModel.allCompanies.count { !it.approved && !it.blocked }
     val blockedCompanies = viewModel.allCompanies.count { it.blocked }
 
     val approvedActivities = viewModel.approvedActivitiesCount
@@ -209,6 +253,8 @@ fun OverviewTabContent(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        AdminSectionLabel("Panoramica")
+
         // KPI Cards Row
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -222,36 +268,73 @@ fun OverviewTabContent(
                 modifier = Modifier.weight(1f)
             )
             KpiCard(
-                title = "Agenzie Pending",
+                title = "Agenzie in attesa",
                 value = "${viewModel.pendingCompanies.size}",
                 icon = Icons.Default.PendingActions,
-                iconColor = Color(0xFFE65100),
+                iconColor = AdminStatusColors.pending,
                 modifier = Modifier.weight(1f),
                 onClick = onNavigateToCompaniesTab
             )
             KpiCard(
-                title = "Attività Pending",
+                title = "Attività in attesa",
                 value = "$pendingActivities",
                 icon = Icons.Default.Explore,
-                iconColor = Color(0xFFC62828),
+                iconColor = AdminStatusColors.pending,
                 modifier = Modifier.weight(1f),
                 onClick = onNavigateToActivitiesTab
             )
         }
 
-        // Donut Chart Card - Società
+        AdminSectionLabel("Coda di moderazione")
+
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+        ) {
+            Column {
+                ModerationQueueRow(
+                    icon = Icons.Default.Business,
+                    title = "Agenzie in attesa",
+                    subtitle = "Registrazioni da approvare o rifiutare",
+                    count = viewModel.pendingCompanies.size,
+                    onClick = onNavigateToCompaniesTab
+                )
+                HorizontalDivider(
+                    color = MaterialTheme.colorScheme.outlineVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+                ModerationQueueRow(
+                    icon = Icons.Default.Explore,
+                    title = "Attività in attesa",
+                    subtitle = "Proposte delle agenzie da moderare",
+                    count = pendingActivities,
+                    onClick = onNavigateToActivitiesTab
+                )
+            }
+        }
+
+        AdminSectionLabel("Statistiche")
+
+        // Donut Chart Card - Società
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
+                .clickable(onClick = onNavigateToCompaniesTab),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
         ) {
             Column(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
-                    text = "Stato di approvazione Agenzie",
+                    text = "Agenzie per stato",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -259,7 +342,7 @@ fun OverviewTabContent(
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 CompanyStatusDonutChart(
                     approvedCount = approvedCompanies,
-                    pendingCount = pendingCompanies,
+                    pendingCount = pendingCompaniesFromAll,
                     blockedCount = blockedCompanies
                 )
             }
@@ -267,17 +350,21 @@ fun OverviewTabContent(
 
         // Donut Chart Card - Attività
         Card(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
+                .clickable(onClick = onNavigateToActivitiesTab),
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
         ) {
             Column(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
-                    text = "Stato di approvazione Attività",
+                    text = "Attività per stato",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -293,30 +380,93 @@ fun OverviewTabContent(
 }
 
 @Composable
+private fun ModerationQueueRow(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    count: Int,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(38.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        if (count > 0) {
+            StatusPill(text = "$count", color = AdminStatusColors.pending)
+        } else {
+            StatusPill(text = "0", color = AdminStatusColors.approved)
+        }
+        Icon(
+            imageVector = Icons.Default.ChevronRight,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(18.dp)
+        )
+    }
+}
+
+@Composable
 fun PendingCompaniesList(
     companies: List<UserDTO>,
+    actingIds: Set<String>,
     onApprove: (String) -> Unit,
     onReject: (String) -> Unit,
     onImageClick: (String) -> Unit
 ) {
-    if (companies.isEmpty()) {
-        EmptyPlaceholder(
-            icon = Icons.Default.CheckCircle,
-            title = "Nessuna agenzia in attesa",
-            subtitle = "Tutte le registrazioni delle agenzie sono state elaborate."
-        )
-    } else {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            items(companies) { company ->
+    // Sempre una LazyColumn (anche da vuota) così il pull-to-refresh resta attivo
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        if (companies.isEmpty()) {
+            item {
+                EmptyPlaceholder(
+                    icon = Icons.Default.CheckCircle,
+                    title = "Nessuna agenzia in attesa",
+                    subtitle = "Tutte le registrazioni delle agenzie sono state elaborate.",
+                    modifier = Modifier.fillParentMaxSize()
+                )
+            }
+        } else {
+            items(companies, key = { it.id.toString() }) { company ->
                 CompanyCard(
                     company = company,
                     onApprove = { onApprove(company.id.toString()) },
                     onReject = { onReject(company.id.toString()) },
-                    onImageClick = onImageClick
+                    onImageClick = onImageClick,
+                    isActing = company.id.toString() in actingIds
                 )
             }
         }
@@ -326,26 +476,31 @@ fun PendingCompaniesList(
 @Composable
 fun PendingActivitiesList(
     activities: List<ActivityDto>,
+    actingIds: Set<String>,
     onApprove: (String) -> Unit,
     onReject: (String) -> Unit
 ) {
-    if (activities.isEmpty()) {
-        EmptyPlaceholder(
-            icon = Icons.Default.CheckCircle,
-            title = "Nessuna attività in attesa",
-            subtitle = "Tutte le proposte delle agenzie sono state moderate."
-        )
-    } else {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            items(activities) { activity ->
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        if (activities.isEmpty()) {
+            item {
+                EmptyPlaceholder(
+                    icon = Icons.Default.CheckCircle,
+                    title = "Nessuna attività in attesa",
+                    subtitle = "Tutte le proposte delle agenzie sono state moderate.",
+                    modifier = Modifier.fillParentMaxSize()
+                )
+            }
+        } else {
+            items(activities, key = { it.id.toString() }) { activity ->
                 ActivityModerationCard(
                     activity = activity,
                     onApprove = { onApprove(activity.id.toString()) },
-                    onReject = { onReject(activity.id.toString()) }
+                    onReject = { onReject(activity.id.toString()) },
+                    isActing = activity.id.toString() in actingIds
                 )
             }
         }
