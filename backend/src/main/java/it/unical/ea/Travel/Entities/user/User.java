@@ -19,10 +19,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import it.unical.ea.Travel.Entities.itinerary.Itinerary;
+import it.unical.ea.Travel.Entities.activity.Activity;
+
 @Getter
 @Setter
 @NoArgsConstructor
 @Entity
+
 @Table(name = "users", indexes = {
         @Index(name = "idx_user_email", columnList = "email", unique = true)
 })
@@ -108,10 +112,27 @@ public class User {
     @Enumerated(EnumType.STRING)
     private Set<TravelTag> preferences = new HashSet<>();
 
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "user_favorite_itineraries",
+        joinColumns = @JoinColumn(name = "user_id"),
+        inverseJoinColumns = @JoinColumn(name = "itinerary_id")
+    )
+    private Set<Itinerary> favoriteItineraries = new HashSet<>();
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "user_favorite_activities",
+        joinColumns = @JoinColumn(name = "user_id"),
+        inverseJoinColumns = @JoinColumn(name = "activity_id")
+    )
+    private Set<Activity> favoriteActivities = new HashSet<>();
+
     public boolean isDeleted() {
         return deletedAt != null;
     }
 }
+
 
 /*
  * users

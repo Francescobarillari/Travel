@@ -23,6 +23,8 @@ import okhttp3.MultipartBody
 import retrofit2.http.Multipart
 import retrofit2.http.Part
 import it.unical.ea.dtos.notification.NotificationDto
+import it.unical.ea.dtos.favorite.UserFavoritesDto
+
 
 interface ApiService {
 
@@ -226,6 +228,21 @@ interface ApiService {
 
     @PUT("api/notifications/{id}/read")
     suspend fun markNotificationAsRead(@Path("id") id: String): retrofit2.Response<Unit>
+
+    @GET("api/favorites")
+    suspend fun getFavorites(): UserFavoritesDto
+
+    @POST("api/favorites/activities/{id}")
+    suspend fun addFavoriteActivity(@Path("id") id: String): retrofit2.Response<Unit>
+
+    @DELETE("api/favorites/activities/{id}")
+    suspend fun removeFavoriteActivity(@Path("id") id: String): retrofit2.Response<Unit>
+
+    @POST("api/favorites/itineraries/{id}")
+    suspend fun addFavoriteItinerary(@Path("id") id: String): retrofit2.Response<Unit>
+
+    @DELETE("api/favorites/itineraries/{id}")
+    suspend fun removeFavoriteItinerary(@Path("id") id: String): retrofit2.Response<Unit>
 }
 
 open class MockApiService : ApiService {
@@ -285,4 +302,10 @@ open class MockApiService : ApiService {
     override suspend fun getBookedItineraries(): List<ItineraryDto> = emptyList()
     override suspend fun getUnreadNotifications(): List<NotificationDto> = emptyList()
     override suspend fun markNotificationAsRead(id: String): retrofit2.Response<Unit> = retrofit2.Response.success(Unit)
+
+    override suspend fun getFavorites(): UserFavoritesDto = UserFavoritesDto()
+    override suspend fun addFavoriteActivity(id: String): retrofit2.Response<Unit> = retrofit2.Response.success(Unit)
+    override suspend fun removeFavoriteActivity(id: String): retrofit2.Response<Unit> = retrofit2.Response.success(Unit)
+    override suspend fun addFavoriteItinerary(id: String): retrofit2.Response<Unit> = retrofit2.Response.success(Unit)
+    override suspend fun removeFavoriteItinerary(id: String): retrofit2.Response<Unit> = retrofit2.Response.success(Unit)
 }

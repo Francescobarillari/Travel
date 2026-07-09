@@ -7,7 +7,9 @@ import it.unical.ea.dtos.authDto.SignupRequest
 import it.unical.ea.dtos.authDto.ForgotPasswordRequest
 import it.unical.ea.dtos.authDto.ResetPasswordRequest
 import it.unical.ea.enums.UserType
+import it.unical.ea.dtos.favorite.UserFavoritesDto
 import com.travel.app.data.session.SessionManager
+
 import com.travel.app.domain.model.User
 import com.travel.app.domain.model.toDomain
 import com.travel.app.domain.model.toDto
@@ -71,6 +73,16 @@ class UserRepositoryImpl(
             
             // 3. Salva la sessione aggiornata con i dati definitivi
             saveSession(user, token, refreshToken)
+            
+            // 4. Carica i preferiti dal backend e salvali in sessione
+            try {
+                val favoritesDto = apiService.getFavorites()
+                val session = sessionManagerProvider()
+                session.setFavoriteActivities(favoritesDto.activityIds?.map { it.toString() }?.toSet() ?: emptySet())
+                session.setFavoriteItineraries(favoritesDto.itineraryIds?.map { it.toString() }?.toSet() ?: emptySet())
+            } catch (favEx: Exception) {
+                favEx.printStackTrace()
+            }
             
             Result.success(user)
         } catch (e: Exception) {
@@ -175,6 +187,17 @@ class UserRepositoryImpl(
             val user = userDto.toDomain()
             val token = sessionManagerProvider().getSessionToken().orEmpty()
             saveSession(user, token)
+
+            // Carica i preferiti dal backend e salvali in sessione
+            try {
+                val favoritesDto = apiService.getFavorites()
+                val session = sessionManagerProvider()
+                session.setFavoriteActivities(favoritesDto.activityIds?.map { it.toString() }?.toSet() ?: emptySet())
+                session.setFavoriteItineraries(favoritesDto.itineraryIds?.map { it.toString() }?.toSet() ?: emptySet())
+            } catch (favEx: Exception) {
+                favEx.printStackTrace()
+            }
+
             Result.success(user)
         } catch (e: Exception) {
             Result.failure(Exception(handleError(e)))

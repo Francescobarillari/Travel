@@ -7,6 +7,10 @@ import androidx.security.crypto.MasterKey
 import com.travel.app.domain.model.User
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+
 
 class SessionManager(context: Context) {
 
@@ -109,14 +113,32 @@ class SessionManager(context: Context) {
         return prefs.getStringSet(KEY_FAVORITE_ACTIVITIES, emptySet()) ?: emptySet()
     }
 
+    fun setFavoriteActivities(ids: Set<String>) {
+        prefs.edit().putStringSet(KEY_FAVORITE_ACTIVITIES, ids).apply()
+    }
+
     fun toggleFavoriteActivity(id: String) {
         val current = getFavoriteActivityIds().toMutableSet()
-        if (current.contains(id)) {
+        val isAdded = if (current.contains(id)) {
             current.remove(id)
+            false
         } else {
             current.add(id)
+            true
         }
         prefs.edit().putStringSet(KEY_FAVORITE_ACTIVITIES, current).apply()
+
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                if (isAdded) {
+                    com.travel.app.data.AppContainer.apiService.addFavoriteActivity(id)
+                } else {
+                    com.travel.app.data.AppContainer.apiService.removeFavoriteActivity(id)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
     }
 
     fun isFavoriteActivity(id: String): Boolean {
@@ -127,14 +149,32 @@ class SessionManager(context: Context) {
         return prefs.getStringSet(KEY_FAVORITE_ITINERARIES, emptySet()) ?: emptySet()
     }
 
+    fun setFavoriteItineraries(ids: Set<String>) {
+        prefs.edit().putStringSet(KEY_FAVORITE_ITINERARIES, ids).apply()
+    }
+
     fun toggleFavoriteItinerary(id: String) {
         val current = getFavoriteItineraryIds().toMutableSet()
-        if (current.contains(id)) {
+        val isAdded = if (current.contains(id)) {
             current.remove(id)
+            false
         } else {
             current.add(id)
+            true
         }
         prefs.edit().putStringSet(KEY_FAVORITE_ITINERARIES, current).apply()
+
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                if (isAdded) {
+                    com.travel.app.data.AppContainer.apiService.addFavoriteItinerary(id)
+                } else {
+                    com.travel.app.data.AppContainer.apiService.removeFavoriteItinerary(id)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
     }
 
     fun isFavoriteItinerary(id: String): Boolean {
