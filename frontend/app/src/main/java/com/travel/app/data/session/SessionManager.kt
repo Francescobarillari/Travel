@@ -106,6 +106,11 @@ class SessionManager(context: Context) {
     }
 
     fun getFavoriteActivityIds(): Set<String> {
+        if (!prefs.contains(KEY_FAVORITE_ACTIVITIES)) {
+            val defaults = setOf("a1a1a1a1-b2b2-c3c3-d4d4-e5e5e5e5e5e5", "f1f1f1f1-e2e2-d3d3-c4c4-b5b5b5b5b5b5")
+            prefs.edit().putStringSet(KEY_FAVORITE_ACTIVITIES, defaults).apply()
+            return defaults
+        }
         return prefs.getStringSet(KEY_FAVORITE_ACTIVITIES, emptySet()) ?: emptySet()
     }
 
@@ -124,6 +129,11 @@ class SessionManager(context: Context) {
     }
 
     fun getFavoriteItineraryIds(): Set<String> {
+        if (!prefs.contains(KEY_FAVORITE_ITINERARIES)) {
+            val defaults = setOf("11111111-2222-3333-4444-555555555555", "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
+            prefs.edit().putStringSet(KEY_FAVORITE_ITINERARIES, defaults).apply()
+            return defaults
+        }
         return prefs.getStringSet(KEY_FAVORITE_ITINERARIES, emptySet()) ?: emptySet()
     }
 

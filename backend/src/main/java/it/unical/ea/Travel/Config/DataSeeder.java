@@ -364,16 +364,184 @@ public class DataSeeder implements CommandLineRunner {
         act7.setParticipants(30);
         act7.setPrice(BigDecimal.ZERO);
 
+        // --- Località Kyoto ---
+        Location locKyoto = locationRepository.findByNameIgnoreCase("Kyoto, Giappone")
+                .orElseGet(() -> {
+                    Location loc = new Location();
+                    loc.setName("Kyoto, Giappone");
+                    loc.setDescription("L'antica capitale del Giappone, celebre per i templi buddisti, i giardini e le geisha.");
+                    return locationRepository.save(loc);
+                });
+
+        // --- Località Berlino ---
+        Location locBerlino = locationRepository.findByNameIgnoreCase("Berlino, Germania")
+                .orElseGet(() -> {
+                    Location loc = new Location();
+                    loc.setName("Berlino, Germania");
+                    loc.setDescription("La capitale tedesca, intrisa di storia del XX secolo e famosa per l'arte e la vita notturna.");
+                    return locationRepository.save(loc);
+                });
+
+        // --- Località Madrid ---
+        Location locMadrid = locationRepository.findByNameIgnoreCase("Madrid, Spagna")
+                .orElseGet(() -> {
+                    Location loc = new Location();
+                    loc.setName("Madrid, Spagna");
+                    loc.setDescription("Capitale della Spagna, ricca di eleganti viali, palazzi storici e musei d'arte di fama mondiale.");
+                    return locationRepository.save(loc);
+                });
+
+        // --- Località Chicago ---
+        Location locChicago = locationRepository.findByNameIgnoreCase("Chicago, USA")
+                .orElseGet(() -> {
+                    Location loc = new Location();
+                    loc.setName("Chicago, USA");
+                    loc.setDescription("La Windy City, nota per la sua architettura avveniristica e le sculture d'arte pubblica.");
+                    return locationRepository.save(loc);
+                });
+
+        // Kyoto - Preferito
+        Itinerary itineraryKyoto = new Itinerary();
+        itineraryKyoto.setId(UUID.fromString("11111111-2222-3333-4444-555555555555"));
+        itineraryKyoto.setTitle("Fascino di Kyoto");
+        itineraryKyoto.setDescription("Esperienza autentica tra templi, tè e foreste di bamboo.");
+        itineraryKyoto.setStartDateTime(LocalDateTime.now().plusDays(15));
+        itineraryKyoto.setEndDateTime(LocalDateTime.now().plusDays(20));
+        itineraryKyoto.setCreator(organizer);
+
+        // Berlino - Non preferito
+        Itinerary itineraryBerlino = new Itinerary();
+        itineraryBerlino.setId(UUID.fromString("66666666-7777-8888-9999-000000000000"));
+        itineraryBerlino.setTitle("Berlino e la sua Storia");
+        itineraryBerlino.setDescription("Muro di Berlino, Currywurst e cultura underground.");
+        itineraryBerlino.setStartDateTime(LocalDateTime.now().plusDays(5));
+        itineraryBerlino.setEndDateTime(LocalDateTime.now().plusDays(8));
+        itineraryBerlino.setCreator(organizer);
+
+        // Madrid - Preferito
+        Itinerary itineraryMadrid = new Itinerary();
+        itineraryMadrid.setId(UUID.fromString("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"));
+        itineraryMadrid.setTitle("Weekend Real a Madrid");
+        itineraryMadrid.setDescription("Arte, storia e sapori tradizionali spagnoli.");
+        itineraryMadrid.setStartDateTime(LocalDateTime.now().plusDays(12));
+        itineraryMadrid.setEndDateTime(LocalDateTime.now().plusDays(15));
+        itineraryMadrid.setCreator(organizer);
+
+        // Chicago - Non preferito
+        Itinerary itineraryChicago = new Itinerary();
+        itineraryChicago.setId(UUID.fromString("ffffffff-0000-1111-2222-333333333333"));
+        itineraryChicago.setTitle("Grattacieli di Chicago");
+        itineraryChicago.setDescription("Architettura moderna e crociera fluviale.");
+        itineraryChicago.setStartDateTime(LocalDateTime.now().plusDays(25));
+        itineraryChicago.setEndDateTime(LocalDateTime.now().plusDays(28));
+        itineraryChicago.setCreator(organizer);
+
+        // Kyoto Activities
+        ActivityTemplate tplKyotoTea = new ActivityTemplate();
+        tplKyotoTea.setName("Cerimonia del Tè");
+        tplKyotoTea.setDescription("Un'esperienza di meditazione e degustazione del Matcha tradizionale.");
+        tplKyotoTea.setLocation("Kyoto, Giappone");
+        tplKyotoTea.setLocationEntity(locKyoto);
+        tplKyotoTea.setOrganizer(organizer);
+        tplKyotoTea.setTags(new HashSet<>(Arrays.asList(TravelTag.CULTURA, TravelTag.CIBO, TravelTag.RELAX)));
+        tplKyotoTea = activityTemplateRepository.save(tplKyotoTea);
+
+        Activity actKyotoTea = new Activity();
+        actKyotoTea.setId(UUID.fromString("a1a1a1a1-b2b2-c3c3-d4d4-e5e5e5e5e5e5"));
+        actKyotoTea.setTemplate(tplKyotoTea);
+        actKyotoTea.setStartTime(LocalDateTime.now().plusDays(16).plusHours(15));
+        actKyotoTea.setEndTime(LocalDateTime.now().plusDays(16).plusHours(17));
+        actKyotoTea.setParticipants(8);
+        actKyotoTea.setPrice(new BigDecimal("45.00"));
+
+        ActivityTemplate tplKyotoBamboo = new ActivityTemplate();
+        tplKyotoBamboo.setName("Foresta di Bamboo");
+        tplKyotoBamboo.setDescription("Passeggiata guidata tra i suggestivi sentieri di Arashiyama.");
+        tplKyotoBamboo.setLocation("Kyoto, Giappone");
+        tplKyotoBamboo.setLocationEntity(locKyoto);
+        tplKyotoBamboo.setOrganizer(organizer);
+        tplKyotoBamboo.setTags(new HashSet<>(Arrays.asList(TravelTag.NATURA, TravelTag.AVVENTURA, TravelTag.FOTOGRAFIA)));
+        tplKyotoBamboo = activityTemplateRepository.save(tplKyotoBamboo);
+
+        Activity actKyotoBamboo = new Activity();
+        actKyotoBamboo.setTemplate(tplKyotoBamboo);
+        actKyotoBamboo.setStartTime(LocalDateTime.now().plusDays(17).plusHours(9));
+        actKyotoBamboo.setEndTime(LocalDateTime.now().plusDays(17).plusHours(12));
+        actKyotoBamboo.setParticipants(15);
+        actKyotoBamboo.setPrice(new BigDecimal("15.00"));
+
+        // Berlino Activities
+        ActivityTemplate tplMuroBerlino = new ActivityTemplate();
+        tplMuroBerlino.setName("Tour del Muro di Berlino");
+        tplMuroBerlino.setDescription("Passeggiata storica lungo la East Side Gallery con guida locale.");
+        tplMuroBerlino.setLocation("Berlino, Germania");
+        tplMuroBerlino.setLocationEntity(locBerlino);
+        tplMuroBerlino.setOrganizer(organizer);
+        tplMuroBerlino.setTags(new HashSet<>(Arrays.asList(TravelTag.STORIA, TravelTag.CULTURA)));
+        tplMuroBerlino = activityTemplateRepository.save(tplMuroBerlino);
+
+        Activity actMuroBerlino = new Activity();
+        actMuroBerlino.setTemplate(tplMuroBerlino);
+        actMuroBerlino.setStartTime(LocalDateTime.now().plusDays(6).plusHours(10));
+        actMuroBerlino.setEndTime(LocalDateTime.now().plusDays(6).plusHours(13));
+        actMuroBerlino.setParticipants(20);
+        actMuroBerlino.setPrice(new BigDecimal("10.00"));
+
+        // Madrid Activities
+        ActivityTemplate tplPradoMadrid = new ActivityTemplate();
+        tplPradoMadrid.setName("Visita al Museo del Prado");
+        tplPradoMadrid.setDescription("Capolavori di Velázquez, Goya ed El Greco con storico dell'arte.");
+        tplPradoMadrid.setLocation("Madrid, Spagna");
+        tplPradoMadrid.setLocationEntity(locMadrid);
+        tplPradoMadrid.setOrganizer(organizer);
+        tplPradoMadrid.setTags(new HashSet<>(Arrays.asList(TravelTag.CULTURA, TravelTag.STORIA, TravelTag.ARTE)));
+        tplPradoMadrid = activityTemplateRepository.save(tplPradoMadrid);
+
+        Activity actPradoMadrid = new Activity();
+        actPradoMadrid.setId(UUID.fromString("f1f1f1f1-e2e2-d3d3-c4c4-b5b5b5b5b5b5"));
+        actPradoMadrid.setTemplate(tplPradoMadrid);
+        actPradoMadrid.setStartTime(LocalDateTime.now().plusDays(13).plusHours(14));
+        actPradoMadrid.setEndTime(LocalDateTime.now().plusDays(13).plusHours(17));
+        actPradoMadrid.setParticipants(12);
+        actPradoMadrid.setPrice(new BigDecimal("30.00"));
+
+        // Chicago Activities
+        ActivityTemplate tplCrocieraChicago = new ActivityTemplate();
+        tplCrocieraChicago.setName("Crociera sull'Architettura");
+        tplCrocieraChicago.setDescription("Crociera in barca per ammirare i grattacieli iconici di Chicago.");
+        tplCrocieraChicago.setLocation("Chicago, USA");
+        tplCrocieraChicago.setLocationEntity(locChicago);
+        tplCrocieraChicago.setOrganizer(organizer);
+        tplCrocieraChicago.setTags(new HashSet<>(Arrays.asList(TravelTag.CITTA, TravelTag.NATURA, TravelTag.AVVENTURA, TravelTag.ARCHITETTURA)));
+        tplCrocieraChicago = activityTemplateRepository.save(tplCrocieraChicago);
+
+        Activity actCrocieraChicago = new Activity();
+        actCrocieraChicago.setTemplate(tplCrocieraChicago);
+        actCrocieraChicago.setStartTime(LocalDateTime.now().plusDays(26).plusHours(11));
+        actCrocieraChicago.setEndTime(LocalDateTime.now().plusDays(26).plusHours(13));
+        actCrocieraChicago.setParticipants(25);
+        actCrocieraChicago.setPrice(new BigDecimal("50.00"));
+
         // Save all activities
-        activityRepository.saveAll(Arrays.asList(act1, act2, act3, act4, actSafari, act5, act6, act7));
+        activityRepository.saveAll(Arrays.asList(
+            act1, act2, act3, act4, actSafari, act5, act6, act7,
+            actKyotoTea, actKyotoBamboo, actMuroBerlino, actPradoMadrid, actCrocieraChicago
+        ));
 
         // Link activities to itineraries
         itinerary1.setActivities(Arrays.asList(act1, act2));
         itinerary2.setActivities(Arrays.asList(act3, act4));
         itinerary3.setActivities(Arrays.asList(actSafari));
+        itineraryKyoto.setActivities(Arrays.asList(actKyotoTea, actKyotoBamboo));
+        itineraryBerlino.setActivities(Arrays.asList(actMuroBerlino));
+        itineraryMadrid.setActivities(Arrays.asList(actPradoMadrid));
+        itineraryChicago.setActivities(Arrays.asList(actCrocieraChicago));
 
         // Save all itineraries
-        itineraryRepository.saveAll(Arrays.asList(itinerary1, itinerary2, itinerary3));
+        itineraryRepository.saveAll(Arrays.asList(
+            itinerary1, itinerary2, itinerary3,
+            itineraryKyoto, itineraryBerlino, itineraryMadrid, itineraryChicago
+        ));
     }
 
     private void seedReviews() {

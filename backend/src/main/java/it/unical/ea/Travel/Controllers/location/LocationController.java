@@ -24,13 +24,30 @@ public class LocationController {
             @RequestParam(defaultValue = "10") int size
     ) {
         Page<LocationDto> results = locationService.searchLocation(query, includeExternal, page, size);
+        results.forEach(this::enrichImageUrl);
         return ResponseEntity.ok(results);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<LocationDto> getLocationById(@PathVariable UUID id) {
         return locationService.getLocationById(id)
+                .map(this::enrichImageUrl)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    private LocationDto enrichImageUrl(LocationDto dto) {
+        if (dto == null) {
+            return null;
+        }
+        if (dto.getImageUrl() != null && !dto.getImageUrl().isEmpty() && !dto.getImageUrl().startsWith("http")) {
+            String filename = dto.getImageUrl().substring(dto.getImageUrl().lastIndexOf("/") + 1);
+            String url = org.springframework.web.servlet.support.ServletUriComponentsBuilder.fromCurrentContextPath()
+                    .path("/activity/images/")
+                    .path(filename)
+                    .toUriString();
+            dto.setImageUrl(url);
+        }
+        return dto;
     }
 }
