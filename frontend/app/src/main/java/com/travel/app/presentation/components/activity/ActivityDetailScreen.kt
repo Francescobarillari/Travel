@@ -116,6 +116,7 @@ fun ActivityDetailScreen(
     }
 
     val context = androidx.compose.ui.platform.LocalContext.current
+    val isOnline by AppContainer.networkMonitor.isOnline.collectAsState(initial = true)
 
     LaunchedEffect(Unit) {
         PayPalCheckout.registerCallbacks(
@@ -217,6 +218,10 @@ fun ActivityDetailScreen(
                                     if (isBooked) {
                                         showCancelConfirmationDialog = true
                                     } else {
+                                        if (!isOnline) {
+                                            Toast.makeText(context, "Sei offline. Questa azione richiede una connessione internet attiva.", Toast.LENGTH_SHORT).show()
+                                            return@Button
+                                        }
                                         scope.launch {
                                             isLoading = true
                                             val bookRes = AppContainer.activityRepository.bookActivity(currentSession!!.id.toString())
@@ -792,6 +797,11 @@ fun ActivityDetailScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
+                        if (!isOnline) {
+                            Toast.makeText(context, "Sei offline. Questa azione richiede una connessione internet attiva.", Toast.LENGTH_SHORT).show()
+                            showCancelConfirmationDialog = false
+                            return@TextButton
+                        }
                         showCancelConfirmationDialog = false
                         scope.launch {
                             isLoading = true
