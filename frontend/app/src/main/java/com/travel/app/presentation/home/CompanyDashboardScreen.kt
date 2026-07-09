@@ -7,8 +7,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -29,10 +28,19 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import coil.compose.AsyncImage
 import com.travel.app.presentation.home.components.CompanyKpiCard
-import com.travel.app.presentation.home.components.OccupancyProgressRing
 import com.travel.app.presentation.home.components.ActivityFillRateBar
 import androidx.compose.material.icons.filled.People
-import androidx.compose.material.icons.filled.TrendingUp
+
+// Un'attività multi-giorno è rappresentata da più sessioni (una per data):
+// per statistiche e periodo si aggrega sempre sull'intera lista, non sulla sola sessione primaria.
+private fun sessionsOf(activity: ActivityDto): List<ActivityDto> =
+    activity.sessions?.takeIf { it.isNotEmpty() } ?: listOf(activity)
+
+private fun bookedSeats(activity: ActivityDto): Int =
+    sessionsOf(activity).sumOf { it.currentParticipants ?: 0 }
+
+private fun capacitySeats(activity: ActivityDto): Int =
+    sessionsOf(activity).sumOf { it.participants ?: 0 }
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -43,9 +51,10 @@ fun CompanyDashboardScreen(
     modifier: Modifier = Modifier
 ) {
     val totalActivities = viewModel.activities.size
-    val totalOccupiedSeats = viewModel.activities.sumOf { it.currentParticipants ?: 0 }
-    val totalCapacitySeats = viewModel.activities.sumOf { it.participants ?: 0 }
-    val occupancyRate = if (totalCapacitySeats > 0) (100 * totalOccupiedSeats / totalCapacitySeats) else 0
+    val totalBookings = viewModel.activities.sumOf { bookedSeats(it) }
+    val availableSeats = viewModel.activities.sumOf {
+        (capacitySeats(it) - bookedSeats(it)).coerceAtLeast(0)
+    }
 
     LaunchedEffect(Unit) {
         viewModel.fetchDashboardData()
@@ -63,14 +72,18 @@ fun CompanyDashboardScreen(
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Text(
-                text = "Dashboard Agenzia",
+                text = "Dashboard",
                 style = MaterialTheme.typography.headlineMedium.copy(
                     fontWeight = FontWeight.ExtraBold,
                     color = Color(0xFF0F172A)
                 )
             )
+            val orgName = viewModel.currentOrganizerName
             Text(
-                text = "Gestisci le tue attività e monitora le prenotazioni in tempo reale.",
+                text = if (orgName.isNotBlank())
+                    "$orgName · panoramica delle tue attività e prenotazioni"
+                else
+                    "Panoramica delle tue attività e prenotazioni",
                 fontSize = 13.sp,
                 color = Color(0xFF64748B)
             )
@@ -113,7 +126,6 @@ fun CompanyDashboardScreen(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(bottom = 100.dp)
             ) {
-                // Sezione Analitica / Statistiche
                 item {
                     Column(
                         modifier = Modifier
@@ -121,96 +133,64 @@ fun CompanyDashboardScreen(
                             .padding(horizontal = 20.dp, vertical = 8.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        // Riga KPI
+                        DashboardSectionLabel("Panoramica")
+
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             CompanyKpiCard(
-                                title = "Attività Pubblicate",
+                                title = "Attività pubblicate",
                                 value = "$totalActivities",
                                 icon = Icons.Default.CalendarToday,
                                 iconColor = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.weight(1f)
                             )
                             CompanyKpiCard(
-                                title = "Prenotazioni",
-                                value = "$totalOccupiedSeats",
+                                title = "Prenotazioni totali",
+                                value = "$totalBookings",
                                 icon = Icons.Default.People,
-                                iconColor = MaterialTheme.colorScheme.secondary,
+                                iconColor = Color(0xFF7C3AED),
                                 modifier = Modifier.weight(1f)
                             )
                             CompanyKpiCard(
-                                title = "Tasso Occupazione",
-                                value = "$occupancyRate%",
-                                icon = Icons.Default.TrendingUp,
-                                iconColor = Color(0xFFE65100),
+                                title = "Posti disponibili",
+                                value = "$availableSeats",
+                                icon = Icons.Default.CheckCircle,
+                                iconColor = Color(0xFF16A34A),
                                 modifier = Modifier.weight(1f)
                             )
                         }
 
-                        // Grafico Progress Ring Occupazione
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(16.dp),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                        ) {
-                            Column(
-                                modifier = Modifier.padding(16.dp),
-                                verticalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                Text(
-                                    text = "Occupazione Posti Totale",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                                OccupancyProgressRing(
-                                    occupiedCount = totalOccupiedSeats,
-                                    capacityCount = totalCapacitySeats
-                                )
-                            }
-                        }
+                        DashboardSectionLabel("Prenotazioni per attività")
 
-                        // Riempimento singole attività
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(16.dp),
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
                         ) {
                             Column(
                                 modifier = Modifier.padding(16.dp),
-                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                                verticalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
-                                Text(
-                                    text = "Performance Singole Attività",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                                 viewModel.activities.forEach { activity ->
                                     ActivityFillRateBar(
                                         name = activity.name ?: "Senza Nome",
-                                        occupiedCount = activity.currentParticipants ?: 0,
-                                        capacityCount = activity.participants ?: 0
+                                        occupiedCount = bookedSeats(activity),
+                                        capacityCount = capacitySeats(activity)
                                     )
                                 }
                             }
                         }
-
-                        Spacer(modifier = Modifier.height(8.dp))
                     }
                 }
 
                 item {
-                    Text(
-                        text = "Le Tue Attività",
-                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                    DashboardSectionLabel(
+                        text = "Le tue attività",
+                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)
                     )
                 }
                 items(viewModel.activities) { activity ->
@@ -225,6 +205,21 @@ fun CompanyDashboardScreen(
     }
 }
 
+@Composable
+private fun DashboardSectionLabel(
+    text: String,
+    modifier: Modifier = Modifier
+) {
+    Text(
+        text = text.uppercase(),
+        modifier = modifier,
+        fontSize = 12.sp,
+        fontWeight = FontWeight.Bold,
+        letterSpacing = 1.2.sp,
+        color = Color(0xFF94A3B8)
+    )
+}
+
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun ActivityDashboardCard(
@@ -233,12 +228,30 @@ fun ActivityDashboardCard(
     onBookingsClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val current = activity.currentParticipants ?: 0
-    val capacity = activity.participants ?: 0
-    val isFull = current >= capacity
-    val statusText = if (isFull) "Completo" else if (current >= capacity * 0.8) "Quasi Completo" else "Disponibile"
-    val statusBgColor = if (isFull) Color(0xFFFEF2F2) else if (current >= capacity * 0.8) Color(0xFFFFF7ED) else Color(0xFFF0FDF4)
-    val statusTextColor = if (isFull) Color(0xFFEF4444) else if (current >= capacity * 0.8) Color(0xFFF97316) else Color(0xFF22C55E)
+    val sessions = sessionsOf(activity)
+    val current = bookedSeats(activity)
+    val capacity = capacitySeats(activity)
+    val isFull = capacity > 0 && current >= capacity
+    val isAlmostFull = capacity > 0 && !isFull && current >= capacity * 0.8
+    val statusText = if (isFull) "Completo" else if (isAlmostFull) "Quasi completo" else "Disponibile"
+    val statusBgColor = if (isFull) Color(0xFFFEF2F2) else if (isAlmostFull) Color(0xFFFFF7ED) else Color(0xFFF0FDF4)
+    val statusTextColor = if (isFull) Color(0xFFEF4444) else if (isAlmostFull) Color(0xFFF97316) else Color(0xFF16A34A)
+
+    // Il periodo dell'attività copre tutte le sessioni, dalla prima all'ultima data.
+    val firstStart = sessions.mapNotNull { it.startTime }.minOrNull()
+    val lastEnd = sessions.mapNotNull { it.endTime }.maxOrNull()
+    val dateFormatter = DateTimeFormatter.ofPattern("dd MMM yyyy")
+    val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
+    val dateText = when {
+        firstStart == null -> "Date da definire"
+        lastEnd == null || firstStart.toLocalDate() == lastEnd.toLocalDate() -> {
+            val timePart = if (lastEnd != null)
+                " · ${firstStart.format(timeFormatter)} - ${lastEnd.format(timeFormatter)}"
+            else ""
+            firstStart.format(dateFormatter) + timePart
+        }
+        else -> "Dal ${firstStart.format(dateFormatter)} al ${lastEnd.format(dateFormatter)}"
+    }
 
     Card(
         modifier = modifier
@@ -246,7 +259,7 @@ fun ActivityDashboardCard(
             .padding(horizontal = 20.dp, vertical = 8.dp),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
     ) {
         Column {
@@ -332,14 +345,26 @@ fun ActivityDashboardCard(
                         tint = Color(0xFF64748B),
                         modifier = Modifier.size(16.dp)
                     )
-                    val formatter = DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm")
-                    val start = activity.startTime?.format(formatter) ?: ""
-                    val end = activity.endTime?.format(formatter) ?: ""
                     Text(
-                        text = "$start - $end",
+                        text = dateText,
                         style = MaterialTheme.typography.bodySmall,
                         color = Color(0xFF64748B)
                     )
+                    if (sessions.size > 1) {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(Color(0xFFF1F5F9))
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        ) {
+                            Text(
+                                text = "${sessions.size} date",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF475569)
+                            )
+                        }
+                    }
                 }
             }
 

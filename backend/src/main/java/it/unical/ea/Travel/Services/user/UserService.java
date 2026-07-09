@@ -54,6 +54,14 @@ public class UserService {
                 throw new ApiException(HttpStatus.BAD_REQUEST, "Il cognome è obbligatorio per i viaggiatori");
             }
         } else if (request.getUserType() == UserType.SOCIETA) {
+            if (request.getCompanyName() == null || request.getCompanyName().strip().isEmpty()) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "Il nome dell'agenzia è obbligatorio");
+            }
+            String companyName = request.getCompanyName().strip();
+            if (userRepository.existsByCompanyNameIgnoreCase(companyName)) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "Il nome dell'agenzia è già in uso, scegline un altro");
+            }
+            request.setCompanyName(companyName);
             if (request.getVatNumber() == null || request.getVatNumber().strip().isEmpty()) {
                 throw new ApiException(HttpStatus.BAD_REQUEST, "La Partita IVA è obbligatoria per le agenzie");
             }
@@ -65,7 +73,6 @@ public class UserService {
                 throw new ApiException(HttpStatus.BAD_REQUEST, "La Partita IVA inserita è già associata ad un'altra agenzia registrata");
             }
             request.setVatNumber(normalizedVat);
-            request.setCompanyName(normalizedVat);
         }
 
         String keycloakUserId = keycloakAdminService.createUser(request);
@@ -75,7 +82,8 @@ public class UserService {
         user.setPasswordHash("{keycloak}");
         user.setKeycloakId(keycloakUserId);
         user.setUserType(request.getUserType());
-        user.setPhone(request.getPhone());
+        // Il telefono non è previsto per le agenzie
+        user.setPhone(request.getUserType() == UserType.SOCIETA ? null : request.getPhone());
 
         if (request.getUserType() == UserType.VIAGGIATORE) {
             user.setFirstName(request.getFirstName());
@@ -153,7 +161,12 @@ public class UserService {
             }
         } else if (user.getUserType() == UserType.SOCIETA) {
             if (userDto.getCompanyName() != null && !userDto.getCompanyName().strip().isEmpty()) {
-                user.setCompanyName(userDto.getCompanyName());
+                String newCompanyName = userDto.getCompanyName().strip();
+                if (!newCompanyName.equalsIgnoreCase(user.getCompanyName())
+                        && userRepository.existsByCompanyNameIgnoreCase(newCompanyName)) {
+                    throw new ApiException(HttpStatus.BAD_REQUEST, "Il nome dell'agenzia è già in uso, scegline un altro");
+                }
+                user.setCompanyName(newCompanyName);
             }
             if (userDto.getVatNumber() != null && !userDto.getVatNumber().strip().isEmpty()) {
                 user.setVatNumber(userDto.getVatNumber());

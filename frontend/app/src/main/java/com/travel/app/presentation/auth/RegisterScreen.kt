@@ -156,7 +156,9 @@ fun RegisterScreen(
 
                         // Campi in comune
                         TravelTextField(value = viewModel.registerEmail, onValueChange = { viewModel.registerEmail = it }, label = "Indirizzo Email *", leadingIcon = Icons.Default.Email, keyboardType = KeyboardType.Email)
-                        TravelTextField(value = viewModel.registerPhone, onValueChange = { viewModel.registerPhone = it }, label = "Telefono (opzionale)", leadingIcon = Icons.Default.Phone, keyboardType = KeyboardType.Phone)
+                        if (viewModel.registerUserType == UserType.VIAGGIATORE) {
+                            TravelTextField(value = viewModel.registerPhone, onValueChange = { viewModel.registerPhone = it }, label = "Telefono (opzionale)", leadingIcon = Icons.Default.Phone, keyboardType = KeyboardType.Phone)
+                        }
                         PasswordField(value = viewModel.registerPassword, onValueChange = { viewModel.registerPassword = it }, label = "Password *")
                         PasswordField(value = viewModel.registerConfirmPassword, onValueChange = { viewModel.registerConfirmPassword = it }, label = "Conferma Password *")
 
@@ -170,6 +172,8 @@ fun RegisterScreen(
                                     viewModel.registerError = "Le password non coincidono"
                                 } else if (viewModel.registerUserType == UserType.VIAGGIATORE && (viewModel.registerFirstName.isBlank() || viewModel.registerLastName.isBlank())) {
                                     viewModel.registerError = "Nome e cognome sono obbligatori"
+                                } else if (viewModel.registerUserType == UserType.SOCIETA && viewModel.registerCompanyName.isBlank()) {
+                                    viewModel.registerError = "Il nome dell'agenzia è obbligatorio"
                                 } else if (viewModel.registerUserType == UserType.SOCIETA && viewModel.registerVatNumber.isBlank()) {
                                     viewModel.registerError = "La Partita IVA è obbligatoria"
                                 } else if (viewModel.registerUserType == UserType.SOCIETA && viewModel.registerDocumentPhotos.isEmpty()) {

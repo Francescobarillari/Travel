@@ -114,9 +114,9 @@ fun TravelApp(
                             currentScreen = Screen.LOGIN
                             coroutineScope.launch {
                                 val msg = if (user.userType == "SOCIETA") {
-                                    "Registrazione completata! L'account è in attesa di approvazione."
+                                    "Registrazione completata! Controlla la posta per validare l'account. Successivamente l'account dovrà essere approvato dall'amministratore."
                                 } else {
-                                    "Registrazione completata! Ora puoi effettuare l'accesso."
+                                    "Registrazione completata! Controlla la posta per validare l'account."
                                 }
                                 snackbarHostState.showSnackbar(msg)
                             }

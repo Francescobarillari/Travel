@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import it.unical.ea.Travel.Services.mail.EmailService;
 import it.unical.ea.Travel.Services.storage.FileStorageService;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -48,6 +49,7 @@ public class AdminController {
     private final UserMapper userMapper;
     private final ActivityMapper activityMapper;
     private final AuditLogService auditLogService;
+    private final EmailService emailService;
 
     @Operation(summary = "Ottieni agenzie in attesa di approvazione")
     @GetMapping("/companies/pending")
@@ -64,6 +66,14 @@ public class AdminController {
         user.setApproved(true);
         userRepository.save(user);
         auditLogService.log("APPROVE_COMPANY", "User", id, "Approved company user with email: " + user.getEmail());
+        
+        // Invia email di conferma approvazione all'agenzia
+        try {
+            emailService.sendCompanyApprovedEmail(user.getEmail(), user.getCompanyName());
+        } catch (Exception e) {
+            System.err.println("Errore nell'invio della mail di approvazione: " + e.getMessage());
+        }
+        
         return ResponseEntity.ok().build();
     }
 
@@ -73,12 +83,23 @@ public class AdminController {
         User user = userRepository.findById(UUID.fromString(id))
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "user.notFound"));
         
+        String email = user.getEmail();
+        String companyName = user.getCompanyName();
+        String keycloakId = user.getKeycloakId();
+        
+        // Invia email di notifica rifiuto all'agenzia prima di eliminare il record dal DB
+        try {
+            emailService.sendCompanyRejectedEmail(email, companyName);
+        } catch (Exception e) {
+            System.err.println("Errore nell'invio della mail di rifiuto: " + e.getMessage());
+        }
+        
         // Elimina l'utente da Keycloak
-        keycloakAdminService.deleteUser(user.getKeycloakId());
+        keycloakAdminService.deleteUser(keycloakId);
         
         // Elimina l'utente dal database locale
         userRepository.delete(user);
-        auditLogService.log("REJECT_COMPANY", "User", id, "Rejected and deleted company user with email: " + user.getEmail());
+        auditLogService.log("REJECT_COMPANY", "User", id, "Rejected and deleted company user with email: " + email);
         return ResponseEntity.ok().build();
     }
 
