@@ -23,6 +23,9 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import it.unical.ea.dtos.activity.ActivityDto
 import it.unical.ea.dtos.itinerary.ItineraryDto
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 
 data class LocalitaItem(
     val name: String,
@@ -30,6 +33,7 @@ data class LocalitaItem(
 )
 
 @RequiresApi(Build.VERSION_CODES.O)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeFeedScreen(
     onLocalitaClick: (String) -> Unit,
@@ -43,10 +47,10 @@ fun HomeFeedScreen(
     val localitaList = listOf(
         LocalitaItem("Roma", "https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=500&auto=format&fit=crop"),
         LocalitaItem("Venezia", "https://images.unsplash.com/photo-1527631746610-bca00a040d60?w=500&auto=format&fit=crop"),
-        LocalitaItem("Firenze", "https://images.unsplash.com/photo-1541370976299-4d24ebbc9037?w=500&auto=format&fit=crop"),
+        LocalitaItem("Firenze", "https://images.unsplash.com/photo-1478147427282-58a87a120781?w=500&auto=format&fit=crop"),
         LocalitaItem("Milano", "https://images.unsplash.com/photo-1520175480921-4edfa2983e0f?w=500&auto=format&fit=crop"),
         LocalitaItem("Napoli", "https://images.unsplash.com/photo-1595877244574-e90ce41ce089?w=500&auto=format&fit=crop"),
-        LocalitaItem("Amalfi", "https://images.unsplash.com/photo-1533105079780-92b9be482077?w=500&auto=format&fit=crop"),
+        LocalitaItem("Parigi", "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=500&auto=format&fit=crop"),
         LocalitaItem("Palermo", "https://images.unsplash.com/photo-1590001155093-a3c66ab0c3ff?w=500&auto=format&fit=crop")
     )
 
@@ -127,12 +131,29 @@ fun HomeFeedScreen(
         }
     }
 
-    Column(
+    val ptrState = rememberPullToRefreshState()
+    if (ptrState.isRefreshing) {
+        LaunchedEffect(true) {
+            com.travel.app.data.AppContainer.clearCache()
+            val actResult = com.travel.app.data.AppContainer.activityRepository.getActivities()
+            val itResult = com.travel.app.data.AppContainer.itineraryRepository.getItineraries()
+            actResult.fold(onSuccess = { allActivities = it }, onFailure = {})
+            itResult.fold(onSuccess = { allItineraries = it }, onFailure = {})
+            ptrState.endRefresh()
+        }
+    }
+
+    Box(
         modifier = modifier
             .fillMaxSize()
-            .verticalScroll(scrollState)
-            .padding(top = 16.dp, bottom = 110.dp)
+            .nestedScroll(ptrState.nestedScrollConnection)
     ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(scrollState)
+                .padding(top = 16.dp, bottom = 110.dp)
+        ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
@@ -465,5 +486,11 @@ fun HomeFeedScreen(
                 }
             }
         }
+    }
+
+        PullToRefreshContainer(
+            state = ptrState,
+            modifier = Modifier.align(Alignment.TopCenter)
+        )
     }
 }

@@ -126,10 +126,20 @@ object AppContainer {
         return capabilities.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET)
     }
 
-    private val client by lazy {
+    private val cache by lazy {
         val cacheSize = 10 * 1024 * 1024L // 10 MB
-        val cache = okhttp3.Cache(appContext.cacheDir, cacheSize)
+        okhttp3.Cache(appContext.cacheDir, cacheSize)
+    }
 
+    fun clearCache() {
+        try {
+            cache.evictAll()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    private val client by lazy {
         OkHttpClient.Builder()
             .cache(cache)
             .addInterceptor(AuthInterceptor { sessionManager })
