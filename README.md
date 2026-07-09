@@ -26,10 +26,25 @@ Usa il seguente template per il file `.env`:
 # IP del computer di sviluppo nella rete locale
 HOST_IP=<ip>
 
-# Configurazione PayPal Sandbox
+# Keycloak
+KEYCLOAK_REALM=ae-realm
+KEYCLOAK_APP_CLIENT_ID=ae-client
+KEYCLOAK_APP_CLIENT_SECRET=travel-dev-secret
+KEYCLOAK_ADMIN_CLIENT_ID=travel-backend-admin
+KEYCLOAK_ADMIN_CLIENT_SECRET=travel-backend-admin-secret
+KEYCLOAK_DEFAULT_CLIENT_ROLE=BASIC
+
+# Database
+SPRING_DATASOURCE_USERNAME=myuser
+SPRING_DATASOURCE_PASSWORD=mypassword
+
+# Payment Config
+# Set PAYMENT_MOCK=true to test payment flow locally/offline (mock gateway)
+# Set PAYMENT_MOCK=false to connect to PayPal Sandbox
 PAYMENT_MOCK=false
-PAYPAL_CLIENT_ID=INSERISCI_IL_TUO_CLIENT_ID_SANDBOX
-PAYPAL_CLIENT_SECRET=INSERISCI_IL_TUO_CLIENT_SECRET_SANDBOX
+
+PAYPAL_CLIENT_ID=AY5DQrR9-oKBLflS7_YhfZMR9ooyLgKs82vID1iyMUJ1vlsdXVeQUnVejDP0zHmxmzfgbjCqHBvWfU2z
+PAYPAL_CLIENT_SECRET=EGcOQJTQaCtKqbLBRPIQUfGL6MSNU39lP9B5ZOM1GKUlZmhi-G2uSYuHxbhI3-eb8lp_grki_Wl1sUmD
 ```
 
 *   `PAYMENT_MOCK`: Impostalo su `true` se vuoi bypassare i controlli reali di PayPal ed effettuare pagamenti di test istantanei simulati dal backend.
@@ -128,4 +143,45 @@ Dopo avviare Docker Compose, puoi verificare che tutto funzioni correttamente ef
 
 ### Documentazione Interattiva (Swagger):
 *   **URL**: `http://localhost:8080/swagger-ui/index.html`
+
+---
+
+## 🔑 Credenziali di Test per la Valutazione (Preconfigurate)
+
+Per facilitare la fase di test e valutazione del progetto, sono disponibili le seguenti credenziali preconfigurate all'interno dell'ambiente:
+
+### 👤 Account Utenti (Keycloak)
+È possibile effettuare il login nell'applicazione (o tramite Swagger/Postman) utilizzando uno dei seguenti profili configurati nel realm `ae-realm`:
+
+| Ruolo | Username | Password | Email | Note |
+| :--- | :--- | :--- | :--- | :--- |
+| **Basic User** | `a` | `a` | `a@a.com` | Profilo utente rapido per test veloci |
+| **Basic User** | `basic-user` | `password` | `basic-user@example.com` | Profilo utente standard |
+| **Administrator** | `admin-user` | `password` | `admin-user@example.com` | Profilo con permessi amministrativi completi |
+
+---
+
+### 🛡️ Amministrazione Keycloak
+Per accedere alla console di amministrazione di Keycloak (disponibile a `http://localhost:8081` una volta avviato Docker):
+*   **Username**: `admin`
+*   **Password**: `admin`
+*   **Realm**: `ae-realm`
+*   **Client ID Applicazione**: `ae-client` (Secret: `travel-dev-secret`)
+*   **Client ID Amministratore**: `travel-backend-admin` (Secret: `travel-backend-admin-secret`)
+
+---
+
+### 💾 Database PostgreSQL
+Se si desidera analizzare o connettersi direttamente al database PostgreSQL (porta esterna `5433`):
+*   **Host**: `localhost`
+*   **Porta**: `5433`
+*   **Database**: `my_project_db`
+*   **Username**: `myuser`
+*   **Password**: `mypassword`
+
+---
+
+### ✉️ Server di Posta Locale (Mailpit)
+Tutte le email inviate dal backend (es. registrazioni, notifiche o conferme) vengono intercettate localmente e possono essere visualizzate tramite la dashboard web:
+*   **URL Dashboard**: `http://localhost:8025/`
 
