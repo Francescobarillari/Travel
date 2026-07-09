@@ -174,7 +174,8 @@ public class ItineraryController {
     public ResponseEntity<Boolean> isItineraryBooked(
             @Parameter(description = "ID dell'itinerario", schema = @Schema(format = "uuid")) @PathVariable String stringId,
             @AuthenticationPrincipal Jwt jwt) {
-        if (jwt == null) return ResponseEntity.ok(false);
+        if (jwt == null)
+            return ResponseEntity.ok(false);
         String email = jwt.getClaimAsString("email");
         boolean isBooked = itineraryService.isItineraryBooked(stringId, email);
         return ResponseEntity.ok(isBooked);
@@ -231,12 +232,16 @@ public class ItineraryController {
         }
 
         if (itinerary.getImagePath() != null) {
-            String imageUrl = ServletUriComponentsBuilder.fromCurrentContextPath()
-                    .path("/itinerary/")
-                    .path(itinerary.getId().toString())
-                    .path("/image")
-                    .toUriString();
-            dto.setImageUrl(imageUrl);
+            if (itinerary.getImagePath().startsWith("http")) {
+                dto.setImageUrl(itinerary.getImagePath());
+            } else {
+                String imageUrl = ServletUriComponentsBuilder.fromCurrentContextPath()
+                        .path("/itinerary/")
+                        .path(itinerary.getId().toString())
+                        .path("/image")
+                        .toUriString();
+                dto.setImageUrl(imageUrl);
+            }
         }
 
         return dto;

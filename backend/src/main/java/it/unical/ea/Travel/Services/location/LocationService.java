@@ -245,6 +245,16 @@ public class LocationService {
             return "https://images.unsplash.com/photo-1564511287568-54483b52a35e?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D";
         if (lower.contains("san francisco"))
             return "https://images.unsplash.com/photo-1506012787146-f92b2d7d6d96?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("tropea"))
+            return "https://images.unsplash.com/photo-1590001155093-a3c66ab0c3ff?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("palermo"))
+            return "https://images.unsplash.com/photo-1541532713592-79a0317b6b77?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("reggio"))
+            return "https://images.unsplash.com/photo-1690289793717-f92cc222752c?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("cosenza") || lower.contains("sila"))
+            return "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("scilla"))
+            return "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80";
         return null;
     }
 }

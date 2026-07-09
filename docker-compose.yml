@@ -51,6 +51,7 @@ services:
     container_name: java_backend
     volumes:
       - ./backend/uploads:/app/uploads
+      - ./pics:/app/pics:ro
     ports:
       - "8080:8080"
     depends_on:

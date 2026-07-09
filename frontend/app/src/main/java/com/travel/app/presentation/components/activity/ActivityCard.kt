@@ -20,6 +20,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.travel.app.presentation.theme.TravelTheme
+import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.lazy.items
 import it.unical.ea.dtos.activity.ActivityDto
 import it.unical.ea.enums.TravelTag
@@ -59,10 +60,11 @@ fun ActivityCard(
                     .fillMaxWidth()
                     .height(180.dp)
             ) {
-                val imageUrl: Any = activity.images?.firstOrNull() ?: com.travel.app.R.drawable.default_image
+                val imageUrl: Any = activity.images?.firstOrNull { it.isNotBlank() } ?: com.travel.app.R.drawable.default_image
                 AsyncImage(
                     model = imageUrl,
                     contentDescription = null,
+                    error = painterResource(com.travel.app.R.drawable.default_image),
                     modifier = Modifier
                         .fillMaxSize()
                         .clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)),

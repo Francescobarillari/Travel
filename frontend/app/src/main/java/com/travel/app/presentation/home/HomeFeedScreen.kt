@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import it.unical.ea.dtos.activity.ActivityDto
 import it.unical.ea.dtos.itinerary.ItineraryDto
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -51,7 +52,11 @@ fun HomeFeedScreen(
         LocalitaItem("Milano", "https://images.unsplash.com/photo-1520175480921-4edfa2983e0f?w=500&auto=format&fit=crop"),
         LocalitaItem("Napoli", "https://images.unsplash.com/photo-1595877244574-e90ce41ce089?w=500&auto=format&fit=crop"),
         LocalitaItem("Parigi", "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=500&auto=format&fit=crop"),
-        LocalitaItem("Palermo", "https://images.unsplash.com/photo-1590001155093-a3c66ab0c3ff?w=500&auto=format&fit=crop")
+        LocalitaItem("Palermo", "https://images.unsplash.com/photo-1541532713592-79a0317b6b77?w=500&auto=format&fit=crop"),
+        LocalitaItem("Tropea", "https://images.unsplash.com/photo-1590001155093-a3c66ab0c3ff?w=500&auto=format&fit=crop"),
+        LocalitaItem("Scilla", "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=500&auto=format&fit=crop"),
+        LocalitaItem("Cosenza", "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=500&auto=format&fit=crop"),
+        LocalitaItem("Reggio Calabria", "https://images.unsplash.com/photo-1690289793717-f92cc222752c?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D")
     )
 
     var allActivities by remember { mutableStateOf<List<ActivityDto>>(emptyList()) }
@@ -261,10 +266,11 @@ fun HomeFeedScreen(
                         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
                     ) {
                         Box(modifier = Modifier.fillMaxSize()) {
-                            val activityImg: Any = activity.images?.firstOrNull() ?: com.travel.app.R.drawable.default_image
+                            val activityImg: Any = activity.images?.firstOrNull { it.isNotBlank() } ?: com.travel.app.R.drawable.default_image
                             AsyncImage(
                                 model = activityImg,
                                 contentDescription = activity.name,
+                                error = painterResource(com.travel.app.R.drawable.default_image),
                                 modifier = Modifier.fillMaxSize(),
                                 contentScale = ContentScale.Crop
                             )
@@ -358,6 +364,7 @@ fun HomeFeedScreen(
                             AsyncImage(
                                 model = itineraryImg,
                                 contentDescription = itinerary.title,
+                                error = painterResource(com.travel.app.R.drawable.default_image),
                                 modifier = Modifier.fillMaxSize(),
                                 contentScale = ContentScale.Crop
                             )
@@ -447,10 +454,11 @@ fun HomeFeedScreen(
                         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
                     ) {
                         Box(modifier = Modifier.fillMaxSize()) {
-                            val activityImg: Any = activity.images?.firstOrNull() ?: com.travel.app.R.drawable.default_image
+                            val activityImg: Any = activity.images?.firstOrNull { it.isNotBlank() } ?: com.travel.app.R.drawable.default_image
                             AsyncImage(
                                 model = activityImg,
                                 contentDescription = activity.name,
+                                error = painterResource(com.travel.app.R.drawable.default_image),
                                 modifier = Modifier.fillMaxSize(),
                                 contentScale = ContentScale.Crop
                             )

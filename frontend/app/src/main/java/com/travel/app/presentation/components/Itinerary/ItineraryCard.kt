@@ -20,6 +20,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.travel.app.presentation.theme.TravelTheme
+import androidx.compose.ui.res.painterResource
 import it.unical.ea.dtos.activity.ActivityDto
 import it.unical.ea.dtos.itinerary.ItineraryDto
 import it.unical.ea.enums.TravelTag
@@ -64,6 +65,7 @@ fun ItineraryCard(
                 AsyncImage(
                     model = itinerary.getImageUrl() ?: com.travel.app.R.drawable.default_image,
                     contentDescription = null,
+                    error = painterResource(com.travel.app.R.drawable.default_image),
                     modifier = Modifier
                         .fillMaxSize()
                         .clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)),
