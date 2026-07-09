@@ -109,6 +109,7 @@ fun ActivityDetailScreen(
                 isLoading = false
             }
         )
+        currentUserEmail = AppContainer.sessionManager.getSessionUser()?.email.orEmpty()
     }
 
     LaunchedEffect(selectedSession) {
