@@ -19,6 +19,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import it.unical.ea.Travel.Repositories.activity.ActivityBookingRepository;
+import it.unical.ea.Travel.Entities.activity.ActivityBooking;
+import it.unical.ea.Travel.Exception.ApiException;
+import org.springframework.http.HttpStatus;
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -28,6 +33,7 @@ public class ReviewService {
     private final ActivityTemplateRepository activityTemplateRepository;
     private final ItineraryRepository itineraryRepository;
     private final UserRepository userRepository;
+    private final ActivityBookingRepository activityBookingRepository;
 
     @Transactional
     public ReviewDto createReview(CreateReviewDto dto) {
@@ -43,6 +49,16 @@ public class ReviewService {
         if (dto.getActivityId() != null) {
             ActivityTemplate activityTemplate = activityTemplateRepository.findById(dto.getActivityId())
                     .orElseThrow(() -> new RuntimeException("Activity Template not found"));
+            
+            // Check if user has confirmed booking for any session that has ended
+            List<ActivityBooking> bookings = activityBookingRepository.findConfirmedBookingsByUserAndTemplate(currentUser.getId(), dto.getActivityId());
+            boolean hasEnded = bookings.stream()
+                    .anyMatch(b -> b.getActivity().getEndTime().isBefore(LocalDateTime.now()));
+            
+            if (!hasEnded) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "review.activity.notEndedOrBooked");
+            }
+
             review.setActivityTemplate(activityTemplate);
         } else if (dto.getItineraryId() != null) {
             Itinerary itinerary = itineraryRepository.findById(dto.getItineraryId())

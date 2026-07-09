@@ -229,7 +229,8 @@ class UserRepositoryImpl(
             val mediaType = mimeType.toMediaTypeOrNull()
             val requestBody = okhttp3.RequestBody.Companion.create(mediaType, fileBytes)
             val part = okhttp3.MultipartBody.Part.createFormData("file", filename, requestBody)
-            val path = apiService.uploadDocument(part)
+            val responseBody = apiService.uploadDocument(part)
+            val path = responseBody.string()
             Result.success(path)
         } catch (e: Exception) {
             Result.failure(Exception(handleError(e)))

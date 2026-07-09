@@ -184,7 +184,7 @@ interface ApiService {
     @POST("api/auth/upload-document")
     suspend fun uploadDocument(
         @retrofit2.http.Part file: okhttp3.MultipartBody.Part
-    ): String
+    ): okhttp3.ResponseBody
 
     // Endpoint Admin
     @GET("api/admin/companies/pending")
@@ -251,7 +251,7 @@ open class MockApiService : ApiService {
     override suspend fun updateItineraryVisibility(id: String, visibility: String): ItineraryDto = throw NotImplementedError()
     override suspend fun deleteItinerary(id: String) {}
     override suspend fun deleteActivity(id: String) {}
-    override suspend fun uploadDocument(file: okhttp3.MultipartBody.Part): String = throw NotImplementedError()
+    override suspend fun uploadDocument(file: okhttp3.MultipartBody.Part): okhttp3.ResponseBody = throw NotImplementedError()
     override suspend fun getPendingCompanies(): List<UserDTO> = throw NotImplementedError()
     override suspend fun approveCompany(id: String) {}
     override suspend fun rejectCompany(id: String) {}

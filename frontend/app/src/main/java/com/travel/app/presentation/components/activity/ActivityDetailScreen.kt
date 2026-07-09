@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Receipt
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -697,29 +698,57 @@ fun ActivityDetailScreen(
                             )
                         }
 
-                        // Form inline per aggiungere una nuova recensione
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
-                        ) {
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                AddReviewInline(
-                                    onSubmit = { rating, comment ->
-                                        scope.launch {
-                                            val targetId = activity?.templateId?.toString() ?: activityId
-                                            val newReview = CreateReviewDto(
-                                                activityId = targetId,
-                                                rating = rating,
-                                                comment = comment
-                                            )
-                                            AppContainer.reviewRepository.createReview(newReview)
-                                            val reviewsResult = AppContainer.reviewRepository.getReviewsForActivity(targetId)
-                                            if (reviewsResult.isSuccess) {
-                                                reviews = reviewsResult.getOrNull() ?: emptyList()
+                        // Form inline per aggiungere una nuova recensione (solo se l'attività è conclusa e l'utente l'ha prenotata)
+                        val hasEnded = selectedSession?.endTime?.isBefore(LocalDateTime.now()) ?: false
+                        if (isBooked && hasEnded) {
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                            ) {
+                                Column(modifier = Modifier.padding(16.dp)) {
+                                    AddReviewInline(
+                                        onSubmit = { rating, comment ->
+                                            scope.launch {
+                                                val targetId = activity?.templateId?.toString() ?: activityId
+                                                val newReview = CreateReviewDto(
+                                                    activityId = targetId,
+                                                    rating = rating,
+                                                    comment = comment
+                                                )
+                                                AppContainer.reviewRepository.createReview(newReview)
+                                                val reviewsResult = AppContainer.reviewRepository.getReviewsForActivity(targetId)
+                                                if (reviewsResult.isSuccess) {
+                                                    reviews = reviewsResult.getOrNull() ?: emptyList()
+                                                }
                                             }
                                         }
-                                    }
-                                )
+                                    )
+                                }
+                            }
+                        } else {
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.15f))
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(16.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Info,
+                                        contentDescription = "Info",
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                    Text(
+                                        text = if (!isBooked) 
+                                            "Prenota questa attività per poter inserire una recensione."
+                                        else 
+                                            "Potrai recensire questa attività una volta che si sarà conclusa.",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
                             }
                         }
                         

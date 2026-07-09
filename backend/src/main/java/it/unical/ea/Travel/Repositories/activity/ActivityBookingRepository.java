@@ -24,4 +24,7 @@ public interface ActivityBookingRepository extends JpaRepository<ActivityBooking
     List<ActivityBooking> findByUserId(UUID userId);
 
     List<ActivityBooking> findByPaymentIntentId(String paymentIntentId);
+
+    @Query("SELECT ab FROM ActivityBooking ab WHERE ab.user.id = :userId AND ab.activity.template.id = :templateId AND ab.status = it.unical.ea.Travel.Entities.payment.BookingStatus.CONFIRMED")
+    List<ActivityBooking> findConfirmedBookingsByUserAndTemplate(@Param("userId") UUID userId, @Param("templateId") UUID templateId);
 }
