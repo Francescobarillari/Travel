@@ -26,6 +26,62 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.travel.app.BuildConfig
 import com.travel.app.data.AppContainer
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.ui.unit.sp
+
+/**
+ * Colori di stato dell'area admin, con varianti chiare per la dark mode.
+ * Gli sfondi soft si ottengono con statusColor.copy(alpha = 0.14f) sulla surface.
+ */
+object AdminStatusColors {
+    val approved: Color @Composable get() =
+        if (isSystemInDarkTheme()) Color(0xFF4ADE80) else Color(0xFF16A34A)
+    val pending: Color @Composable get() =
+        if (isSystemInDarkTheme()) Color(0xFFFBBF24) else Color(0xFFD97706)
+    val blocked: Color @Composable get() =
+        if (isSystemInDarkTheme()) Color(0xFFF87171) else Color(0xFFDC2626)
+}
+
+// Le immagini delle attività pending arrivano come path relativi (l'endpoint admin
+// non li arricchisce): l'URL pubblico va costruito lato client.
+fun adminActivityImageUrl(path: String): String =
+    if (path.startsWith("http")) path
+    else "${BuildConfig.BACKEND_URL}api/activity/images/${path.substringAfterLast("/")}"
+
+@Composable
+fun AdminSectionLabel(
+    text: String,
+    modifier: Modifier = Modifier
+) {
+    Text(
+        text = text.uppercase(),
+        modifier = modifier,
+        fontSize = 12.sp,
+        fontWeight = FontWeight.Bold,
+        letterSpacing = 1.2.sp,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
+}
+
+@Composable
+fun StatusPill(
+    text: String,
+    color: Color,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .background(color.copy(alpha = 0.14f), RoundedCornerShape(8.dp))
+            .padding(horizontal = 10.dp, vertical = 4.dp)
+    ) {
+        Text(
+            text = text,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold,
+            color = color
+        )
+    }
+}
 
 @Composable
 fun InfoRow(
@@ -40,14 +96,14 @@ fun InfoRow(
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = Color.Gray,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.size(16.dp)
         )
         Text(
             text = label,
             style = MaterialTheme.typography.bodySmall,
             fontWeight = FontWeight.SemiBold,
-            color = Color.Gray
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Text(
             text = value,
@@ -61,10 +117,11 @@ fun InfoRow(
 fun EmptyPlaceholder(
     icon: ImageVector,
     title: String,
-    subtitle: String
+    subtitle: String,
+    modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,

@@ -27,32 +27,60 @@ class AdminViewModel(
     var allCompanies by mutableStateOf<List<User>>(emptyList())
         private set
 
+    // Conteggio dei template di attività approvati (getActivities filtra già template approved=true)
     var approvedActivitiesCount by mutableStateOf(0)
         private set
 
+    // Spinner a schermo intero: solo al primo caricamento
     var isLoading by mutableStateOf(false)
+        private set
+
+    // Refresh successivi (pull-to-refresh / icona aggiorna): il contenuto resta visibile
+    var isRefreshing by mutableStateOf(false)
+        private set
+
+    // ID delle card con un'azione approva/rifiuta/blocca in corso
+    var actingIds by mutableStateOf<Set<String>>(emptySet())
         private set
 
     var errorMessage by mutableStateOf<String?>(null)
 
+    private var hasLoadedOnce = false
+
     fun loadData() {
         viewModelScope.launch {
-            isLoading = true
+            if (hasLoadedOnce) isRefreshing = true else isLoading = true
             errorMessage = null
             try {
-                pendingCompanies = apiService.getPendingCompanies()
-                pendingActivities = apiService.getPendingActivities()
-                approvedActivitiesCount = apiService.getActivities().size
-                
-                userRepository.getAllCompanies().fold(
-                    onSuccess = { allCompanies = it },
-                    onFailure = { errorMessage = it.message }
-                )
+                fetchAll()
             } catch (e: Exception) {
                 errorMessage = e.localizedMessage ?: "Errore nel caricamento dei dati"
             } finally {
+                hasLoadedOnce = true
                 isLoading = false
+                isRefreshing = false
             }
+        }
+    }
+
+    private suspend fun fetchAll() {
+        pendingCompanies = apiService.getPendingCompanies()
+        pendingActivities = apiService.getPendingActivities()
+        approvedActivitiesCount = apiService.getActivities().size
+
+        userRepository.getAllCompanies().fold(
+            onSuccess = { allCompanies = it },
+            onFailure = { errorMessage = it.message }
+        )
+    }
+
+    // Riallinea contatori e liste dopo un'azione, senza mostrare alcuno spinner
+    private suspend fun reloadStatsSilently() {
+        try {
+            fetchAll()
+        } catch (_: Exception) {
+            // Le liste sono già state aggiornate in modo ottimistico: un errore
+            // nel refresh silenzioso non deve sovrascrivere l'esito dell'azione.
         }
     }
 
@@ -64,89 +92,58 @@ class AdminViewModel(
         pendingCompanies = companies
         pendingActivities = activities
         allCompanies = allComps
+        hasLoadedOnce = true
     }
 
-    fun approveCompany(id: String) {
+    private fun runCardAction(
+        id: String,
+        fallbackError: String,
+        action: suspend () -> Unit
+    ) {
         viewModelScope.launch {
-            isLoading = true
+            actingIds = actingIds + id
             errorMessage = null
             try {
-                apiService.approveCompany(id)
-                loadData()
+                action()
             } catch (e: Exception) {
-                errorMessage = e.localizedMessage ?: "Impossibile approvare l'agenzia"
-                isLoading = false
+                errorMessage = e.localizedMessage ?: fallbackError
+            } finally {
+                actingIds = actingIds - id
             }
         }
     }
 
-    fun rejectCompany(id: String) {
-        viewModelScope.launch {
-            isLoading = true
-            errorMessage = null
-            try {
-                apiService.rejectCompany(id)
-                loadData()
-            } catch (e: Exception) {
-                errorMessage = e.localizedMessage ?: "Impossibile rifiutare l'agenzia"
-                isLoading = false
-            }
-        }
+    fun approveCompany(id: String) = runCardAction(id, "Impossibile approvare l'agenzia") {
+        apiService.approveCompany(id)
+        pendingCompanies = pendingCompanies.filterNot { it.id.toString() == id }
+        reloadStatsSilently()
     }
 
-    fun blockCompany(id: String) {
-        viewModelScope.launch {
-            isLoading = true
-            errorMessage = null
-            userRepository.blockCompany(id).fold(
-                onSuccess = { loadData() },
-                onFailure = {
-                    errorMessage = it.localizedMessage ?: "Impossibile bloccare l'agenzia"
-                    isLoading = false
-                }
-            )
-        }
+    fun rejectCompany(id: String) = runCardAction(id, "Impossibile rifiutare l'agenzia") {
+        apiService.rejectCompany(id)
+        pendingCompanies = pendingCompanies.filterNot { it.id.toString() == id }
+        reloadStatsSilently()
     }
 
-    fun unblockCompany(id: String) {
-        viewModelScope.launch {
-            isLoading = true
-            errorMessage = null
-            userRepository.unblockCompany(id).fold(
-                onSuccess = { loadData() },
-                onFailure = {
-                    errorMessage = it.localizedMessage ?: "Impossibile sbloccare l'agenzia"
-                    isLoading = false
-                }
-            )
-        }
+    fun blockCompany(id: String) = runCardAction(id, "Impossibile bloccare l'agenzia") {
+        userRepository.blockCompany(id).getOrThrow()
+        reloadStatsSilently()
     }
 
-    fun approveActivity(id: String) {
-        viewModelScope.launch {
-            isLoading = true
-            errorMessage = null
-            try {
-                apiService.approveActivity(id)
-                loadData()
-            } catch (e: Exception) {
-                errorMessage = e.localizedMessage ?: "Impossibile approvare l'attività"
-                isLoading = false
-            }
-        }
+    fun unblockCompany(id: String) = runCardAction(id, "Impossibile sbloccare l'agenzia") {
+        userRepository.unblockCompany(id).getOrThrow()
+        reloadStatsSilently()
     }
 
-    fun rejectActivity(id: String) {
-        viewModelScope.launch {
-            isLoading = true
-            errorMessage = null
-            try {
-                apiService.rejectActivity(id)
-                loadData()
-            } catch (e: Exception) {
-                errorMessage = e.localizedMessage ?: "Impossibile eliminare l'attività"
-                isLoading = false
-            }
-        }
+    fun approveActivity(id: String) = runCardAction(id, "Impossibile approvare l'attività") {
+        apiService.approveActivity(id)
+        pendingActivities = pendingActivities.filterNot { it.id.toString() == id }
+        reloadStatsSilently()
+    }
+
+    fun rejectActivity(id: String) = runCardAction(id, "Impossibile eliminare l'attività") {
+        apiService.rejectActivity(id)
+        pendingActivities = pendingActivities.filterNot { it.id.toString() == id }
+        reloadStatsSilently()
     }
 }
