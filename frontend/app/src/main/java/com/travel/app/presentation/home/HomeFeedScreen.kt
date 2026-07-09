@@ -261,7 +261,7 @@ fun HomeFeedScreen(
                         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
                     ) {
                         Box(modifier = Modifier.fillMaxSize()) {
-                            val activityImg = activity.images?.firstOrNull() ?: "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=500&auto=format&fit=crop"
+                            val activityImg: Any = activity.images?.firstOrNull() ?: com.travel.app.R.drawable.default_image
                             AsyncImage(
                                 model = activityImg,
                                 contentDescription = activity.name,
@@ -354,7 +354,7 @@ fun HomeFeedScreen(
                         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
                     ) {
                         Box(modifier = Modifier.fillMaxSize()) {
-                            val itineraryImg = itinerary.imageUrl ?: "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=500&auto=format&fit=crop"
+                            val itineraryImg: Any = itinerary.imageUrl ?: com.travel.app.R.drawable.default_image
                             AsyncImage(
                                 model = itineraryImg,
                                 contentDescription = itinerary.title,
@@ -447,7 +447,7 @@ fun HomeFeedScreen(
                         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
                     ) {
                         Box(modifier = Modifier.fillMaxSize()) {
-                            val activityImg = activity.images?.firstOrNull() ?: "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=500&auto=format&fit=crop"
+                            val activityImg: Any = activity.images?.firstOrNull() ?: com.travel.app.R.drawable.default_image
                             AsyncImage(
                                 model = activityImg,
                                 contentDescription = activity.name,

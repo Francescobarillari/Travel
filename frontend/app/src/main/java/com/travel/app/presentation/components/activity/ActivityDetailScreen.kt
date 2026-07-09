@@ -350,8 +350,8 @@ fun ActivityDetailScreen(
                             .fillMaxWidth()
                             .height(280.dp)
                     ) {
-                        val imagesList = act.images.orEmpty().ifEmpty {
-                            listOf("https://images.unsplash.com/photo-1488646953014-85cb44e25828?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80")
+                        val imagesList: List<Any> = act.images.orEmpty().ifEmpty {
+                            listOf(com.travel.app.R.drawable.default_image)
                         }
                         val pagerState = rememberPagerState(pageCount = { imagesList.size })
 

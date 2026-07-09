@@ -62,7 +62,7 @@ fun ItineraryCard(
                     .height(180.dp)
             ) {
                 AsyncImage(
-                    model = itinerary.getImageUrl() ?: "https://via.placeholder.com/600x400?text=No+Image",
+                    model = itinerary.getImageUrl() ?: com.travel.app.R.drawable.default_image,
                     contentDescription = null,
                     modifier = Modifier
                         .fillMaxSize()

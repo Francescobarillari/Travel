@@ -59,7 +59,7 @@ fun ActivityCard(
                     .fillMaxWidth()
                     .height(180.dp)
             ) {
-                val imageUrl = activity.images?.firstOrNull() ?: "https://images.unsplash.com/photo-1488646953014-85cb44e25828?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"
+                val imageUrl: Any = activity.images?.firstOrNull() ?: com.travel.app.R.drawable.default_image
                 AsyncImage(
                     model = imageUrl,
                     contentDescription = null,

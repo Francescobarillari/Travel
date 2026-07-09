@@ -331,7 +331,7 @@ fun ItineraryDetailScreen(
                     .height(280.dp)
             ) {
                 AsyncImage(
-                    model = itinerary.getImageUrl() ?: "https://via.placeholder.com/800x600?text=No+Image",
+                    model = itinerary.getImageUrl() ?: com.travel.app.R.drawable.default_image,
                     contentDescription = itinerary.getTitle(),
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
