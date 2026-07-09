@@ -472,7 +472,6 @@ fun CreateItineraryScreen(
                     }
                 }
             }
-
             Spacer(modifier = Modifier.height(24.dp))
 
             // Action Button
