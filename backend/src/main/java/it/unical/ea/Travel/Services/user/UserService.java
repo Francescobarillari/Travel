@@ -123,6 +123,19 @@ public class UserService {
         try {
             User savedUser = userRepository.save(user);
             auditLogService.log("USER_REGISTER", "User", savedUser.getId().toString(), "Registered user with email: " + savedUser.getEmail() + " of type " + savedUser.getUserType());
+            
+            if (savedUser.getUserType() == UserType.SOCIETA) {
+                try {
+                    emailService.sendAdminApprovalRequestEmail(
+                        savedUser.getCompanyName(),
+                        savedUser.getEmail(),
+                        savedUser.getVatNumber()
+                    );
+                } catch (Exception e) {
+                    System.err.println("Errore nell'invio della mail di notifica all'admin: " + e.getMessage());
+                }
+            }
+
             return savedUser;
         } catch (RuntimeException exception) {
             keycloakAdminService.deleteUser(keycloakUserId);
