@@ -46,6 +46,7 @@ public class ItineraryService {
     private final ActivityService activityService;
     private final AuditLogService auditLogService;
     private final PaymentGateway paymentGateway;
+    private final it.unical.ea.Travel.Services.notification.NotificationService notificationService;
 
     @Value("${payment.mock:true}")
     private boolean paymentMock;
@@ -59,7 +60,8 @@ public class ItineraryService {
                             ActivityBookingRepository activityBookingRepository,
                             ActivityService activityService,
                             AuditLogService auditLogService,
-                            PaymentGateway paymentGateway) {
+                            PaymentGateway paymentGateway,
+                            it.unical.ea.Travel.Services.notification.NotificationService notificationService) {
         this.itineraryRepository = itineraryRepository;
         this.userRepository = userRepository;
         this.activityRepository = activityRepository;
@@ -69,6 +71,7 @@ public class ItineraryService {
         this.activityService = activityService;
         this.auditLogService = auditLogService;
         this.paymentGateway = paymentGateway;
+        this.notificationService = notificationService;
     }
 
     // Riceve tutti gli itinerari dal database
@@ -259,7 +262,9 @@ public class ItineraryService {
         }
         
         auditLogService.log("BOOK_ITINERARY", "ItineraryBooking", booking.getId().toString(), "User " + userEmail + " booked itinerary: " + itinerary.getTitle() + " status: " + status);
-        
+        if (status == BookingStatus.CONFIRMED) {
+            sendItineraryBookingConfirmationNotifications(booking);
+        }
         return new PaymentIntentResponseDto(clientSecret, booking.getId().toString());
     }
 
@@ -312,8 +317,34 @@ public class ItineraryService {
             ab.setStatus(BookingStatus.CONFIRMED);
             activityBookingRepository.save(ab);
         }
-        
+        sendItineraryBookingConfirmationNotifications(booking);
         auditLogService.log("CONFIRM_ITINERARY_BOOKING", "ItineraryBooking", booking.getId().toString(), "Booking confirmed client-side");
+    }
+
+    private void sendItineraryBookingConfirmationNotifications(ItineraryBooking booking) {
+        try {
+            notificationService.createNotification(
+                booking.getUser(),
+                "Itinerario Prenotato",
+                "Il tuo itinerario '" + booking.getItinerary().getTitle() + "' è stato prenotato con successo!",
+                it.unical.ea.enums.NotificationType.PRENOTAZIONE_SUCCESSO
+            );
+
+            List<ActivityBooking> activityBookings = activityBookingRepository.findByUserIdAndItineraryId(booking.getUser().getId(), booking.getItinerary().getId());
+            for (ActivityBooking ab : activityBookings) {
+                User organizer = ab.getActivity().getTemplate().getOrganizer();
+                if (organizer != null) {
+                    notificationService.createNotification(
+                        organizer,
+                        "Nuova Prenotazione Attività",
+                        "Un utente ha prenotato la tua attività '" + ab.getActivity().getTemplate().getName() + "' all'interno di un itinerario.",
+                        it.unical.ea.enums.NotificationType.NUOVA_PRENOTAZIONE
+                    );
+                }
+            }
+        } catch (Exception e) {
+            auditLogService.log("NOTIFICATION_ERROR", "ItineraryBooking", booking.getId().toString(), "Errore nell'invio delle notifiche per itinerario: " + e.getMessage());
+        }
     }
 
     public boolean isItineraryBooked(String itineraryId, String userEmail) {

@@ -63,6 +63,7 @@ public class ActivityService {
     private final it.unical.ea.Travel.Services.location.LocationService locationService;
     private final PaymentGateway paymentGateway;
     private final ReviewRepository reviewRepository;
+    private final it.unical.ea.Travel.Services.notification.NotificationService notificationService;
 
     @Value("${payment.mock:true}")
     private boolean paymentMock;
@@ -362,6 +363,9 @@ public class ActivityService {
         booking.setStatus(status);
         booking.setPaymentIntentId(paymentIntentId);
         ActivityBooking savedBooking = activityBookingRepository.save(booking);
+        if (status == BookingStatus.CONFIRMED) {
+            sendBookingConfirmationNotifications(savedBooking);
+        }
         auditLogService.log("BOOK_ACTIVITY", "ActivityBooking", savedBooking.getId().toString(), "User " + userEmail + " booked activity " + activity.getTemplate().getName() + " status: " + status);
         
         return new PaymentIntentResponseDto(clientSecret, savedBooking.getId().toString());
@@ -446,7 +450,31 @@ public class ActivityService {
         }
         booking.setStatus(BookingStatus.CONFIRMED);
         activityBookingRepository.save(booking);
+        sendBookingConfirmationNotifications(booking);
         auditLogService.log("CONFIRM_ACTIVITY_BOOKING", "ActivityBooking", booking.getId().toString(), "Activity booking confirmed client-side");
+    }
+
+    private void sendBookingConfirmationNotifications(ActivityBooking booking) {
+        try {
+            notificationService.createNotification(
+                booking.getUser(),
+                "Prenotazione Confermata",
+                "La tua prenotazione per l'attività '" + booking.getActivity().getTemplate().getName() + "' è stata confermata!",
+                it.unical.ea.enums.NotificationType.PRENOTAZIONE_SUCCESSO
+            );
+            User organizer = booking.getActivity().getTemplate().getOrganizer();
+            if (organizer != null) {
+                notificationService.createNotification(
+                    organizer,
+                    "Nuova Prenotazione",
+                    "Un utente ha prenotato la tua attività '" + booking.getActivity().getTemplate().getName() + "'.",
+                    it.unical.ea.enums.NotificationType.NUOVA_PRENOTAZIONE
+                );
+            }
+        } catch (Exception e) {
+            // Non blocca il processo principale se l'invio delle notifiche fallisce
+            auditLogService.log("NOTIFICATION_ERROR", "ActivityBooking", booking.getId().toString(), "Errore nell'invio delle notifiche: " + e.getMessage());
+        }
     }
 
     @Transactional(readOnly = true)
