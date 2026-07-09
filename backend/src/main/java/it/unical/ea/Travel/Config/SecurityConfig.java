@@ -7,7 +7,6 @@ import java.util.Map;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -20,12 +19,14 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.security.web.SecurityFilterChain;
 
 /**
- * Configurazione principale della sicurezza dell'applicazione.
+ * Configurazione della sicurezza dell'applicazione, unica e attiva in ogni profilo.
  * L'applicazione valida i Bearer token emessi da Keycloak tramite OAuth2 Resource Server.
+ *
+ * Non esistono varianti per-profilo: una configurazione che disattiva l'autenticazione
+ * in "dev" finisce per essere quella con cui l'applicazione viene realmente eseguita.
  */
 @Configuration
 @EnableWebSecurity
-@Profile("!dev")
 public class SecurityConfig {
 
     private final RateLimitFilter rateLimitFilter;
@@ -51,6 +52,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/itinerary/*/image").permitAll()
                 .requestMatchers(HttpMethod.GET, "/activity/images/*").permitAll()
                 .requestMatchers(HttpMethod.GET, "/user/*/avatar").permitAll()
+                // Capability: accesso pubblico in sola lettura a una lista preferiti tramite link con token
+                .requestMatchers(HttpMethod.GET, "/api/favorite-lists/shared/*").permitAll()
                 .requestMatchers("/api/basic").hasRole("BASIC")
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated()              

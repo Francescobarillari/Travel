@@ -1,0 +1,27 @@
+# Artefatti di build (ricompilati dentro l'immagine)
+**/target/
+**/build/
+
+# Il client Android non serve al build del backend
+frontend/
+
+# Metadati git e IDE
+.git/
+.gitignore
+.idea/
+.vscode/
+*.iml
+
+# Gradle
+**/.gradle/
+
+# Upload runtime (montati come volume, non parte dell'immagine)
+uploads/
+backend/uploads/
+
+# File di ambiente e segreti
+.env
+
+# Documentazione e materiale non necessario
+*.md
+theme_import/
