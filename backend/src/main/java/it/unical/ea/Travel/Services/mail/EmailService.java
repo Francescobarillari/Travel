@@ -30,7 +30,8 @@ public class EmailService {
                 content = "<h1>Benvenuto su Dèrive!</h1>" +
                           "<p>Ciao <strong>" + name + "</strong>,</p>" +
                           "<p>Grazie per esserti registrato come Agenzia sulla nostra piattaforma.</p>" +
-                          "<p>La tua richiesta è in attesa di approvazione da parte di un amministratore. Ti invieremo un'ulteriore conferma non appena l'account sarà attivo.</p>" +
+                          "<p>Ti confermiamo che il tuo indirizzo email è stato verificato con successo.</p>" +
+                          "<p><strong>Importante:</strong> La tua richiesta è ora in attesa di approvazione da parte di un amministratore. Il tuo account deve essere espressamente approvato dall'admin prima che tu possa effettuare l'accesso ed utilizzare le funzionalità dell'applicazione. Ti invieremo un'ulteriore conferma via email non appena l'account sarà attivo.</p>" +
                           "<br><p>Il team di Dèrive</p>";
             } else {
                 content = "<h1>Benvenuto su Dèrive!</h1>" +
@@ -65,6 +66,48 @@ public class EmailService {
             mailSender.send(message);
         } catch (MessagingException e) {
             throw new RuntimeException("Errore durante l'invio della mail OTP", e);
+        }
+    }
+
+    public void sendCompanyApprovedEmail(String toEmail, String companyName) {
+        MimeMessage message = mailSender.createMimeMessage();
+        try {
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setFrom(fromEmail != null && !fromEmail.isBlank() ? fromEmail : "noreply@derive.com");
+            helper.setTo(toEmail);
+            helper.setSubject("Account Approvato - Benvenuto su Dèrive!");
+            
+            String content = "<h1>Account Approvato!</h1>" +
+                             "<p>Ciao <strong>" + companyName + "</strong>,</p>" +
+                             "<p>Siamo felici di comunicarti che la tua richiesta di registrazione come Agenzia su Dèrive è stata <strong>approvata</strong> da un amministratore.</p>" +
+                             "<p>Da questo momento puoi effettuare l'accesso nell'applicazione e iniziare a pubblicare i tuoi itinerari e attività.</p>" +
+                             "<br><p>Il team di Dèrive</p>";
+            
+            helper.setText(content, true);
+            mailSender.send(message);
+        } catch (MessagingException e) {
+            throw new RuntimeException("Errore durante l'invio della mail di approvazione agenzia", e);
+        }
+    }
+
+    public void sendCompanyRejectedEmail(String toEmail, String companyName) {
+        MimeMessage message = mailSender.createMimeMessage();
+        try {
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setFrom(fromEmail != null && !fromEmail.isBlank() ? fromEmail : "noreply@derive.com");
+            helper.setTo(toEmail);
+            helper.setSubject("Registrazione non approvata - Dèrive");
+            
+            String content = "<h1>Registrazione non approvata</h1>" +
+                             "<p>Ciao <strong>" + companyName + "</strong>,</p>" +
+                             "<p>Ti informiamo che, in seguito alla verifica dei documenti caricati, la tua richiesta di registrazione come Agenzia su Dèrive è stata <strong>rifiutata</strong>.</p>" +
+                             "<p>Se ritieni che ci sia stato un errore o se desideri ricevere maggiori chiarimenti, puoi contattare il nostro supporto rispondendo a questa email.</p>" +
+                             "<br><p>Il team di Dèrive</p>";
+            
+            helper.setText(content, true);
+            mailSender.send(message);
+        } catch (MessagingException e) {
+            throw new RuntimeException("Errore durante l'invio della mail di rifiuto agenzia", e);
         }
     }
 }
