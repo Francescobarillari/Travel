@@ -171,6 +171,7 @@ fun HomeScreen(
                             onLocalitaClick = { localitaName ->
                                 AppContainer.sessionManager.incrementLocationScore(localitaName, 1)
                                 cercaViewModel.onSearchQueryChanged(localitaName, saveToHistory = false)
+                                cercaViewModel.selectedTab = CercaTab.TUTTI
                                 selectedTab = HomeTab.CERCA
                             },
                             onActivityClick = { activityId ->
@@ -308,6 +309,9 @@ fun HomeScreen(
                         onTabSelected = { 
                             if (it == HomeTab.PREFERITI && isSocieta) {
                                 companyAddOfferViewModel.resetForm()
+                            }
+                            if (it == HomeTab.CERCA) {
+                                cercaViewModel.selectedTab = CercaTab.TUTTI
                             }
                             selectedTab = it 
                         }
