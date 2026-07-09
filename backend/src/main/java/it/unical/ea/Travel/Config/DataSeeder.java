@@ -67,10 +67,34 @@ public class DataSeeder implements CommandLineRunner {
         seedTestUser();
         if (activityRepository.count() == 0) {
             seedData();
+        } else {
+            healExistingActivityTemplates();
         }
         if (reviewRepository.count() == 0) {
             seedReviews();
         }
+    }
+
+    private void healExistingActivityTemplates() {
+        activityTemplateRepository.findAll().forEach(tpl -> {
+            String name = tpl.getName().toLowerCase();
+            if (name.contains("colosseo")) {
+                tpl.setImages(new java.util.ArrayList<>(List.of("https://images.unsplash.com/photo-1552832230-c0197dd311b5?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80")));
+            } else if (name.contains("cena a trastevere") || name.contains("trastevere")) {
+                tpl.setImages(new java.util.ArrayList<>(List.of("https://images.unsplash.com/photo-1515003197210-e0cd71810b5f?auto=format&fit=crop&w=800&q=80")));
+            } else if (name.contains("trekking")) {
+                tpl.setImages(new java.util.ArrayList<>(List.of("https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80")));
+            } else if (name.contains("spa") || name.contains("terme")) {
+                tpl.setImages(new java.util.ArrayList<>(List.of("https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=800&q=80")));
+            } else if (name.contains("cucina")) {
+                tpl.setImages(new java.util.ArrayList<>(List.of("https://images.unsplash.com/photo-1556910103-1c02745aae4d?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80")));
+            } else if (name.contains("gondola")) {
+                tpl.setImages(new java.util.ArrayList<>(List.of("https://images.unsplash.com/photo-1527631746610-bca00a040d60?auto=format&fit=crop&w=800&q=80")));
+            } else if (name.contains("walking tour") || name.contains("milano") || name.contains("free walking")) {
+                tpl.setImages(new java.util.ArrayList<>(List.of("https://images.unsplash.com/photo-1520175480921-4edfa2983e0f?auto=format&fit=crop&w=800&q=80")));
+            }
+            activityTemplateRepository.save(tpl);
+        });
     }
 
     private void seedTestUser() {

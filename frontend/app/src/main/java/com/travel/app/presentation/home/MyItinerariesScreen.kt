@@ -226,7 +226,7 @@ fun MyItinerariesScreen(
                                             onClick = {
                                                 val sendIntent = Intent().apply {
                                                     action = Intent.ACTION_SEND
-                                                    putExtra(Intent.EXTRA_TEXT, "Guarda il mio itinerario '${itinerary.title}' su Travel! http://travel.app/itinerary/$idStr")
+                                                    putExtra(Intent.EXTRA_TEXT, "Guarda il mio itinerario '${itinerary.title}' su Dèrive! http://derive.app/itinerary/$idStr")
                                                     type = "text/plain"
                                                 }
                                                 val shareIntent = Intent.createChooser(sendIntent, "Condividi itinerario")

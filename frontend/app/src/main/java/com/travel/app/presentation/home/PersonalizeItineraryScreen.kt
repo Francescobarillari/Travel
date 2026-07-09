@@ -171,7 +171,7 @@ fun PersonalizeItineraryScreen(
                                     endDateTime = itinerary.endDateTime
                                     creatorId = userId
                                     this.activityIds = selectedActivities.mapNotNull { it.id?.toString() }
-                                    visibility = "PRIVATE"
+                                    visibility = itinerary.visibility ?: "PRIVATE"
                                 }
                                 val res = AppContainer.itineraryRepository.createItinerary(req)
                                 if (res.isSuccess && coverImageUri != null) {

@@ -27,6 +27,9 @@ import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.AccessTime
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Public
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -57,6 +60,7 @@ fun CreateItineraryScreen(
     var description by remember { mutableStateOf("") }
     var location by remember { mutableStateOf("") }
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+    var visibility by remember { mutableStateOf("PRIVATE") }
 
     // Suggestions states for location autocomplete
     var locationSuggestions by remember { mutableStateOf<List<LocationDto>>(emptyList()) }
@@ -413,6 +417,62 @@ fun CreateItineraryScreen(
                 }
             }
 
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = "Visibilità dell'Itinerario",
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                val options = listOf(
+                    Triple("PRIVATE", "Privato", Icons.Default.Lock),
+                    Triple("PUBLIC", "Pubblico", Icons.Default.Public),
+                    Triple("SHARED", "Condivisibile", Icons.Default.Share)
+                )
+
+                options.forEach { (value, label, icon) ->
+                    val isSelected = visibility == value
+                    val containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
+                    val contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+                    val borderColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+
+                    Card(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(72.dp)
+                            .clickable { visibility = value },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = containerColor),
+                        border = androidx.compose.foundation.BorderStroke(2.dp, borderColor)
+                    ) {
+                        Column(
+                            modifier = Modifier.fillMaxSize(),
+                            verticalArrangement = Arrangement.Center,
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Icon(
+                                imageVector = icon,
+                                contentDescription = label,
+                                tint = contentColor,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = label,
+                                style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+                                color = contentColor
+                            )
+                        }
+                    }
+                }
+            }
+
             Spacer(modifier = Modifier.height(24.dp))
 
             // Action Button
@@ -444,6 +504,7 @@ fun CreateItineraryScreen(
                     tempItinerary.description = description.takeIf { it.isNotBlank() }
                     tempItinerary.startDateTime = startLdt
                     tempItinerary.endDateTime = endLdt
+                    tempItinerary.visibility = visibility
 
                     onNext(tempItinerary, location.trim(), selectedImageUri)
                 },
