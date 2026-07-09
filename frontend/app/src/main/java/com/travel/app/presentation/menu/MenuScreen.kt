@@ -227,7 +227,7 @@ fun MenuScreen(
             MenuItemRow(
                 icon = Icons.Default.Notifications,
                 text = "Notifiche",
-                onClick = { Toast.makeText(context, "Notifiche: Funzionalità in arrivo!", Toast.LENGTH_SHORT).show() }
+                onClick = { Toast.makeText(context, "Trovi le notifiche nella campanella in alto a destra della Home", Toast.LENGTH_SHORT).show() }
             )
             MenuDivider()
             MenuItemRow(
