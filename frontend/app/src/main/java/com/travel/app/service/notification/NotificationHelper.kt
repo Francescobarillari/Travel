@@ -16,6 +16,23 @@ object NotificationHelper {
     const val CHANNEL_BOOKINGS_ID = "bookings_channel"
     const val CHANNEL_REMINDERS_ID = "reminders_channel"
 
+    private const val PREFS_NAME = "notifications_prefs"
+    private const val KEY_SHOWN_IDS = "shown_notification_ids"
+
+    // Traccia le notifiche già mostrate sul dispositivo: la lettura in-app è separata
+    // (una notifica resta "non letta" finché l'utente non la legge dalla campanella),
+    // ma non deve essere ri-mostrata come push ad ogni sync.
+    fun hasBeenShown(context: Context, notificationId: String): Boolean {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getStringSet(KEY_SHOWN_IDS, emptySet())?.contains(notificationId) == true
+    }
+
+    fun markAsShown(context: Context, notificationId: String) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val current = prefs.getStringSet(KEY_SHOWN_IDS, emptySet()) ?: emptySet()
+        prefs.edit().putStringSet(KEY_SHOWN_IDS, current + notificationId).apply()
+    }
+
     fun createNotificationChannels(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val nameBookings = "Prenotazioni"

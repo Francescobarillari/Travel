@@ -169,8 +169,10 @@ fun HomeFeedScreen(
                 style = MaterialTheme.typography.headlineMedium.copy(
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
-                )
+                ),
+                modifier = Modifier.weight(1f)
             )
+            com.travel.app.presentation.components.notifications.NotificationBell()
         }
 
         // 1. LOCALITÀ

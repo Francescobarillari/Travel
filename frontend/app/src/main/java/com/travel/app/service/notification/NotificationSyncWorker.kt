@@ -30,20 +30,20 @@ class NotificationSyncWorker(
             Log.d("NotificationSyncWorker", "Fetched ${notifications.size} unread notifications.")
 
             for (notification in notifications) {
-                // Mostra la notifica sul dispositivo
+                val notificationId = notification.id?.toString() ?: continue
+
+                // Mostra la push solo la prima volta: la notifica resta "non letta"
+                // finché l'utente non la legge dalla campanella in-app.
+                if (NotificationHelper.hasBeenShown(applicationContext, notificationId)) continue
+
                 NotificationHelper.showNotification(
                     context = applicationContext,
                     title = notification.title ?: "Travel Update",
                     message = notification.message ?: "",
-                    channelId = NotificationHelper.CHANNEL_BOOKINGS_ID
+                    channelId = NotificationHelper.CHANNEL_BOOKINGS_ID,
+                    notificationId = notificationId.hashCode()
                 )
-
-                // Segna la notifica come letta sul backend
-                try {
-                    AppContainer.apiService.markNotificationAsRead(notification.id.toString())
-                } catch (e: Exception) {
-                    Log.e("NotificationSyncWorker", "Failed to mark notification as read", e)
-                }
+                NotificationHelper.markAsShown(applicationContext, notificationId)
             }
 
             Result.success()

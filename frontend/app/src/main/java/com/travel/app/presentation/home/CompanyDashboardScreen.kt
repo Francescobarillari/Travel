@@ -65,28 +65,34 @@ fun CompanyDashboardScreen(
             .fillMaxSize()
             .background(Color(0xFFF8FAFC))
     ) {
-        Column(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp, vertical = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = "Dashboard",
-                style = MaterialTheme.typography.headlineMedium.copy(
-                    fontWeight = FontWeight.ExtraBold,
-                    color = Color(0xFF0F172A)
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    text = "Dashboard",
+                    style = MaterialTheme.typography.headlineMedium.copy(
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color(0xFF0F172A)
+                    )
                 )
-            )
-            val orgName = viewModel.currentOrganizerName
-            Text(
-                text = if (orgName.isNotBlank())
-                    "$orgName · panoramica delle tue attività e prenotazioni"
-                else
-                    "Panoramica delle tue attività e prenotazioni",
-                fontSize = 13.sp,
-                color = Color(0xFF64748B)
-            )
+                val orgName = viewModel.currentOrganizerName
+                Text(
+                    text = if (orgName.isNotBlank())
+                        "$orgName · panoramica delle tue attività e prenotazioni"
+                    else
+                        "Panoramica delle tue attività e prenotazioni",
+                    fontSize = 13.sp,
+                    color = Color(0xFF64748B)
+                )
+            }
+            com.travel.app.presentation.components.notifications.NotificationBell()
         }
 
         if (viewModel.isLoading) {
