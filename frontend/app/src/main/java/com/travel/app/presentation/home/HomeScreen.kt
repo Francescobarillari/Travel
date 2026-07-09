@@ -319,42 +319,7 @@ fun HomeScreen(
         // Overlay detail screens on top of the main content
         
         // 1. User Profile Overlay (composed first, so details render on top of it)
-        // 1. Personalize Overlay
-        if (personalizingItinerary != null) {
-            PersonalizeItineraryScreen(
-                itinerary = personalizingItinerary!!,
-                onNavigateBack = { personalizingItinerary = null },
-                onPersonalizeSuccess = {
-                    personalizingItinerary = null
-                    selectedItinerary = null
-                },
-                onActivityClick = { activityId ->
-                    selectedItemId = activityId
-                    selectedItemIsTrip = false
-                }
-            )
-        }
 
-        // 2. Create Itinerary Overlay (Activity selection step)
-        if (newItineraryMetadata != null) {
-            PersonalizeItineraryScreen(
-                itinerary = newItineraryMetadata!!,
-                initialCity = newItineraryCity,
-                coverImageUri = newItineraryImageUri,
-                onNavigateBack = { newItineraryMetadata = null },
-                onPersonalizeSuccess = {
-                    newItineraryMetadata = null
-                    newItineraryCity = ""
-                    newItineraryImageUri = null
-                    selectedTab = HomeTab.I_MIEI_ITINERARI
-                    itinerariesRefreshTrigger++
-                },
-                onActivityClick = { activityId ->
-                    selectedItemId = activityId
-                    selectedItemIsTrip = false
-                }
-            )
-        }
 
         // 3. User Profile Overlay (composed first, so details render on top of it)
         if (selectedProfileUser != null) {
@@ -442,6 +407,43 @@ fun HomeScreen(
                     AppContainer.sessionManager.toggleFavoriteActivity(activityId)
                     isFav = !isFav
                     favoritesTrigger++
+                }
+            )
+        }
+
+        // 6. Personalize Overlay (composed last, so it renders on top of Itinerary/Activity Details)
+        if (personalizingItinerary != null) {
+            PersonalizeItineraryScreen(
+                itinerary = personalizingItinerary!!,
+                onNavigateBack = { personalizingItinerary = null },
+                onPersonalizeSuccess = {
+                    personalizingItinerary = null
+                    selectedItinerary = null
+                },
+                onActivityClick = { activityId ->
+                    selectedItemId = activityId
+                    selectedItemIsTrip = false
+                }
+            )
+        }
+
+        // 7. Create Itinerary Overlay (Activity selection step)
+        if (newItineraryMetadata != null) {
+            PersonalizeItineraryScreen(
+                itinerary = newItineraryMetadata!!,
+                initialCity = newItineraryCity,
+                coverImageUri = newItineraryImageUri,
+                onNavigateBack = { newItineraryMetadata = null },
+                onPersonalizeSuccess = {
+                    newItineraryMetadata = null
+                    newItineraryCity = ""
+                    newItineraryImageUri = null
+                    selectedTab = HomeTab.I_MIEI_ITINERARI
+                    itinerariesRefreshTrigger++
+                },
+                onActivityClick = { activityId ->
+                    selectedItemId = activityId
+                    selectedItemIsTrip = false
                 }
             )
         }
