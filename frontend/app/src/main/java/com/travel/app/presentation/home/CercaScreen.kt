@@ -18,6 +18,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.travel.app.presentation.theme.TravelTheme
@@ -42,6 +44,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.gestures.detectTapGestures
 import com.travel.app.domain.model.User
 
+@OptIn(ExperimentalLayoutApi::class)
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun CercaScreen(
@@ -71,10 +74,12 @@ fun CercaScreen(
         }
     }
 
-    var sliderPosition by remember(viewModel.minPrice, viewModel.maxPrice) {
-        val min = viewModel.minPrice?.toFloat() ?: 0f
-        val max = viewModel.maxPrice?.toFloat() ?: 500f
-        mutableStateOf(min..max)
+    var localMinPrice by remember { mutableStateOf(0f) }
+    var localMaxPrice by remember { mutableStateOf(500f) }
+
+    LaunchedEffect(viewModel.minPrice, viewModel.maxPrice) {
+        localMinPrice = viewModel.minPrice?.toFloat() ?: 0f
+        localMaxPrice = viewModel.maxPrice?.toFloat() ?: 500f
     }
 
     LaunchedEffect(Unit) {
@@ -200,24 +205,161 @@ fun CercaScreen(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                 shape = RoundedCornerShape(16.dp)
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    val maxDisplay = if (sliderPosition.endInclusive >= 500f) "500+€" else "${sliderPosition.endInclusive.toInt()}€"
+                Column(
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .heightIn(max = 350.dp)
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Filtri e Ordinamento",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        TextButton(onClick = { viewModel.resetFilters() }) {
+                            Text("Resetta", style = MaterialTheme.typography.bodyMedium)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Ordina per
                     Text(
-                        text = "Fascia di prezzo (solo per attività): ${sliderPosition.start.toInt()}€ - $maxDisplay",
+                        text = "Ordina per",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                    androidx.compose.material3.RangeSlider(
-                        value = sliderPosition,
-                        onValueChange = { sliderPosition = it },
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp)
+                    ) {
+                        // Scrollable filter chips
+                        androidx.compose.foundation.lazy.LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            item {
+                                FilterChip(
+                                    selected = viewModel.sortBy == CercaSortOption.NONE,
+                                    onClick = { viewModel.onSortByChanged(CercaSortOption.NONE) },
+                                    label = { Text("Nessuno") }
+                                )
+                            }
+                            item {
+                                FilterChip(
+                                    selected = viewModel.sortBy == CercaSortOption.PRICE_ASC,
+                                    onClick = { viewModel.onSortByChanged(CercaSortOption.PRICE_ASC) },
+                                    label = { Text("Prezzo: Crescente") }
+                                )
+                            }
+                            item {
+                                FilterChip(
+                                    selected = viewModel.sortBy == CercaSortOption.PRICE_DESC,
+                                    onClick = { viewModel.onSortByChanged(CercaSortOption.PRICE_DESC) },
+                                    label = { Text("Prezzo: Decrescente") }
+                                )
+                            }
+                            item {
+                                FilterChip(
+                                    selected = viewModel.sortBy == CercaSortOption.RATING_DESC,
+                                    onClick = { viewModel.onSortByChanged(CercaSortOption.RATING_DESC) },
+                                    label = { Text("Valutazione") }
+                                )
+                            }
+                            item {
+                                FilterChip(
+                                    selected = viewModel.sortBy == CercaSortOption.DATE_ASC,
+                                    onClick = { viewModel.onSortByChanged(CercaSortOption.DATE_ASC) },
+                                    label = { Text("Data: più vicina") }
+                                )
+                            }
+                            item {
+                                FilterChip(
+                                    selected = viewModel.sortBy == CercaSortOption.DATE_DESC,
+                                    onClick = { viewModel.onSortByChanged(CercaSortOption.DATE_DESC) },
+                                    label = { Text("Data: più lontana") }
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Price Range Slider
+                    val maxDisplay = if (localMaxPrice >= 500f) "500+€" else "${localMaxPrice.toInt()}€"
+                    Text(
+                        text = "Fascia di prezzo (attività/itinerari): ${localMinPrice.toInt()}€ - $maxDisplay",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    RangeSlider(
+                        value = localMinPrice..localMaxPrice,
+                        onValueChange = { range ->
+                            localMinPrice = range.start
+                            localMaxPrice = range.endInclusive
+                        },
                         valueRange = 0f..500f,
-                        steps = 49,
                         onValueChangeFinished = {
-                            val maxP = if (sliderPosition.endInclusive >= 500f) null else sliderPosition.endInclusive.toDouble()
-                            viewModel.onPriceRangeChanged(sliderPosition.start.toDouble(), maxP)
+                            val maxP = if (localMaxPrice >= 500f) null else localMaxPrice.toDouble()
+                            viewModel.onPriceRangeChanged(localMinPrice.toDouble(), maxP)
                         }
                     )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Rating filter
+                    Text(
+                        text = "Valutazione minima",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        listOf(null, 3.0, 4.0, 4.5).forEach { rating ->
+                            FilterChip(
+                                selected = viewModel.minRating == rating,
+                                onClick = { viewModel.onMinRatingChanged(rating) },
+                                label = { Text(if (rating == null) "Qualsiasi" else "$rating+ ⭐") }
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Categorie / Tag
+                    Text(
+                        text = "Categorie / Tag",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        TravelTag.values().forEach { tag ->
+                            val isSelected = viewModel.selectedTags.contains(tag)
+                            FilterChip(
+                                selected = isSelected,
+                                onClick = { viewModel.toggleTag(tag) },
+                                label = { Text(tag.name) }
+                            )
+                        }
+                    }
                 }
             }
         }
