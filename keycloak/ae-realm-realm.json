@@ -2,6 +2,17 @@
   "realm": "ae-realm",
   "enabled": true,
   "displayName": "Travel Development Realm",
+  "smtpServer": {
+    "host": "smtp.gmail.com",
+    "port": "587",
+    "from": "eaderive@gmail.com",
+    "fromDisplayName": "Dèrive Travel",
+    "auth": "true",
+    "ssl": "false",
+    "starttls": "true",
+    "user": "eaderive@gmail.com",
+    "password": "jpktjwpfqabylofb"
+  },
   "registrationAllowed": false,
   "loginWithEmailAllowed": true,
   "duplicateEmailsAllowed": false,
