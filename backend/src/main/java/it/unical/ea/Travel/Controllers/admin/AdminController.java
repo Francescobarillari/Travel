@@ -49,6 +49,7 @@ public class AdminController {
     private final UserMapper userMapper;
     private final ActivityMapper activityMapper;
     private final AuditLogService auditLogService;
+
     private final it.unical.ea.Travel.Services.notification.NotificationService notificationService;
     private final EmailService emailService;
 
