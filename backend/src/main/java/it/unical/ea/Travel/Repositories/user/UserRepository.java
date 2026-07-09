@@ -14,10 +14,12 @@ import it.unical.ea.Travel.Entities.user.User;
 
 @Repository
 public interface UserRepository extends JpaRepository<User, UUID> {
+    @Query("SELECT u FROM User u WHERE LOWER(u.email) = LOWER(?1)")
     public Optional<User> getUserByEmail(String email);
     public List<User> findByUserTypeAndApproved(UserType userType, Boolean approved);
     public List<User> findByUserType(UserType userType);
     boolean existsByVatNumber(String vatNumber);
+    boolean existsByCompanyNameIgnoreCase(String companyName);
 
     // bisogna cambiare questa query in sql -> JPA Specifications
     @Query(value = "SELECT * FROM users WHERE email = ?1", nativeQuery = true)

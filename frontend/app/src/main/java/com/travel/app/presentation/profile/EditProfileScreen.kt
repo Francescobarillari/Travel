@@ -442,6 +442,8 @@ fun EditProfileForm(
             }
 
             // Phone Number field with Country prefix selector (Disabled/Read-only)
+            // Le agenzie non hanno un numero di telefono associato
+            if (!isSocieta) {
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -497,6 +499,7 @@ fun EditProfileForm(
                         )
                     )
                 }
+            }
             }
 
             Spacer(modifier = Modifier.height(16.dp))

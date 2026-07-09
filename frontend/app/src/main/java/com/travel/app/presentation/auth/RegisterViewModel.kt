@@ -68,6 +68,10 @@ class RegisterViewModel(
                 return
             }
         } else {
+            if (registerCompanyName.isBlank()) {
+                registerError = "Il nome dell'agenzia è obbligatorio"
+                return
+            }
             if (registerVatNumber.isBlank()) {
                 registerError = "La Partita IVA è obbligatoria"
                 return
@@ -78,7 +82,7 @@ class RegisterViewModel(
                 return
             }
             registerVatNumber = cleanedVat
-            registerCompanyName = cleanedVat
+            registerCompanyName = registerCompanyName.trim()
         }
 
         viewModelScope.launch {
@@ -99,7 +103,7 @@ class RegisterViewModel(
                     companyName = registerCompanyName,
                     vatNumber = registerVatNumber,
                     password = registerPassword,
-                    phone = registerPhone.takeIf { it.isNotBlank() },
+                    phone = null,
                     captchaToken = captchaToken,
                     documentPhotos = registerDocumentPhotos
                 )
