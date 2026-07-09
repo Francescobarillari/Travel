@@ -78,12 +78,19 @@ services:
       - PAYMENT_MOCK=${PAYMENT_MOCK}
       - PAYPAL_CLIENT_ID=${PAYPAL_CLIENT_ID}
       - PAYPAL_CLIENT_SECRET=${PAYPAL_CLIENT_SECRET}
-      - SPRING_MAIL_HOST=smtp.gmail.com
-      - SPRING_MAIL_PORT=587
-      - SPRING_MAIL_USERNAME=eaderive@gmail.com
-      - SPRING_MAIL_PASSWORD=jpktjwpfqabylofb
-      - SPRING_MAIL_AUTH=true
-      - SPRING_MAIL_STARTTLS=true
+      - SPRING_MAIL_HOST=${SPRING_MAIL_HOST:-mailpit}
+      - SPRING_MAIL_PORT=${SPRING_MAIL_PORT:-1025}
+      - SPRING_MAIL_USERNAME=${SPRING_MAIL_USERNAME:-}
+      - SPRING_MAIL_PASSWORD=${SPRING_MAIL_PASSWORD:-}
+      - SPRING_MAIL_AUTH=${SPRING_MAIL_AUTH:-false}
+      - SPRING_MAIL_STARTTLS=${SPRING_MAIL_STARTTLS:-false}
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: mailpit
+    ports:
+      - "1025:1025"
+      - "8025:8025"
 
 volumes:
   postgres_data:
