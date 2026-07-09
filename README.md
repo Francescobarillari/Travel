@@ -9,7 +9,7 @@
 5. **Database (`db`)**: Database relazionale **PostgreSQL 15** per la memorizzazione dei dati di dominio dell'applicazione (es. profili utente, esperienze di viaggio, prenotazioni, preferiti).
 
 ---
-## 🚀 Configurazione Iniziale (Primo Clone)
+## Configurazione Iniziale (Primo Clone)
 
 Segui rigorosamente questi passaggi per configurare l'ambiente locale al primo clone del repository.
 
@@ -100,7 +100,7 @@ docker compose up -d --build
 
 ---
 
-## 🧪 Test e Verifica dell'Ambiente (API Testing)
+## Test e Verifica dell'Ambiente (API Testing)
 
 Dopo avviare Docker Compose, puoi verificare che tutto funzioni correttamente effettuando dei test sulle API del backend tramite **Swagger UI** o client come Postman.
 
