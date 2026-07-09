@@ -49,6 +49,7 @@ public class AdminController {
     private final UserMapper userMapper;
     private final ActivityMapper activityMapper;
     private final AuditLogService auditLogService;
+    private final it.unical.ea.Travel.Services.notification.NotificationService notificationService;
     private final EmailService emailService;
 
     @Operation(summary = "Ottieni agenzie in attesa di approvazione")
@@ -65,6 +66,15 @@ public class AdminController {
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "user.notFound"));
         user.setApproved(true);
         userRepository.save(user);
+        
+        // Invia notifica di approvazione
+        notificationService.createNotification(
+            user,
+            "Account Approvato",
+            "La tua agenzia è stata approvata dall'amministratore. Ora puoi iniziare a pubblicare offerte!",
+            it.unical.ea.enums.NotificationType.APPROVAZIONE_SOCIETA
+        );
+
         auditLogService.log("APPROVE_COMPANY", "User", id, "Approved company user with email: " + user.getEmail());
         
         // Invia email di conferma approvazione all'agenzia

@@ -16,8 +16,27 @@ import com.travel.app.service.ApiService
 import java.util.UUID
 
 class MainActivity : ComponentActivity() {
+
+    private val requestPermissionLauncher = registerForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        // Permesso gestito
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // Crea i canali per le notifiche native
+        com.travel.app.service.notification.NotificationHelper.createNotificationChannels(this)
+        
+        // Richiede i permessi su Android 13+
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            requestPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+        }
+
+        // Avvia il WorkManager per il polling in background
+        setupNotificationWorkManager()
+
         setContent {
             var isDarkMode by remember {
                 mutableStateOf(AppContainer.sessionManager.isDarkMode())
@@ -32,6 +51,22 @@ class MainActivity : ComponentActivity() {
                 )
             }
         }
+    }
+
+    private fun setupNotificationWorkManager() {
+        val workRequest = androidx.work.PeriodicWorkRequestBuilder<com.travel.app.service.notification.NotificationSyncWorker>(
+            15, java.util.concurrent.TimeUnit.MINUTES
+        ).setConstraints(
+            androidx.work.Constraints.Builder()
+                .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
+                .build()
+        ).build()
+
+        androidx.work.WorkManager.getInstance(applicationContext).enqueueUniquePeriodicWork(
+            "NotificationSyncWork",
+            androidx.work.ExistingPeriodicWorkPolicy.KEEP,
+            workRequest
+        )
     }
 }
 

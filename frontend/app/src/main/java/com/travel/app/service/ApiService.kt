@@ -22,6 +22,7 @@ import it.unical.ea.dtos.payment.PaymentIntentResponseDto
 import okhttp3.MultipartBody
 import retrofit2.http.Multipart
 import retrofit2.http.Part
+import it.unical.ea.dtos.notification.NotificationDto
 
 interface ApiService {
 
@@ -212,6 +213,12 @@ interface ApiService {
 
     @POST("api/admin/companies/{id}/unblock")
     suspend fun unblockCompany(@Path("id") id: String)
+
+    @GET("api/notifications/unread")
+    suspend fun getUnreadNotifications(): List<NotificationDto>
+
+    @PUT("api/notifications/{id}/read")
+    suspend fun markNotificationAsRead(@Path("id") id: String): retrofit2.Response<Unit>
 }
 
 open class MockApiService : ApiService {
@@ -268,4 +275,6 @@ open class MockApiService : ApiService {
     override suspend fun cancelActivityBooking(id: String): retrofit2.Response<Unit> = retrofit2.Response.success(Unit)
     override suspend fun getBookedActivities(): List<ActivityDto> = emptyList()
     override suspend fun getBookedItineraries(): List<ItineraryDto> = emptyList()
+    override suspend fun getUnreadNotifications(): List<NotificationDto> = emptyList()
+    override suspend fun markNotificationAsRead(id: String): retrofit2.Response<Unit> = retrofit2.Response.success(Unit)
 }
