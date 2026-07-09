@@ -59,9 +59,9 @@ fun ActivityCard(
                     .fillMaxWidth()
                     .height(180.dp)
             ) {
-                val imageUrl = activity.images?.firstOrNull()
+                val imageUrl = activity.images?.firstOrNull() ?: "https://images.unsplash.com/photo-1488646953014-85cb44e25828?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"
                 AsyncImage(
-                    model = imageUrl ?: "https://via.placeholder.com/600x400?text=No+Image",
+                    model = imageUrl,
                     contentDescription = null,
                     modifier = Modifier
                         .fillMaxSize()
