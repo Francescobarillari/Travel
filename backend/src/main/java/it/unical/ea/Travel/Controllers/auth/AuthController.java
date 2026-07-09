@@ -65,6 +65,13 @@ public class AuthController {
         try {
             JwtResponse tokenResponse = authService.login(request);
 
+            // Contrassegna l'email come verificata nel DB locale e invia la mail di benvenuto
+            try {
+                userService.markEmailAsVerified(email);
+            } catch (Exception e) {
+                System.err.println("Impossibile aggiornare lo stato di verifica email in DB locale: " + e.getMessage());
+            }
+
             // Verifica approvazione per profili Società
             try {
                 User user = userService.getUserByEmail(email);
@@ -84,13 +91,6 @@ public class AuthController {
 
             // Autenticazione riuscita: azzera i tentativi falliti
             loginAttemptService.loginSucceeded(email);
-
-            // Contrassegna l'email come verificata nel DB locale e invia la mail di benvenuto
-            try {
-                userService.markEmailAsVerified(email);
-            } catch (Exception e) {
-                System.err.println("Impossibile aggiornare lo stato di verifica email in DB locale: " + e.getMessage());
-            }
 
             return ResponseEntity.ok(tokenResponse);
         } catch (ApiException e) {
