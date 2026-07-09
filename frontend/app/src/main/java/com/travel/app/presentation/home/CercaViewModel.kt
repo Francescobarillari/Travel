@@ -110,6 +110,19 @@ class CercaViewModel(
                     result.fold(
                         onSuccess = { page -> 
                             var results = page.content ?: emptyList()
+                            // Filtra le attività le cui sessioni sono già iniziate/passate
+                            results = results.mapNotNull { template ->
+                                val activeSessions = template.sessions?.filter { session ->
+                                    val start = session.startTime
+                                    start == null || start.isAfter(java.time.LocalDateTime.now())
+                                } ?: emptyList()
+                                if (activeSessions.isNotEmpty()) {
+                                    template.sessions = activeSessions
+                                    template
+                                } else {
+                                    null
+                                }
+                            }
                             if (minPrice != null || maxPrice != null) {
                                 results = results.filter { template ->
                                     val price = template.sessions?.firstOrNull()?.price?.toDouble() ?: 0.0
@@ -188,23 +201,29 @@ class CercaViewModel(
         val maxP = maxPrice
         
         filteredItineraries = allItineraries.filter { itinerary ->
-            val queryMatch = if (query.isEmpty()) {
-                true
+            val start = itinerary.getStartDateTime()
+            val hasStarted = start != null && start.isBefore(java.time.LocalDateTime.now())
+            if (hasStarted) {
+                false
             } else {
-                val titleMatch = itinerary.getTitle()?.contains(query, ignoreCase = true) == true
-                val descMatch = itinerary.getDescription()?.contains(query, ignoreCase = true) == true
-                val activityMatch = itinerary.getActivities()?.any { activity ->
-                    activity.name?.contains(query, ignoreCase = true) == true ||
-                    activity.location?.contains(query, ignoreCase = true) == true
-                } == true
-                titleMatch || descMatch || activityMatch
+                val queryMatch = if (query.isEmpty()) {
+                    true
+                } else {
+                    val titleMatch = itinerary.getTitle()?.contains(query, ignoreCase = true) == true
+                    val descMatch = itinerary.getDescription()?.contains(query, ignoreCase = true) == true
+                    val activityMatch = itinerary.getActivities()?.any { activity ->
+                        activity.name?.contains(query, ignoreCase = true) == true ||
+                        activity.location?.contains(query, ignoreCase = true) == true
+                    } == true
+                    titleMatch || descMatch || activityMatch
+                }
+
+                val totalPrice = itinerary.getActivities()?.sumOf { it.getPrice()?.toDouble() ?: 0.0 } ?: 0.0
+                val minMatch = if (minP == null) true else totalPrice >= minP
+                val maxMatch = if (maxP == null) true else totalPrice <= maxP
+
+                queryMatch && minMatch && maxMatch
             }
-
-            val totalPrice = itinerary.getActivities()?.sumOf { it.getPrice()?.toDouble() ?: 0.0 } ?: 0.0
-            val minMatch = if (minP == null) true else totalPrice >= minP
-            val maxMatch = if (maxP == null) true else totalPrice <= maxP
-
-            queryMatch && minMatch && maxMatch
         }
     }
 
@@ -249,6 +268,19 @@ class CercaViewModel(
             result.fold(
                 onSuccess = { page -> 
                     var results = page.content ?: emptyList()
+                    // Filtra le attività le cui sessioni sono già iniziate/passate
+                    results = results.mapNotNull { template ->
+                        val activeSessions = template.sessions?.filter { session ->
+                            val start = session.startTime
+                            start == null || start.isAfter(java.time.LocalDateTime.now())
+                        } ?: emptyList()
+                        if (activeSessions.isNotEmpty()) {
+                            template.sessions = activeSessions
+                            template
+                        } else {
+                            null
+                        }
+                    }
                     if (minPrice != null || maxPrice != null) {
                         results = results.filter { template ->
                             val price = template.sessions?.firstOrNull()?.price?.toDouble() ?: 0.0

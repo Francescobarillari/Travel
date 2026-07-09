@@ -204,6 +204,9 @@ fun ActivityDetailScreen(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
+                            val hasStarted = currentSession!!.startTime?.isBefore(LocalDateTime.now()) == true
+                            val isFull = currentSession.participants != null && (currentSession.currentParticipants ?: 0) >= currentSession.participants
+
                             if (isBooked) {
                                 IconButton(
                                     onClick = { showReceiptDialog = true },
@@ -217,19 +220,68 @@ fun ActivityDetailScreen(
                                         tint = MaterialTheme.colorScheme.onPrimaryContainer
                                     )
                                 }
-                            }
-                            Button(
-                                onClick = {
-                                    if (isBooked) {
-                                        showCancelConfirmationDialog = true
-                                    } else {
+                                Button(
+                                    onClick = { showCancelConfirmationDialog = true },
+                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                                    contentPadding = PaddingValues(horizontal = 12.dp),
+                                    modifier = Modifier.height(48.dp),
+                                    shape = RoundedCornerShape(24.dp)
+                                ) {
+                                    Text(
+                                        text = "Annulla Prenotazione",
+                                        fontWeight = FontWeight.Bold,
+                                        maxLines = 1,
+                                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
+                                    )
+                                }
+                            } else if (hasStarted) {
+                                Button(
+                                    onClick = {},
+                                    enabled = false,
+                                    contentPadding = PaddingValues(horizontal = 12.dp),
+                                    modifier = Modifier.height(48.dp),
+                                    shape = RoundedCornerShape(24.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                        disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                ) {
+                                    Text(
+                                        text = "Evento terminato",
+                                        fontWeight = FontWeight.Bold,
+                                        maxLines = 1,
+                                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
+                                    )
+                                }
+                            } else if (isFull) {
+                                Button(
+                                    onClick = {},
+                                    enabled = false,
+                                    contentPadding = PaddingValues(horizontal = 12.dp),
+                                    modifier = Modifier.height(48.dp),
+                                    shape = RoundedCornerShape(24.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                        disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                ) {
+                                    Text(
+                                        text = "Posti esauriti",
+                                        fontWeight = FontWeight.Bold,
+                                        maxLines = 1,
+                                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
+                                    )
+                                }
+                            } else {
+                                Button(
+                                    onClick = {
                                         if (!isOnline) {
                                             Toast.makeText(context, "Sei offline. Questa azione richiede una connessione internet attiva.", Toast.LENGTH_SHORT).show()
                                             return@Button
                                         }
                                         scope.launch {
                                             isLoading = true
-                                            val bookRes = AppContainer.activityRepository.bookActivity(currentSession!!.id.toString())
+                                            val bookRes = AppContainer.activityRepository.bookActivity(currentSession.id.toString())
                                             isLoading = false
                                             bookRes.fold(
                                                 onSuccess = { response ->
@@ -242,21 +294,19 @@ fun ActivityDetailScreen(
                                                 }
                                             )
                                         }
-                                    }
-                                },
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (isBooked) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
-                                ),
-                                contentPadding = PaddingValues(horizontal = 12.dp),
-                                modifier = Modifier.height(48.dp),
-                                shape = RoundedCornerShape(24.dp)
-                            ) {
-                                Text(
-                                    text = if (isBooked) "Annulla Prenotazione" else "Prenota",
-                                    fontWeight = FontWeight.Bold,
-                                    maxLines = 1,
-                                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
-                                )
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                                    contentPadding = PaddingValues(horizontal = 12.dp),
+                                    modifier = Modifier.height(48.dp),
+                                    shape = RoundedCornerShape(24.dp)
+                                ) {
+                                    Text(
+                                        text = "Prenota",
+                                        fontWeight = FontWeight.Bold,
+                                        maxLines = 1,
+                                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
+                                    )
+                                }
                             }
                         }
                     }

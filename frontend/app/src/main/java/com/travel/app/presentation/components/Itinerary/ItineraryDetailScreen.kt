@@ -237,6 +237,11 @@ fun ItineraryDetailScreen(
                             color = MaterialTheme.colorScheme.primary
                         )
                     }
+                    val hasStarted = itinerary.getStartDateTime()?.isBefore(LocalDateTime.now()) == true
+                    val isFull = itinerary.getActivities()?.any { activity ->
+                        activity.participants != null && (activity.currentParticipants ?: 0) >= activity.participants
+                    } == true
+
                     if (isBooked) {
                         Button(
                             onClick = {
@@ -257,6 +262,36 @@ fun ItineraryDetailScreen(
                             } else {
                                 Text("Annulla Prenotazione", fontWeight = FontWeight.Bold)
                             }
+                        }
+                    } else if (hasStarted) {
+                        Button(
+                            onClick = {},
+                            enabled = false,
+                            modifier = Modifier
+                                .width(180.dp)
+                                .height(52.dp),
+                            shape = RoundedCornerShape(26.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        ) {
+                            Text("Evento terminato", fontWeight = FontWeight.Bold)
+                        }
+                    } else if (isFull) {
+                        Button(
+                            onClick = {},
+                            enabled = false,
+                            modifier = Modifier
+                                .width(160.dp)
+                                .height(52.dp),
+                            shape = RoundedCornerShape(26.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        ) {
+                            Text("Posti esauriti", fontWeight = FontWeight.Bold)
                         }
                     } else {
                         Button(

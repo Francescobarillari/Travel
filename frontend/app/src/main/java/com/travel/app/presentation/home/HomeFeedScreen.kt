@@ -118,16 +118,20 @@ fun HomeFeedScreen(
     }
 
     var recommendedActivities = allActivities.filter { activity ->
+        val hasStarted = activity.startTime?.isBefore(java.time.LocalDateTime.now()) == true
         val city = activity.location?.split(",")?.first()?.trim() ?: ""
         city.equals(recommendedCity, ignoreCase = true) && 
-        !favoriteActivityIds.contains(activity.id?.toString() ?: "") // Esclude se già nei preferiti
+        !favoriteActivityIds.contains(activity.id?.toString() ?: "") && // Esclude se già nei preferiti
+        !hasStarted
     }
 
     // Se tutte le attività della città consigliata sono già preferite, mostrale comunque per non far sparire la sezione
     if (recommendedActivities.isEmpty()) {
         recommendedActivities = allActivities.filter { activity ->
+            val hasStarted = activity.startTime?.isBefore(java.time.LocalDateTime.now()) == true
             val city = activity.location?.split(",")?.first()?.trim() ?: ""
-            city.equals(recommendedCity, ignoreCase = true)
+            city.equals(recommendedCity, ignoreCase = true) &&
+            !hasStarted
         }
     }
 
