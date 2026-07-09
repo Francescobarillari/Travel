@@ -78,6 +78,15 @@ public class ItineraryController {
         return toDTO(updated);
     }
 
+    @Operation(summary = "Aggiorna un itinerario esistente", description = "Aggiorna i dettagli e le attività di un itinerario esistente")
+    @PutMapping("/{stringId}")
+    public ItineraryDto updateItinerary(
+            @PathVariable String stringId,
+            @Valid @RequestBody CreateItineraryRequest request) {
+        Itinerary updated = itineraryService.updateItinerary(stringId, request);
+        return toDTO(updated);
+    }
+
     @Operation(summary = "Ottieni un itinerario per ID")
     @GetMapping("/{stringId}")
     public ItineraryDto getItinerary(

@@ -17,6 +17,7 @@ import it.unical.ea.Travel.Services.audit.AuditLogService;
 import it.unical.ea.Travel.Services.payment.PaymentGateway;
 import it.unical.ea.dtos.payment.PaymentIntentResponseDto;
 import it.unical.ea.dtos.itinerary.ItineraryDto;
+import it.unical.ea.dtos.itinerary.CreateItineraryRequest;
 import it.unical.ea.Travel.Entities.payment.BookingStatus;
 import java.math.BigDecimal;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -130,6 +131,50 @@ public class ItineraryService {
 
         Itinerary saved = itineraryRepository.save(itinerary);
         auditLogService.log("CREATE_ITINERARY", "Itinerary", saved.getId().toString(), "Created itinerary: " + saved.getTitle());
+        return saved;
+    }
+
+    // Aggiorna un itinerario esistente
+    public Itinerary updateItinerary(String stringId, CreateItineraryRequest request) {
+        Itinerary itinerary = getItinerary(stringId);
+
+        itinerary.setTitle(request.getTitle());
+        itinerary.setDescription(request.getDescription());
+        itinerary.setVisibility(request.getVisibility() != null ? request.getVisibility() : "PRIVATE");
+
+        // Risolve le activity (se presenti)
+        if (request.getActivityIds() != null) {
+            List<UUID> activityUuids = request.getActivityIds().stream()
+                    .map(UUID::fromString)
+                    .toList();
+            List<Activity> activities = activityRepository.findAllById(activityUuids);
+
+            // Ordinamento cronologico
+            activities.sort(java.util.Comparator.comparing(Activity::getStartTime));
+
+            // Validazione anti-sovrapposizione
+            for (int i = 0; i < activities.size() - 1; i++) {
+                Activity current = activities.get(i);
+                Activity next = activities.get(i + 1);
+                if (current.getEndTime().isAfter(next.getStartTime())) {
+                    throw new ApiException(HttpStatus.BAD_REQUEST, "itinerary.activities.overlap");
+                }
+            }
+
+            itinerary.setActivities(activities);
+
+            // Calcolo automatico delle date dell'itinerario
+            if (!activities.isEmpty()) {
+                itinerary.setStartDateTime(activities.get(0).getStartTime());
+                itinerary.setEndDateTime(activities.get(activities.size() - 1).getEndTime());
+            } else {
+                itinerary.setStartDateTime(null);
+                itinerary.setEndDateTime(null);
+            }
+        }
+
+        Itinerary saved = itineraryRepository.save(itinerary);
+        auditLogService.log("UPDATE_ITINERARY", "Itinerary", saved.getId().toString(), "Updated itinerary: " + saved.getTitle());
         return saved;
     }
 

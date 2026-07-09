@@ -43,6 +43,15 @@ class ItineraryRepositoryImpl(
         }
     }
 
+    override suspend fun updateItinerary(id: String, request: CreateItineraryRequest): Result<ItineraryDto> {
+        return try {
+            val result = apiService.updateItinerary(id, request)
+            Result.success(result)
+        } catch (e: Exception) {
+            Result.failure(Exception(handleError(e)))
+        }
+    }
+
     override suspend fun uploadItineraryImage(id: String, imageBytes: ByteArray, mimeType: String, fileName: String): Result<ItineraryDto> {
         return try {
             val requestBody = imageBytes.toRequestBody(mimeType.toMediaTypeOrNull())

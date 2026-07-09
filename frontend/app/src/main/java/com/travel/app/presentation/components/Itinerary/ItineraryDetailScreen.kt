@@ -50,7 +50,7 @@ import com.travel.app.presentation.components.review.ReviewCard
 import com.travel.app.presentation.components.review.AddReviewInline
 import kotlinx.coroutines.launch
 import com.travel.app.utils.CalendarExportUtil
-import androidx.compose.material.icons.filled.Handyman
+import androidx.compose.material.icons.filled.EditNote
 import com.travel.app.presentation.components.checkout.CheckoutSummaryScreen
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.material.icons.filled.Check
@@ -192,7 +192,8 @@ fun ItineraryDetailScreen(
 
     Scaffold(
         floatingActionButton = {
-            if (isViaggiatore && itinerary.creatorId?.toString() != currentUser?.id) {
+            if (isViaggiatore) {
+                val isCreator = itinerary.creatorId?.toString() == currentUser?.id
                 FloatingActionButton(
                     onClick = { onPersonalizeClick(itinerary) },
                     shape = CircleShape,
@@ -201,8 +202,9 @@ fun ItineraryDetailScreen(
                     modifier = Modifier.padding(bottom = 12.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Handyman,
-                        contentDescription = "Personalizza itinerario"
+                        imageVector = Icons.Default.EditNote,
+                        contentDescription = if (isCreator) "Modifica itinerario" else "Personalizza itinerario",
+                        modifier = Modifier.size(28.dp)
                     )
                 }
             }

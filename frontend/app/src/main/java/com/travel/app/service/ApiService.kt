@@ -130,6 +130,13 @@ interface ApiService {
     @POST("itinerary")
     suspend fun createItinerary(@Body request: CreateItineraryRequest): ItineraryDto
 
+    // Chiamata per aggiornare un itinerario esistente
+    @PUT("itinerary/{id}")
+    suspend fun updateItinerary(
+        @Path("id") id: String,
+        @Body request: CreateItineraryRequest
+    ): ItineraryDto
+
     @Multipart
     @POST("itinerary/{id}/image")
     suspend fun uploadItineraryImage(
@@ -247,6 +254,7 @@ open class MockApiService : ApiService {
     override suspend fun getItineraries(): List<ItineraryDto> = throw NotImplementedError()
     override suspend fun getItinerariesByCreator(creatorId: String): List<ItineraryDto> = throw NotImplementedError()
     override suspend fun createItinerary(request: CreateItineraryRequest): ItineraryDto = throw NotImplementedError()
+    override suspend fun updateItinerary(id: String, request: CreateItineraryRequest): ItineraryDto = throw NotImplementedError()
     override suspend fun uploadItineraryImage(id: String, file: okhttp3.MultipartBody.Part): ItineraryDto = throw NotImplementedError()
     override suspend fun updateItineraryVisibility(id: String, visibility: String): ItineraryDto = throw NotImplementedError()
     override suspend fun deleteItinerary(id: String) {}

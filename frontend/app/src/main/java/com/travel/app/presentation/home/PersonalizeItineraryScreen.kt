@@ -57,6 +57,10 @@ fun PersonalizeItineraryScreen(
     val isOnline by AppContainer.networkMonitor.isOnline.collectAsState(initial = true)
     val scope = rememberCoroutineScope()
 
+    val currentUser = remember { AppContainer.sessionManager.getSessionUser() }
+    val userId = currentUser?.id
+    val isEditingExisting = itinerary.id != null && itinerary.creatorId?.toString() == userId
+
     val city = remember(itinerary) {
         initialCity ?: itinerary.activities?.firstOrNull()?.location?.split(",")?.firstOrNull()?.trim() ?: ""
     }
@@ -101,8 +105,10 @@ fun PersonalizeItineraryScreen(
             TopAppBar(
                 title = {
                     Column {
-                        Text("Personalizza Itinerario", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
-                        if (city.isNotBlank()) {
+                        Text(if (isEditingExisting) "Modifica Itinerario" else "Personalizza Itinerario", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+                        if (isEditingExisting) {
+                            Text("Modifica di ${itinerary.title}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        } else if (city.isNotBlank()) {
                             Text("Personalizzazione a $city", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
@@ -153,7 +159,6 @@ fun PersonalizeItineraryScreen(
                                 Toast.makeText(context, "Sei offline. Non è possibile salvare l'itinerario senza connessione.", Toast.LENGTH_SHORT).show()
                                 return@Button
                             }
-                            val userId = AppContainer.sessionManager.getSessionUser()?.id
                             if (userId == null) {
                                 Toast.makeText(context, "Errore: utente non loggato", Toast.LENGTH_SHORT).show()
                                 return@Button
@@ -173,10 +178,14 @@ fun PersonalizeItineraryScreen(
                                     this.activityIds = selectedActivities.mapNotNull { it.id?.toString() }
                                     visibility = itinerary.visibility ?: "PRIVATE"
                                 }
-                                val res = AppContainer.itineraryRepository.createItinerary(req)
+                                val res = if (isEditingExisting) {
+                                    AppContainer.itineraryRepository.updateItinerary(itinerary.id!!.toString(), req)
+                                } else {
+                                    AppContainer.itineraryRepository.createItinerary(req)
+                                }
                                 if (res.isSuccess && coverImageUri != null) {
-                                    val createdItin = res.getOrNull()
-                                    val itinId = createdItin?.id?.toString()
+                                    val savedItin = res.getOrNull()
+                                    val itinId = savedItin?.id?.toString()
                                     if (itinId != null) {
                                         try {
                                             val inputStream = context.contentResolver.openInputStream(coverImageUri)
@@ -197,7 +206,8 @@ fun PersonalizeItineraryScreen(
                                 isSaving = false
                                 res.fold(
                                     onSuccess = {
-                                        Toast.makeText(context, "Itinerario creato con successo!", Toast.LENGTH_SHORT).show()
+                                        val successMsg = if (isEditingExisting) "Itinerario modificato con successo!" else "Itinerario creato con successo!"
+                                        Toast.makeText(context, successMsg, Toast.LENGTH_SHORT).show()
                                         onPersonalizeSuccess()
                                     },
                                     onFailure = { err ->
@@ -212,7 +222,7 @@ fun PersonalizeItineraryScreen(
                         if (isSaving) {
                             CircularProgressIndicator(modifier = Modifier.size(20.dp), color = MaterialTheme.colorScheme.onPrimary)
                         } else {
-                            Text("Salva e Crea")
+                            Text(if (isEditingExisting) "Salva Modifiche" else "Salva e Crea")
                         }
                     }
                 }
