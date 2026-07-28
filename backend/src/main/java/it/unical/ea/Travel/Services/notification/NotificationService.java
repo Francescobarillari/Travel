@@ -2,12 +2,14 @@ package it.unical.ea.Travel.Services.notification;
 
 import it.unical.ea.Travel.Entities.notification.Notification;
 import it.unical.ea.Travel.Entities.user.User;
+import it.unical.ea.Travel.Exception.ApiException;
 import it.unical.ea.Travel.Mappers.notification.NotificationMapper;
 import it.unical.ea.Travel.Repositories.notification.NotificationRepository;
 import it.unical.ea.dtos.notification.NotificationDto;
 import it.unical.ea.enums.NotificationType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -53,11 +55,14 @@ public class NotificationService {
     }
 
     @Transactional
-    public void markAsRead(UUID notificationId) {
-        notificationRepository.findById(notificationId).ifPresent(notification -> {
-            notification.setRead(true);
-            notificationRepository.save(notification);
-        });
+    public void markAsRead(UUID notificationId, User user) {
+        Notification notification = notificationRepository.findById(notificationId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "notification.notFound"));
+        if (!notification.getUser().getId().equals(user.getId())) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "error.forbidden");
+        }
+        notification.setRead(true);
+        notificationRepository.save(notification);
     }
 
     public SseEmitter registerEmitter(UUID userId) {

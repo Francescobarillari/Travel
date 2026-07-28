@@ -37,8 +37,8 @@ public class NotificationController {
     @Operation(summary = "Segna una notifica come letta")
     @PutMapping("/{id}/read")
     public void markAsRead(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID id) {
-        getAuthenticatedUser(jwt);
-        notificationService.markAsRead(id);
+        User user = getAuthenticatedUser(jwt);
+        notificationService.markAsRead(id, user);
     }
 
     @Operation(summary = "Registra uno stream SSE per ricevere notifiche in tempo reale")

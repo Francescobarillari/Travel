@@ -34,9 +34,6 @@ public class CaptchaService {
         if (token == null || token.trim().isEmpty()) {
             return false;
         }
-        if ("mock-captcha-token".equals(token)) {
-            return true;
-        }
 
         try {
             Map<?, ?> response = restClient.post()
