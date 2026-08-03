@@ -93,11 +93,11 @@ public class ItineraryService {
         return itineraryRepository.findByCreatorId(creatorId);
     }
 
-    // Risolve il creatore e le activity, poi salva l'itinerario
-    public Itinerary createItinerary(Itinerary itinerary, String creatorStringId, List<String> activityStringIds) {
-        // Risolve il creatore
-        UUID creatorId = UUID.fromString(creatorStringId);
-        User creator = userRepository.findById(creatorId)
+    // Risolve il creatore (dall'utente autenticato, mai da un id fornito dal client) e le activity, poi salva l'itinerario
+    public Itinerary createItinerary(Itinerary itinerary, List<String> activityStringIds) {
+        // Risolve il creatore dal token JWT dell'utente autenticato
+        String email = it.unical.ea.Travel.Config.SecurityUtils.getCurrentUserEmail();
+        User creator = userRepository.getUserByEmail(email)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "user.notFound"));
         itinerary.setCreator(creator);
 

@@ -63,7 +63,6 @@ public class ItineraryController {
 
         Itinerary savedItinerary = itineraryService.createItinerary(
                 itinerary,
-                request.getCreatorId(),
                 request.getActivityIds());
 
         return toDTO(savedItinerary);
