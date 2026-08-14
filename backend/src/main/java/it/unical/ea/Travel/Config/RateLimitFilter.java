@@ -28,18 +28,27 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private static final int MAX_UPLOAD_REQUESTS = 3;
     private static final Duration UPLOAD_REFILL_PERIOD = Duration.ofMinutes(1);
 
+    private static final int MAX_PASSWORD_RESET_REQUESTS = 3;
+    private static final Duration PASSWORD_RESET_REFILL_PERIOD = Duration.ofMinutes(1);
+    private static final String FORGOT_PASSWORD_PATH = "/api/auth/forgot-password";
+    private static final String RESET_PASSWORD_PATH = "/api/auth/reset-password";
+
     @Value("${app.security.trust-proxy:false}")
     private boolean trustProxy;
 
     private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger("security-audit");
 
-    // Caffeine cache handles automatic expiration, preventing memory leaks
     private final Cache<String, Bucket> loginBuckets = Caffeine.newBuilder()
             .expireAfterAccess(Duration.ofMinutes(10))
             .maximumSize(10000)
             .build();
 
     private final Cache<String, Bucket> uploadBuckets = Caffeine.newBuilder()
+            .expireAfterAccess(Duration.ofMinutes(10))
+            .maximumSize(10000)
+            .build();
+
+    private final Cache<String, Bucket> passwordResetBuckets = Caffeine.newBuilder()
             .expireAfterAccess(Duration.ofMinutes(10))
             .maximumSize(10000)
             .build();
@@ -58,8 +67,9 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
         boolean isLogin = LOGIN_PATH.equals(uri) && "POST".equalsIgnoreCase(request.getMethod());
         boolean isUpload = isUploadRequest(request, uri);
+        boolean isPasswordReset = (FORGOT_PASSWORD_PATH.equals(uri) || RESET_PASSWORD_PATH.equals(uri)) && "POST".equalsIgnoreCase(request.getMethod());
 
-        if (!isLogin && !isUpload) {
+        if (!isLogin && !isUpload && !isPasswordReset) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -78,7 +88,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
                 logger.warn("RATE_LIMIT_BLOCKED - Login rate limit reached for IP: {}. URI: {}", clientIp, request.getRequestURI());
                 sendErrorResponse(response, retryAfterSeconds, "Troppi tentativi di login. Riprova tra " + retryAfterSeconds + " secondi.");
             }
-        } else {
+        } else if (isUpload) {
             Bucket bucket = uploadBuckets.get(clientIp, k -> createBucket(MAX_UPLOAD_REQUESTS, UPLOAD_REFILL_PERIOD));
             ConsumptionProbe probe = bucket.tryConsumeAndReturnRemaining(1);
 
@@ -89,6 +99,18 @@ public class RateLimitFilter extends OncePerRequestFilter {
                 long retryAfterSeconds = Duration.ofNanos(probe.getNanosToWaitForRefill()).toSeconds() + 1;
                 logger.warn("RATE_LIMIT_BLOCKED - Upload rate limit reached for IP: {}. URI: {}", clientIp, request.getRequestURI());
                 sendErrorResponse(response, retryAfterSeconds, "Troppi tentativi di upload. Riprova tra " + retryAfterSeconds + " secondi.");
+            }
+        } else {
+            Bucket bucket = passwordResetBuckets.get(clientIp, k -> createBucket(MAX_PASSWORD_RESET_REQUESTS, PASSWORD_RESET_REFILL_PERIOD));
+            ConsumptionProbe probe = bucket.tryConsumeAndReturnRemaining(1);
+
+            if (probe.isConsumed()) {
+                response.setHeader("X-Rate-Limit-Remaining", String.valueOf(probe.getRemainingTokens()));
+                filterChain.doFilter(request, response);
+            } else {
+                long retryAfterSeconds = Duration.ofNanos(probe.getNanosToWaitForRefill()).toSeconds() + 1;
+                logger.warn("RATE_LIMIT_BLOCKED - Password reset rate limit reached for IP: {}. URI: {}", clientIp, request.getRequestURI());
+                sendErrorResponse(response, retryAfterSeconds, "Troppi tentativi di recupero password. Riprova tra " + retryAfterSeconds + " secondi.");
             }
         }
     }
