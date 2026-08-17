@@ -1,26 +1,27 @@
 package it.unical.ea.Travel.Services.itinerary;
 
+import it.unical.ea.Travel.Config.SecurityUtils;
 import it.unical.ea.Travel.Entities.activity.Activity;
 import it.unical.ea.Travel.Entities.activity.ActivityBooking;
 import it.unical.ea.Travel.Entities.itinerary.Itinerary;
 import it.unical.ea.Travel.Entities.itinerary.ItineraryBooking;
+import it.unical.ea.Travel.Entities.payment.BookingStatus;
 import it.unical.ea.Travel.Entities.user.User;
 import it.unical.ea.Travel.Exception.ApiException;
-import it.unical.ea.Travel.Repositories.activity.ActivityRepository;
 import it.unical.ea.Travel.Repositories.activity.ActivityBookingRepository;
-import it.unical.ea.Travel.Repositories.itinerary.ItineraryRepository;
+import it.unical.ea.Travel.Repositories.activity.ActivityRepository;
 import it.unical.ea.Travel.Repositories.itinerary.ItineraryBookingRepository;
+import it.unical.ea.Travel.Repositories.itinerary.ItineraryRepository;
 import it.unical.ea.Travel.Repositories.user.UserRepository;
 import it.unical.ea.Travel.Services.activity.ActivityService;
-import it.unical.ea.Travel.Services.storage.FileStorageService;
 import it.unical.ea.Travel.Services.audit.AuditLogService;
+import it.unical.ea.Travel.Services.notification.NotificationService;
 import it.unical.ea.Travel.Services.payment.PaymentGateway;
-import it.unical.ea.dtos.payment.PaymentIntentResponseDto;
-import it.unical.ea.dtos.itinerary.ItineraryDto;
+import it.unical.ea.Travel.Services.storage.FileStorageService;
 import it.unical.ea.dtos.itinerary.CreateItineraryRequest;
-import it.unical.ea.Travel.Entities.payment.BookingStatus;
-import java.math.BigDecimal;
-import org.springframework.beans.factory.annotation.Autowired;
+import it.unical.ea.dtos.payment.PaymentIntentResponseDto;
+import it.unical.ea.enums.NotificationType;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
@@ -28,12 +29,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Optional;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
 public class ItineraryService {
 
     private static final String ITINERARIES_SUBDIR = "itineraries";
@@ -47,130 +51,85 @@ public class ItineraryService {
     private final ActivityService activityService;
     private final AuditLogService auditLogService;
     private final PaymentGateway paymentGateway;
-    private final it.unical.ea.Travel.Services.notification.NotificationService notificationService;
+    private final NotificationService notificationService;
 
     @Value("${payment.mock:true}")
     private boolean paymentMock;
 
-    @Autowired
-    public ItineraryService(ItineraryRepository itineraryRepository,
-                            UserRepository userRepository,
-                            ActivityRepository activityRepository,
-                            FileStorageService fileStorageService,
-                            ItineraryBookingRepository itineraryBookingRepository,
-                            ActivityBookingRepository activityBookingRepository,
-                            ActivityService activityService,
-                            AuditLogService auditLogService,
-                            PaymentGateway paymentGateway,
-                            it.unical.ea.Travel.Services.notification.NotificationService notificationService) {
-        this.itineraryRepository = itineraryRepository;
-        this.userRepository = userRepository;
-        this.activityRepository = activityRepository;
-        this.fileStorageService = fileStorageService;
-        this.itineraryBookingRepository = itineraryBookingRepository;
-        this.activityBookingRepository = activityBookingRepository;
-        this.activityService = activityService;
-        this.auditLogService = auditLogService;
-        this.paymentGateway = paymentGateway;
-        this.notificationService = notificationService;
-    }
-
-    // Riceve tutti gli itinerari dal database
     public List<Itinerary> getAllItineraries() {
-        return itineraryRepository.findAll();
+        return getAllItineraries(null, false);
     }
 
-    // Cerca un singolo itinerario tramite il suo ID
+    public List<Itinerary> getAllItineraries(String userEmail, boolean isAdmin) {
+        if (isAdmin) {
+            return itineraryRepository.findAll();
+        }
+        if (userEmail != null) {
+            User user = userRepository.getUserByEmail(userEmail).orElse(null);
+            if (user != null) {
+                return itineraryRepository.findPublicOrCreatorItineraries(user.getId());
+            }
+        }
+        return itineraryRepository.findByVisibilityIgnoreCase("PUBLIC");
+    }
+
     public Itinerary getItinerary(String stringId) {
         UUID uuid = UUID.fromString(stringId);
         return itineraryRepository.findById(uuid)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "itinerary.notFound"));
     }
 
-    // Cerca gli itinerari creati da un utente specifico
-    public List<Itinerary> getItinerariesByCreator(String creatorStringId) {
-        UUID creatorId = UUID.fromString(creatorStringId);
-        return itineraryRepository.findByCreatorId(creatorId);
+    public Itinerary getItinerary(String stringId, String userEmail, boolean isAdmin) {
+        Itinerary itinerary = getItinerary(stringId);
+        if (itinerary.getVisibility() != null && "PRIVATE".equalsIgnoreCase(itinerary.getVisibility().trim())) {
+            boolean isOwner = userEmail != null && itinerary.getCreator() != null
+                    && userEmail.equalsIgnoreCase(itinerary.getCreator().getEmail());
+            if (!isAdmin && !isOwner) {
+                throw new ApiException(HttpStatus.FORBIDDEN, "error.forbidden");
+            }
+        }
+        return itinerary;
     }
 
-    // Risolve il creatore (dall'utente autenticato, mai da un id fornito dal client) e le activity, poi salva l'itinerario
+    public List<Itinerary> getItinerariesByCreator(String creatorStringId) {
+        return getItinerariesByCreator(creatorStringId, null, false);
+    }
+
+    public List<Itinerary> getItinerariesByCreator(String creatorStringId, String userEmail, boolean isAdmin) {
+        UUID creatorId = UUID.fromString(creatorStringId);
+        if (isAdmin) {
+            return itineraryRepository.findByCreatorId(creatorId);
+        }
+        if (userEmail != null) {
+            User requester = userRepository.getUserByEmail(userEmail).orElse(null);
+            if (requester != null && requester.getId().equals(creatorId)) {
+                return itineraryRepository.findByCreatorId(creatorId);
+            }
+        }
+        return itineraryRepository.findByCreatorIdAndVisibilityIgnoreCase(creatorId, "PUBLIC");
+    }
+
     public Itinerary createItinerary(Itinerary itinerary, List<String> activityStringIds) {
-        // Risolve il creatore dal token JWT dell'utente autenticato
-        String email = it.unical.ea.Travel.Config.SecurityUtils.getCurrentUserEmail();
+        String email = SecurityUtils.getCurrentUserEmail();
         User creator = userRepository.getUserByEmail(email)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "user.notFound"));
         itinerary.setCreator(creator);
 
-        // Risolve le activity (se presenti)
-        if (activityStringIds != null && !activityStringIds.isEmpty()) {
-            List<UUID> activityUuids = activityStringIds.stream()
-                    .map(UUID::fromString)
-                    .toList();
-            List<Activity> activities = activityRepository.findAllById(activityUuids);
-
-            // Ordinamento cronologico
-            activities.sort(java.util.Comparator.comparing(Activity::getStartTime));
-
-            // Validazione anti-sovrapposizione
-            for (int i = 0; i < activities.size() - 1; i++) {
-                Activity current = activities.get(i);
-                Activity next = activities.get(i + 1);
-                if (current.getEndTime().isAfter(next.getStartTime())) {
-                    throw new ApiException(HttpStatus.BAD_REQUEST, "itinerary.activities.overlap");
-                }
-            }
-
-            itinerary.setActivities(activities);
-
-            // Calcolo automatico delle date dell'itinerario
-            if (!activities.isEmpty()) {
-                itinerary.setStartDateTime(activities.get(0).getStartTime());
-                itinerary.setEndDateTime(activities.get(activities.size() - 1).getEndTime());
-            }
-        }
+        linkAndValidateActivities(itinerary, activityStringIds);
 
         Itinerary saved = itineraryRepository.save(itinerary);
         auditLogService.log("CREATE_ITINERARY", "Itinerary", saved.getId().toString(), "Created itinerary: " + saved.getTitle());
         return saved;
     }
 
-    // Aggiorna un itinerario esistente
     public Itinerary updateItinerary(String stringId, CreateItineraryRequest request) {
         Itinerary itinerary = getItinerary(stringId);
-
         itinerary.setTitle(request.getTitle());
         itinerary.setDescription(request.getDescription());
         itinerary.setVisibility(request.getVisibility() != null ? request.getVisibility() : "PRIVATE");
 
-        // Risolve le activity (se presenti)
         if (request.getActivityIds() != null) {
-            List<UUID> activityUuids = request.getActivityIds().stream()
-                    .map(UUID::fromString)
-                    .toList();
-            List<Activity> activities = activityRepository.findAllById(activityUuids);
-
-            // Ordinamento cronologico
-            activities.sort(java.util.Comparator.comparing(Activity::getStartTime));
-
-            // Validazione anti-sovrapposizione
-            for (int i = 0; i < activities.size() - 1; i++) {
-                Activity current = activities.get(i);
-                Activity next = activities.get(i + 1);
-                if (current.getEndTime().isAfter(next.getStartTime())) {
-                    throw new ApiException(HttpStatus.BAD_REQUEST, "itinerary.activities.overlap");
-                }
-            }
-
-            itinerary.setActivities(activities);
-
-            // Calcolo automatico delle date dell'itinerario
-            if (!activities.isEmpty()) {
-                itinerary.setStartDateTime(activities.get(0).getStartTime());
-                itinerary.setEndDateTime(activities.get(activities.size() - 1).getEndTime());
-            } else {
-                itinerary.setStartDateTime(null);
-                itinerary.setEndDateTime(null);
-            }
+            linkAndValidateActivities(itinerary, request.getActivityIds());
         }
 
         Itinerary saved = itineraryRepository.save(itinerary);
@@ -178,85 +137,68 @@ public class ItineraryService {
         return saved;
     }
 
-    // Rimuove un itinerario (soft delete tramite @SQLDelete)
     public void deleteItinerary(String stringId) {
-        UUID uuid = UUID.fromString(stringId);
-        itineraryRepository.deleteById(uuid);
+        itineraryRepository.deleteById(UUID.fromString(stringId));
         auditLogService.log("DELETE_ITINERARY", "Itinerary", stringId, "Deleted itinerary with ID: " + stringId);
     }
 
-    // Gestione immagine
-
-    //Carica un'immagine per l'itinerario specificato.
-    //Se esiste già un'immagine, viene sostituita.
     public Itinerary uploadImage(String itineraryId, MultipartFile file) {
         Itinerary itinerary = getItinerary(itineraryId);
-
-        // Se esiste già un'immagine, elimina quella vecchia
         if (itinerary.getImagePath() != null) {
             fileStorageService.delete(itinerary.getImagePath());
         }
-
         String relativePath = fileStorageService.store(file, ITINERARIES_SUBDIR);
         itinerary.setImagePath(relativePath);
-
         return itineraryRepository.save(itinerary);
     }
 
-    
-    //Restituisce l'immagine dell'itinerario come Resource.
-
     public Resource getImage(String itineraryId) {
         Itinerary itinerary = getItinerary(itineraryId);
-
         if (itinerary.getImagePath() == null) {
             throw new ApiException(HttpStatus.NOT_FOUND, "itinerary.imageNotFound");
         }
-
         return fileStorageService.load(itinerary.getImagePath());
     }
 
-    
-    //Elimina l'immagine associata all'itinerario.
-
     public Itinerary deleteImage(String itineraryId) {
         Itinerary itinerary = getItinerary(itineraryId);
-
         if (itinerary.getImagePath() != null) {
             fileStorageService.delete(itinerary.getImagePath());
             itinerary.setImagePath(null);
             itineraryRepository.save(itinerary);
         }
-
         return itinerary;
+    }
+
+    public Itinerary updateVisibility(String stringId, String visibility) {
+        Itinerary itinerary = getItinerary(stringId);
+        itinerary.setVisibility(visibility);
+        Itinerary saved = itineraryRepository.save(itinerary);
+        auditLogService.log("UPDATE_ITINERARY_VISIBILITY", "Itinerary", stringId, "Updated visibility to: " + visibility);
+        return saved;
     }
 
     @Transactional
     public PaymentIntentResponseDto bookItinerary(String itineraryId, String userEmail) {
-        // 1. Lock sull'Itinerario
         Itinerary itinerary = itineraryRepository.findByIdForUpdate(UUID.fromString(itineraryId))
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "itinerary.notFound"));
-                
-        // 2. Controllo evento concluso
+
         if (itinerary.getEndDateTime() != null && itinerary.getEndDateTime().isBefore(LocalDateTime.now())) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "itinerary.booking.pastEvent");
         }
-                
+
         User user = userRepository.getUserByEmail(userEmail)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "user.notFound"));
-                
+
         BigDecimal totalPrice = BigDecimal.ZERO;
-        
-        // 3. Lock sulle attività collegate (Optimistic Lock)
         for (Activity activity : itinerary.getActivities()) {
             Activity lockedActivity = activityRepository.findByIdForUpdate(activity.getId())
                     .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "activity.notFound"));
-                    
+
             int current = activityService.calculateCurrentParticipants(lockedActivity);
             if (lockedActivity.getParticipants() != null && current >= lockedActivity.getParticipants()) {
                 throw new ApiException(HttpStatus.BAD_REQUEST, "itinerary.booking.activityFull");
             }
-            
             if (activity.getPrice() != null) {
                 totalPrice = totalPrice.add(activity.getPrice());
             }
@@ -264,8 +206,8 @@ public class ItineraryService {
 
         Optional<ItineraryBooking> existingBookingOpt = itineraryBookingRepository.findByUserIdAndItineraryId(user.getId(), itinerary.getId());
         if (existingBookingOpt.isPresent()) {
-            ItineraryBooking existingBooking = existingBookingOpt.get();
-            if (existingBooking.getStatus() == BookingStatus.PENDING || existingBooking.getStatus() == BookingStatus.FAILED) {
+            ItineraryBooking existing = existingBookingOpt.get();
+            if (existing.getStatus() == BookingStatus.PENDING || existing.getStatus() == BookingStatus.FAILED) {
                 cancelItineraryBooking(itineraryId, userEmail);
             } else {
                 throw new ApiException(HttpStatus.CONFLICT, "itinerary.booking.alreadyBooked");
@@ -278,13 +220,11 @@ public class ItineraryService {
 
         if (totalPrice.compareTo(BigDecimal.ZERO) > 0 && !paymentMock) {
             clientSecret = paymentGateway.createPaymentIntent(totalPrice, "eur", "Booking for Itinerary: " + itinerary.getTitle());
-            // For PayPal, the returned value is the Order ID.
             paymentIntentId = clientSecret;
         } else {
             status = BookingStatus.CONFIRMED;
         }
 
-        // 4. Salva la prenotazione dell'itinerario
         ItineraryBooking booking = new ItineraryBooking();
         booking.setUser(user);
         booking.setItinerary(itinerary);
@@ -292,7 +232,6 @@ public class ItineraryService {
         booking.setPaymentIntentId(paymentIntentId);
         itineraryBookingRepository.save(booking);
 
-        // 5. Iscrizione automatica a cascata in tutte le attività
         for (Activity activity : itinerary.getActivities()) {
             if (activityBookingRepository.findByUserIdAndActivityId(user.getId(), activity.getId()).isPresent()) {
                 continue;
@@ -300,13 +239,15 @@ public class ItineraryService {
             ActivityBooking actBooking = new ActivityBooking();
             actBooking.setUser(user);
             actBooking.setActivity(activity);
-            actBooking.setItinerary(itinerary); // Riferimento all'itinerario
+            actBooking.setItinerary(itinerary);
             actBooking.setStatus(status);
             actBooking.setPaymentIntentId(paymentIntentId);
             activityBookingRepository.save(actBooking);
         }
-        
-        auditLogService.log("BOOK_ITINERARY", "ItineraryBooking", booking.getId().toString(), "User " + userEmail + " booked itinerary: " + itinerary.getTitle() + " status: " + status);
+
+        auditLogService.log("BOOK_ITINERARY", "ItineraryBooking", booking.getId().toString(),
+                "User " + userEmail + " booked itinerary: " + itinerary.getTitle() + " status: " + status);
+
         if (status == BookingStatus.CONFIRMED) {
             sendItineraryBookingConfirmationNotifications(booking);
         }
@@ -317,44 +258,42 @@ public class ItineraryService {
     public void cancelItineraryBooking(String itineraryId, String userEmail) {
         Itinerary itinerary = itineraryRepository.findByIdForUpdate(UUID.fromString(itineraryId))
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "itinerary.notFound"));
-                
+
         if (itinerary.getEndDateTime() != null && itinerary.getEndDateTime().isBefore(LocalDateTime.now())) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "itinerary.booking.pastEvent");
         }
-        
+
         User user = userRepository.getUserByEmail(userEmail)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "user.notFound"));
-                
+
         ItineraryBooking booking = itineraryBookingRepository.findByUserIdAndItineraryId(user.getId(), itinerary.getId())
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "itinerary.booking.notFound"));
-                
-        // Rimuove l'iscrizione a cascata da tutte le attività collegate
+
         List<ActivityBooking> associatedBookings = activityBookingRepository.findByUserIdAndItineraryId(user.getId(), itinerary.getId());
         activityBookingRepository.deleteAll(associatedBookings);
         activityBookingRepository.flush();
 
-        // Rimuove la prenotazione dell'itinerario
         itineraryBookingRepository.delete(booking);
         itineraryBookingRepository.flush();
-        
-        auditLogService.log("CANCEL_ITINERARY_BOOKING", "ItineraryBooking", booking.getId().toString(), "User " + userEmail + " cancelled booking for itinerary: " + itinerary.getTitle());
+
+        auditLogService.log("CANCEL_ITINERARY_BOOKING", "ItineraryBooking", booking.getId().toString(),
+                "User " + userEmail + " cancelled booking for itinerary: " + itinerary.getTitle());
     }
 
     @Transactional
     public void confirmItineraryBooking(String bookingId) {
         ItineraryBooking booking = itineraryBookingRepository.findById(UUID.fromString(bookingId))
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "itinerary.booking.notFound"));
+
         if (booking.getStatus() == BookingStatus.CONFIRMED) {
             return;
         }
         booking.setStatus(BookingStatus.CONFIRMED);
         itineraryBookingRepository.save(booking);
 
-        // Aggiorna le prenotazioni delle attività collegate
-        List<ActivityBooking> activityBookings = null;
-        if (booking.getPaymentIntentId() != null) {
-            activityBookings = activityBookingRepository.findByPaymentIntentId(booking.getPaymentIntentId());
-        }
+        List<ActivityBooking> activityBookings = booking.getPaymentIntentId() != null
+                ? activityBookingRepository.findByPaymentIntentId(booking.getPaymentIntentId())
+                : null;
         if (activityBookings == null || activityBookings.isEmpty()) {
             activityBookings = activityBookingRepository.findByUserIdAndItineraryId(booking.getUser().getId(), booking.getItinerary().getId());
         }
@@ -366,13 +305,58 @@ public class ItineraryService {
         auditLogService.log("CONFIRM_ITINERARY_BOOKING", "ItineraryBooking", booking.getId().toString(), "Booking confirmed client-side");
     }
 
+    public boolean isItineraryBooked(String itineraryId, String userEmail) {
+        User user = userRepository.getUserByEmail(userEmail).orElse(null);
+        if (user == null) return false;
+
+        Optional<ItineraryBooking> existing = itineraryBookingRepository.findByUserIdAndItineraryId(user.getId(), UUID.fromString(itineraryId));
+        return existing.isPresent() && existing.get().getStatus() == BookingStatus.CONFIRMED;
+    }
+
+    @Transactional(readOnly = true)
+    public List<Itinerary> getBookedItinerariesForUser(String userEmail) {
+        User user = userRepository.getUserByEmail(userEmail)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "user.notFound"));
+        return itineraryBookingRepository.findByUserId(user.getId()).stream()
+                .filter(b -> b.getStatus() == BookingStatus.CONFIRMED)
+                .map(ItineraryBooking::getItinerary)
+                .toList();
+    }
+
+    private void linkAndValidateActivities(Itinerary itinerary, List<String> activityStringIds) {
+        if (activityStringIds == null || activityStringIds.isEmpty()) {
+            itinerary.setActivities(null);
+            itinerary.setStartDateTime(null);
+            itinerary.setEndDateTime(null);
+            return;
+        }
+
+        List<UUID> activityUuids = activityStringIds.stream()
+                .map(UUID::fromString)
+                .toList();
+        List<Activity> activities = activityRepository.findAllById(activityUuids);
+        activities.sort(Comparator.comparing(Activity::getStartTime));
+
+        for (int i = 0; i < activities.size() - 1; i++) {
+            if (activities.get(i).getEndTime().isAfter(activities.get(i + 1).getStartTime())) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "itinerary.activities.overlap");
+            }
+        }
+
+        itinerary.setActivities(activities);
+        if (!activities.isEmpty()) {
+            itinerary.setStartDateTime(activities.get(0).getStartTime());
+            itinerary.setEndDateTime(activities.get(activities.size() - 1).getEndTime());
+        }
+    }
+
     private void sendItineraryBookingConfirmationNotifications(ItineraryBooking booking) {
         try {
             notificationService.createNotification(
-                booking.getUser(),
-                "Itinerario Prenotato",
-                "Il tuo itinerario '" + booking.getItinerary().getTitle() + "' è stato prenotato con successo!",
-                it.unical.ea.enums.NotificationType.PRENOTAZIONE_SUCCESSO
+                    booking.getUser(),
+                    "Itinerario Prenotato",
+                    "Il tuo itinerario '" + booking.getItinerary().getTitle() + "' è stato prenotato con successo!",
+                    NotificationType.PRENOTAZIONE_SUCCESSO
             );
 
             List<ActivityBooking> activityBookings = activityBookingRepository.findByUserIdAndItineraryId(booking.getUser().getId(), booking.getItinerary().getId());
@@ -380,42 +364,16 @@ public class ItineraryService {
                 User organizer = ab.getActivity().getTemplate().getOrganizer();
                 if (organizer != null) {
                     notificationService.createNotification(
-                        organizer,
-                        "Nuova Prenotazione Attività",
-                        "Un utente ha prenotato la tua attività '" + ab.getActivity().getTemplate().getName() + "' all'interno di un itinerario.",
-                        it.unical.ea.enums.NotificationType.NUOVA_PRENOTAZIONE
+                            organizer,
+                            "Nuova Prenotazione Attività",
+                            "Un utente ha prenotato la tua attività '" + ab.getActivity().getTemplate().getName() + "' all'interno di un itinerario.",
+                            NotificationType.NUOVA_PRENOTAZIONE
                     );
                 }
             }
         } catch (Exception e) {
-            auditLogService.log("NOTIFICATION_ERROR", "ItineraryBooking", booking.getId().toString(), "Errore nell'invio delle notifiche per itinerario: " + e.getMessage());
+            auditLogService.log("NOTIFICATION_ERROR", "ItineraryBooking", booking.getId().toString(),
+                    "Errore nell'invio delle notifiche per itinerario: " + e.getMessage());
         }
-    }
-
-    public boolean isItineraryBooked(String itineraryId, String userEmail) {
-        User user = userRepository.getUserByEmail(userEmail).orElse(null);
-        if (user == null) return false;
-
-        Optional<ItineraryBooking> existingBookingOpt = itineraryBookingRepository.findByUserIdAndItineraryId(user.getId(), UUID.fromString(itineraryId));
-        return existingBookingOpt.isPresent() && existingBookingOpt.get().getStatus() == BookingStatus.CONFIRMED;
-    }
-
-    @Transactional(readOnly = true)
-    public List<Itinerary> getBookedItinerariesForUser(String userEmail) {
-        User user = userRepository.getUserByEmail(userEmail)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "user.notFound"));
-        List<ItineraryBooking> bookings = itineraryBookingRepository.findByUserId(user.getId());
-        return bookings.stream()
-                .filter(b -> b.getStatus() == BookingStatus.CONFIRMED)
-                .map(ItineraryBooking::getItinerary)
-                .toList();
-    }
-
-    public Itinerary updateVisibility(String stringId, String visibility) {
-        Itinerary itinerary = getItinerary(stringId);
-        itinerary.setVisibility(visibility);
-        Itinerary saved = itineraryRepository.save(itinerary);
-        auditLogService.log("UPDATE_ITINERARY_VISIBILITY", "Itinerary", stringId, "Updated visibility to: " + visibility);
-        return saved;
     }
 }

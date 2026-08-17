@@ -17,6 +17,13 @@ public interface ItineraryRepository extends JpaRepository<Itinerary, UUID> {
 
     List<Itinerary> findByCreatorId(UUID creatorId);
 
+    List<Itinerary> findByCreatorIdAndVisibilityIgnoreCase(UUID creatorId, String visibility);
+
+    List<Itinerary> findByVisibilityIgnoreCase(String visibility);
+
+    @Query("SELECT i FROM Itinerary i WHERE UPPER(i.visibility) = 'PUBLIC' OR (i.creator IS NOT NULL AND i.creator.id = :creatorId)")
+    List<Itinerary> findPublicOrCreatorItineraries(@Param("creatorId") UUID creatorId);
+
     @Lock(LockModeType.OPTIMISTIC_FORCE_INCREMENT)
     @Query("SELECT i FROM Itinerary i WHERE i.id = :id")
     Optional<Itinerary> findByIdForUpdate(@Param("id") UUID id);

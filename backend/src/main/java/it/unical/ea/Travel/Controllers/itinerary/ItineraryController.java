@@ -3,7 +3,9 @@ package it.unical.ea.Travel.Controllers.itinerary;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -89,15 +91,20 @@ public class ItineraryController {
     @Operation(summary = "Ottieni un itinerario per ID")
     @GetMapping("/{stringId}")
     public ItineraryDto getItinerary(
-            @Parameter(description = "ID dell'itinerario", schema = @Schema(format = "uuid"), example = "550e8400-e29b-41d4-a716-446655440000") @PathVariable String stringId) {
-        Itinerary itinerary = itineraryService.getItinerary(stringId);
+            @Parameter(description = "ID dell'itinerario", schema = @Schema(format = "uuid"), example = "550e8400-e29b-41d4-a716-446655440000") @PathVariable String stringId,
+            @AuthenticationPrincipal Jwt jwt) {
+        String email = jwt != null ? jwt.getClaimAsString("email") : null;
+        boolean admin = isAdmin(jwt);
+        Itinerary itinerary = itineraryService.getItinerary(stringId, email, admin);
         return toDTO(itinerary);
     }
 
     @Operation(summary = "Ottieni tutti gli itinerari")
     @GetMapping
-    public List<ItineraryDto> getItineraries() {
-        return itineraryService.getAllItineraries().stream()
+    public List<ItineraryDto> getItineraries(@AuthenticationPrincipal Jwt jwt) {
+        String email = jwt != null ? jwt.getClaimAsString("email") : null;
+        boolean admin = isAdmin(jwt);
+        return itineraryService.getAllItineraries(email, admin).stream()
                 .map(this::toDTO)
                 .toList();
     }
@@ -105,8 +112,11 @@ public class ItineraryController {
     @Operation(summary = "Ottieni gli itinerari di un creatore", description = "Restituisce tutti gli itinerari creati da un utente specifico")
     @GetMapping("/creator/{creatorId}")
     public List<ItineraryDto> getItinerariesByCreator(
-            @Parameter(description = "ID del creatore", schema = @Schema(format = "uuid"), example = "550e8400-e29b-41d4-a716-446655440000") @PathVariable String creatorId) {
-        return itineraryService.getItinerariesByCreator(creatorId).stream()
+            @Parameter(description = "ID del creatore", schema = @Schema(format = "uuid"), example = "550e8400-e29b-41d4-a716-446655440000") @PathVariable String creatorId,
+            @AuthenticationPrincipal Jwt jwt) {
+        String email = jwt != null ? jwt.getClaimAsString("email") : null;
+        boolean admin = isAdmin(jwt);
+        return itineraryService.getItinerariesByCreator(creatorId, email, admin).stream()
                 .map(this::toDTO)
                 .toList();
     }
@@ -244,5 +254,27 @@ public class ItineraryController {
         }
 
         return dto;
+    }
+
+    private boolean isAdmin(Jwt jwt) {
+        if (jwt == null) return false;
+        List<String> roles = jwt.getClaimAsStringList("roles");
+        if (roles != null && roles.stream().anyMatch(r -> r.equalsIgnoreCase("ADMIN") || r.equalsIgnoreCase("ROLE_ADMIN"))) {
+            return true;
+        }
+        Map<String, Object> resourceAccess = jwt.getClaim("resource_access");
+        if (resourceAccess != null) {
+            Object clientAccess = resourceAccess.get("ae-client");
+            if (clientAccess instanceof Map<?, ?> clientAccessMap) {
+                Object clientRoles = clientAccessMap.get("roles");
+                if (clientRoles instanceof Collection<?> roleCollection) {
+                    if (roleCollection.stream().anyMatch(r -> "ADMIN".equalsIgnoreCase(String.valueOf(r)) || "ROLE_ADMIN".equalsIgnoreCase(String.valueOf(r)))) {
+                        return true;
+                    }
+                }
+            }
+        }
+        String email = jwt.getClaimAsString("email");
+        return "admin-user@example.com".equalsIgnoreCase(email);
     }
 }
