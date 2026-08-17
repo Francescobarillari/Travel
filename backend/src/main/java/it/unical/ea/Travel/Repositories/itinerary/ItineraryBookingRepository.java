@@ -11,4 +11,6 @@ public interface ItineraryBookingRepository extends JpaRepository<ItineraryBooki
     Optional<ItineraryBooking> findByUserIdAndItineraryId(UUID userId, UUID itineraryId);
     java.util.List<ItineraryBooking> findByPaymentIntentId(String paymentIntentId);
     java.util.List<ItineraryBooking> findByUserId(UUID userId);
+    boolean existsByUserIdAndItineraryIdAndStatus(UUID userId, UUID itineraryId, it.unical.ea.Travel.Entities.payment.BookingStatus status);
 }
+

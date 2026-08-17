@@ -23,4 +23,9 @@ public interface ReviewRepository extends JpaRepository<Review, UUID> {
 
     @Query("SELECT AVG(r.rating) FROM Review r WHERE r.activityTemplate.id = :templateId")
     Double getAverageRatingForTemplate(@Param("templateId") UUID templateId);
+
+    boolean existsByAuthorIdAndActivityTemplateId(UUID authorId, UUID activityTemplateId);
+
+    boolean existsByAuthorIdAndItineraryId(UUID authorId, UUID itineraryId);
 }
+
