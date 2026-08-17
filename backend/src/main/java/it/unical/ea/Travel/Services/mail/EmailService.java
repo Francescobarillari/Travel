@@ -44,7 +44,7 @@ public class EmailService {
             helper.setText(content, true);
             mailSender.send(message);
         } catch (MessagingException e) {
-            throw new RuntimeException("Errore durante l'invio della mail di benvenuto", e);
+            throw new it.unical.ea.Travel.Exception.ApiException(org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR, "email.sendError");
         }
     }
 
@@ -65,7 +65,7 @@ public class EmailService {
             helper.setText(content, true);
             mailSender.send(message);
         } catch (MessagingException e) {
-            throw new RuntimeException("Errore durante l'invio della mail OTP", e);
+            throw new it.unical.ea.Travel.Exception.ApiException(org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR, "email.sendError");
         }
     }
 
@@ -86,7 +86,7 @@ public class EmailService {
             helper.setText(content, true);
             mailSender.send(message);
         } catch (MessagingException e) {
-            throw new RuntimeException("Errore durante l'invio della mail di approvazione agenzia", e);
+            throw new it.unical.ea.Travel.Exception.ApiException(org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR, "email.sendError");
         }
     }
 
@@ -107,7 +107,7 @@ public class EmailService {
             helper.setText(content, true);
             mailSender.send(message);
         } catch (MessagingException e) {
-            throw new RuntimeException("Errore durante l'invio della mail di rifiuto agenzia", e);
+            throw new it.unical.ea.Travel.Exception.ApiException(org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR, "email.sendError");
         }
     }
 }

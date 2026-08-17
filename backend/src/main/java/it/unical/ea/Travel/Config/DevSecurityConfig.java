@@ -1,74 +1,52 @@
 package it.unical.ea.Travel.Config;
 
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.web.SecurityFilterChain;
 
 /**
- * Configurazione della sicurezza dell'applicazione, unica e attiva in ogni profilo.
- * L'applicazione valida i Bearer token emessi da Keycloak tramite OAuth2 Resource Server.
- *
- * Non esistono varianti per-profilo: una configurazione che disattiva l'autenticazione
- * in "dev" finisce per essere quella con cui l'applicazione viene realmente eseguita.
+ * Configurazione di sicurezza per il profilo "dev".
+ * Permette tutte le richieste senza autenticazione,
+ * ma parsando il token se presente, in modo che @AuthenticationPrincipal funzioni.
  */
 @Configuration
 @EnableWebSecurity
-public class SecurityConfig {
-
-    private final RateLimitFilter rateLimitFilter;
-
-    public SecurityConfig(RateLimitFilter rateLimitFilter) {
-        this.rateLimitFilter = rateLimitFilter;
-    }
+@Profile("dev")
+public class DevSecurityConfig {
 
     @Bean
-    public org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer webSecurityCustomizer() {
+    public WebSecurityCustomizer webSecurityCustomizer() {
         return (web) -> web.ignoring().requestMatchers("/api/auth/**", "/swagger-ui/**", "/v3/api-docs/**");
     }
 
-    @Bean
+    @Bean(name = "devSecurityFilterChain")
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.disable()) 
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers("/api/v1/payments/paypal/webhook").permitAll()
-
-                .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs", "/v3/api-docs/**", "/error").permitAll()
-                .requestMatchers(HttpMethod.GET, "/itinerary/*/image").permitAll()
-                .requestMatchers(HttpMethod.GET, "/activity/images/*").permitAll()
-                .requestMatchers(HttpMethod.GET, "/user/*/avatar").permitAll()
-                // Capability: accesso pubblico in sola lettura a una lista preferiti tramite link con token
-                .requestMatchers(HttpMethod.GET, "/api/favorite-lists/shared/*").permitAll()
-                .requestMatchers("/api/basic").hasRole("BASIC")
-                .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                .anyRequest().authenticated()              
+                .anyRequest().permitAll()
             )
-            .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
             .oauth2ResourceServer(oauth2 -> oauth2
                 .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter()))
             );
-        
+
         return http.build();
     }
 
-    @Bean
-    public JwtAuthenticationConverter jwtAuthenticationConverter() {
+    private JwtAuthenticationConverter jwtAuthenticationConverter() {
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
         converter.setJwtGrantedAuthoritiesConverter(this::extractAuthorities);
         return converter;

@@ -12,6 +12,8 @@ import it.unical.ea.Travel.Config.SecurityUtils;
 import it.unical.ea.dtos.review.CreateReviewDto;
 import it.unical.ea.dtos.review.ReviewDto;
 import lombok.RequiredArgsConstructor;
+import it.unical.ea.Travel.Exception.ApiException;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,23 +35,24 @@ public class ReviewService {
     public ReviewDto createReview(CreateReviewDto dto) {
         String email = SecurityUtils.getCurrentUserEmail();
         User currentUser = userRepository.getUserByEmail(email)
-            .orElseThrow(() -> new RuntimeException("User not found"));
+            .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "user.notFound"));
         
         Review review = new Review();
         review.setAuthor(currentUser);
         review.setRating(dto.getRating());
         review.setComment(dto.getComment());
 
-        if (dto.getActivityId() != null) {
-            ActivityTemplate activityTemplate = activityTemplateRepository.findById(dto.getActivityId())
-                    .orElseThrow(() -> new RuntimeException("Activity Template not found"));
-            review.setActivityTemplate(activityTemplate);
+        UUID templateId = dto.getActivityId();
+        if (templateId != null) {
+            ActivityTemplate template = activityTemplateRepository.findById(templateId)
+                    .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "activity.template.notFound"));
+            review.setActivityTemplate(template);
         } else if (dto.getItineraryId() != null) {
             Itinerary itinerary = itineraryRepository.findById(dto.getItineraryId())
-                    .orElseThrow(() -> new RuntimeException("Itinerary not found"));
+                    .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "itinerary.notFound"));
             review.setItinerary(itinerary);
         } else {
-            throw new IllegalArgumentException("Either ActivityId or ItineraryId must be provided");
+            throw new ApiException(HttpStatus.BAD_REQUEST, "review.invalidParameters");
         }
 
         Review savedReview = reviewRepository.save(review);
@@ -67,7 +70,7 @@ public class ReviewService {
     @Transactional(readOnly = true)
     public List<ReviewDto> getReviewsForItinerary(UUID itineraryId) {
         Itinerary itinerary = itineraryRepository.findById(itineraryId)
-                .orElseThrow(() -> new RuntimeException("Itinerary not found"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "itinerary.notFound"));
                 
         List<Review> allReviews = new ArrayList<>();
         
@@ -96,10 +99,10 @@ public class ReviewService {
     public ReviewDto updateReview(UUID id, CreateReviewDto dto) {
         String email = SecurityUtils.getCurrentUserEmail();
         Review review = reviewRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Review not found"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "review.notFound"));
 
         if (!review.getAuthor().getEmail().equals(email)) {
-            throw new RuntimeException("Non hai i permessi per modificare questa recensione");
+            throw new ApiException(HttpStatus.FORBIDDEN, "review.forbidden");
         }
 
         review.setRating(dto.getRating());
@@ -113,10 +116,10 @@ public class ReviewService {
     public void deleteReview(UUID id) {
         String email = SecurityUtils.getCurrentUserEmail();
         Review review = reviewRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Review not found"));
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "review.notFound"));
 
         if (!review.getAuthor().getEmail().equals(email)) {
-            throw new RuntimeException("Non hai i permessi per eliminare questa recensione");
+            throw new ApiException(HttpStatus.FORBIDDEN, "review.forbidden");
         }
 
         reviewRepository.delete(review);

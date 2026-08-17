@@ -1,9 +1,11 @@
 package it.unical.ea.Travel.Exception;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -13,6 +15,7 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
+@Slf4j
 @ControllerAdvice
 @RequiredArgsConstructor
 public class GlobalExceptionHandler {
@@ -21,10 +24,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<Map<String, String>> handleApiException(ApiException ex, Locale locale) {
-        // Recupera il messaggio localizzato usando il locale corrente della richiesta, con fallback sulla chiave stessa
         String translatedMessage = messageSource.getMessage(ex.getMessageKey(), null, ex.getMessageKey(), locale);
-        
-        // Restituisce un JSON del tipo {"error": "messaggio tradotto"} e il corretto status HTTP
         return new ResponseEntity<>(Map.of("error", translatedMessage), ex.getStatus());
     }
 
@@ -35,7 +35,6 @@ public class GlobalExceptionHandler {
         Map<String, String> fieldErrors = new HashMap<>();
 
         for (FieldError fieldError : ex.getBindingResult().getFieldErrors()) {
-            // Il messaggio è già risolto dal MessageSource grazie all'uso delle chiavi {message.key}
             fieldErrors.put(fieldError.getField(), fieldError.getDefaultMessage());
         }
 
@@ -54,6 +53,17 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(Map.of("error", message != null ? message : "Richiesta non valida."), HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<Map<String, String>> handleIllegalStateException(IllegalStateException ex) {
+        return new ResponseEntity<>(Map.of("error", ex.getMessage() != null ? ex.getMessage() : "Stato operazione non valido."), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<Map<String, String>> handleAccessDeniedException(AccessDeniedException ex, Locale locale) {
+        String translatedMessage = messageSource.getMessage("error.unauthorized", null, "Non sei autorizzato ad eseguire questa operazione.", locale);
+        return new ResponseEntity<>(Map.of("error", translatedMessage), HttpStatus.FORBIDDEN);
+    }
+
     @ExceptionHandler(org.springframework.orm.ObjectOptimisticLockingFailureException.class)
     public ResponseEntity<Map<String, String>> handleOptimisticLockException(
             org.springframework.orm.ObjectOptimisticLockingFailureException ex, Locale locale) {
@@ -67,6 +77,11 @@ public class GlobalExceptionHandler {
         String translatedMessage = messageSource.getMessage("file.maxSizeExceeded", null, "Il file caricato supera la dimensione massima consentita.", locale);
         return new ResponseEntity<>(Map.of("error", translatedMessage), HttpStatus.PAYLOAD_TOO_LARGE);
     }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<Map<String, String>> handleGenericException(Exception ex, Locale locale) {
+        log.error("Unhandled exception captured by GlobalExceptionHandler: {}", ex.getMessage(), ex);
+        String translatedMessage = messageSource.getMessage("error.internalServerError", null, "Si è verificato un errore interno del server.", locale);
+        return new ResponseEntity<>(Map.of("error", translatedMessage), HttpStatus.INTERNAL_SERVER_ERROR);
+    }
 }
-
-

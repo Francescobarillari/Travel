@@ -40,7 +40,7 @@ public class FileStorageService {
         try {
             Files.createDirectories(rootLocation);
         } catch (IOException e) {
-            throw new RuntimeException("Impossibile creare la directory di upload: " + rootLocation, e);
+            throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "file.storageError");
         }
     }
 
@@ -56,7 +56,7 @@ public class FileStorageService {
         try {
             Files.createDirectories(targetDir);
         } catch (IOException e) {
-            throw new RuntimeException("Impossibile creare la sotto-directory: " + targetDir, e);
+            throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "file.storageError");
         }
 
         Path targetPath = targetDir.resolve(newFilename).normalize();
@@ -69,7 +69,7 @@ public class FileStorageService {
         try (InputStream inputStream = file.getInputStream()) {
             Files.copy(inputStream, targetPath, StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
-            throw new RuntimeException("Impossibile salvare il file: " + newFilename, e);
+            throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "file.storageError");
         }
 
         return subDir + "/" + newFilename;
@@ -112,7 +112,7 @@ public class FileStorageService {
         try {
             Files.deleteIfExists(file);
         } catch (IOException e) {
-            throw new RuntimeException("Impossibile eliminare il file: " + filePath, e);
+            throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "file.storageError");
         }
     }
 
