@@ -24,6 +24,7 @@ import it.unical.ea.enums.UserType;
 
 import it.unical.ea.dtos.user.UserDTO;
 import it.unical.ea.Travel.Entities.user.User;
+import it.unical.ea.Travel.Exception.ApiException;
 import it.unical.ea.Travel.Mappers.user.UserMapper;
 import it.unical.ea.Travel.Services.user.UserService;
 import jakarta.validation.Valid;
@@ -135,21 +136,38 @@ public class UserController {
         return false;
     }
 
+    private void checkUserOwnershipOrAdmin(Jwt jwt, String stringId) {
+        if (jwt == null) {
+            throw new ApiException(HttpStatus.UNAUTHORIZED, "auth.login.invalidCredentials");
+        }
+        if (isAdmin(jwt)) {
+            return;
+        }
+        String email = jwt.getClaimAsString("email");
+        User user = userService.getUser(stringId);
+        if (email == null || !email.equalsIgnoreCase(user.getEmail())) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "error.forbidden");
+        }
+    }
 
     @Operation(summary = "Elimina un utente")
     @DeleteMapping("/{stringId}")
-    public void deleteUser(@Parameter(description = "ID dell'utente", schema = @Schema(format = "uuid"), example = "550e8400-e29b-41d4-a716-446655440000") @PathVariable String stringId){
+    public void deleteUser(
+            @Parameter(description = "ID dell'utente", schema = @Schema(format = "uuid"), example = "550e8400-e29b-41d4-a716-446655440000")
+            @PathVariable String stringId,
+            @AuthenticationPrincipal Jwt jwt) {
+        checkUserOwnershipOrAdmin(jwt, stringId);
         userService.deleteUser(stringId);
     }
-
-    // --- Endpoints Avatar ---
 
     @Operation(summary = "Carica l'avatar dell'utente", description = "Accetta un file immagine (JPEG, PNG, WebP)")
     @PostMapping(value = "/{stringId}/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public UserDTO uploadAvatar(
             @Parameter(description = "ID dell'utente", schema = @Schema(format = "uuid"), example = "550e8400-e29b-41d4-a716-446655440000")
             @PathVariable String stringId,
-            @RequestPart("file") MultipartFile file) {
+            @RequestPart("file") MultipartFile file,
+            @AuthenticationPrincipal Jwt jwt) {
+        checkUserOwnershipOrAdmin(jwt, stringId);
         User updated = userService.uploadAvatar(stringId, file);
         return toDTO(updated);
     }
@@ -176,7 +194,9 @@ public class UserController {
     @DeleteMapping("/{stringId}/avatar")
     public UserDTO deleteAvatar(
             @Parameter(description = "ID dell'utente", schema = @Schema(format = "uuid"), example = "550e8400-e29b-41d4-a716-446655440000")
-            @PathVariable String stringId) {
+            @PathVariable String stringId,
+            @AuthenticationPrincipal Jwt jwt) {
+        checkUserOwnershipOrAdmin(jwt, stringId);
         User updated = userService.deleteAvatar(stringId);
         return toDTO(updated);
     }
