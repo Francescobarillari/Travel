@@ -31,6 +31,10 @@ public class PayPalPaymentGatewayImpl implements PaymentGateway {
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
 
+    private String cachedAccessToken;
+    private java.time.Instant tokenExpiryTime = java.time.Instant.MIN;
+    private final Object tokenLock = new Object();
+
     public PayPalPaymentGatewayImpl(
             @Value("${paypal.client.id:}") String clientId,
             @Value("${paypal.client.secret:}") String clientSecret,
@@ -43,7 +47,11 @@ public class PayPalPaymentGatewayImpl implements PaymentGateway {
         this.webhookId = webhookId;
         this.skipVerify = skipVerify;
         this.isLiveMode = "live".equalsIgnoreCase(mode);
-        this.restTemplate = new RestTemplate();
+        
+        org.springframework.http.client.SimpleClientHttpRequestFactory factory = new org.springframework.http.client.SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(5000);
+        factory.setReadTimeout(10000);
+        this.restTemplate = new RestTemplate(factory);
         this.objectMapper = new ObjectMapper();
         
         if (this.isLiveMode) {
@@ -60,29 +68,47 @@ public class PayPalPaymentGatewayImpl implements PaymentGateway {
     }
 
     private String getAccessToken() {
-        String url = baseUrl + "/v1/oauth2/token";
-
-        HttpHeaders headers = new HttpHeaders();
-        String auth = clientId + ":" + clientSecret;
-        String encodedAuth = Base64.getEncoder().encodeToString(auth.getBytes());
-        headers.setBasicAuth(encodedAuth);
-        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-
-        MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
-        body.add("grant_type", "client_credentials");
-
-        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(body, headers);
-
-        try {
-            ResponseEntity<Map> response = restTemplate.postForEntity(url, request, Map.class);
-            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
-                return (String) response.getBody().get("access_token");
-            }
-        } catch (Exception e) {
-            log.error("Error fetching PayPal access token: {}", e.getMessage());
-            throw new RuntimeException("Failed to authenticate with PayPal", e);
+        if (cachedAccessToken != null && java.time.Instant.now().isBefore(tokenExpiryTime.minusSeconds(60))) {
+            return cachedAccessToken;
         }
-        throw new RuntimeException("Failed to fetch PayPal access token");
+
+        synchronized (tokenLock) {
+            if (cachedAccessToken != null && java.time.Instant.now().isBefore(tokenExpiryTime.minusSeconds(60))) {
+                return cachedAccessToken;
+            }
+
+            String url = baseUrl + "/v1/oauth2/token";
+
+            HttpHeaders headers = new HttpHeaders();
+            String auth = clientId + ":" + clientSecret;
+            String encodedAuth = Base64.getEncoder().encodeToString(auth.getBytes());
+            headers.setBasicAuth(encodedAuth);
+            headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+
+            MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
+            body.add("grant_type", "client_credentials");
+
+            HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(body, headers);
+
+            try {
+                ResponseEntity<Map> response = restTemplate.postForEntity(url, request, Map.class);
+                if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+                    String token = (String) response.getBody().get("access_token");
+                    Object expiresInObj = response.getBody().get("expires_in");
+                    long expiresInSeconds = 3600;
+                    if (expiresInObj instanceof Number num) {
+                        expiresInSeconds = num.longValue();
+                    }
+                    this.cachedAccessToken = token;
+                    this.tokenExpiryTime = java.time.Instant.now().plusSeconds(expiresInSeconds);
+                    return token;
+                }
+            } catch (Exception e) {
+                log.error("Error fetching PayPal access token: {}", e.getMessage());
+                throw new RuntimeException("Failed to authenticate with PayPal", e);
+            }
+            throw new RuntimeException("Failed to fetch PayPal access token");
+        }
     }
 
     @Override

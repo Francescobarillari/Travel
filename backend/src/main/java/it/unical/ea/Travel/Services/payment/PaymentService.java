@@ -36,14 +36,18 @@ public class PaymentService {
     private final ActivityService activityService;
     private final AuditLogService auditLogService;
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private static final java.util.regex.Pattern ORDER_ID_PATTERN = java.util.regex.Pattern.compile("^[a-zA-Z0-9_-]{1,64}$");
 
     @Transactional
     public PaymentVerificationResponseDto captureAndVerifyPayment(PaymentCaptureRequestDto request, String userEmail) {
-        if (request == null || request.getOrderId() == null || request.getOrderId().isBlank()) {
+        if (request == null || request.getOrderId() == null || !ORDER_ID_PATTERN.matcher(request.getOrderId().trim()).matches()) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "payment.invalidOrderId");
         }
+        if (userEmail == null || "SYSTEM".equalsIgnoreCase(userEmail) || "anonymousUser".equalsIgnoreCase(userEmail)) {
+            throw new it.unical.ea.Travel.Exception.UnauthorizedAccessException("auth.unauthorized");
+        }
 
-        String orderId = request.getOrderId();
+        String orderId = request.getOrderId().trim();
         String bookingType = request.getBookingType(); // "ITINERARY" or "ACTIVITY"
 
         log.info("Initiating server-to-server payment capture & verification for orderId: {}, bookingType: {}", orderId, bookingType);
@@ -90,7 +94,7 @@ public class PaymentService {
 
         // If payment completed or mock gateway returned true
         if (isCompleted || "COMPLETED".equalsIgnoreCase(status)) {
-            String bookingId = confirmBookingByOrder(orderId, request.getBookingId(), bookingType, userEmail);
+            String bookingId = confirmBookingByOrder(orderId, request.getBookingId(), bookingType, userEmail, false);
             auditLogService.log("PAYMENT_VERIFIED", "PayPalOrder", orderId, "Payment verified and captured server-to-server for booking: " + bookingId);
             return PaymentVerificationResponseDto.builder()
                     .success(true)
@@ -183,11 +187,28 @@ public class PaymentService {
 
             switch (eventType) {
                 case "CHECKOUT.ORDER.APPROVED":
+                    log.info("Webhook received CHECKOUT.ORDER.APPROVED for Order ID: {}. Validating and triggering server capture...", orderId);
+                    PayPalOrderDetails approvedDetails = paymentGateway.getOrderDetails(orderId);
+                    validateOrderPrice(orderId, approvedDetails);
+
+                    boolean captured = paymentGateway.captureOrder(orderId);
+                    if (captured) {
+                        confirmBookingByOrder(orderId, null, null, "SYSTEM", true);
+                        auditLogService.log("WEBHOOK_PAYMENT_CONFIRMED", "PayPalWebhook", orderId, "Booking captured and confirmed via Webhook event: " + eventType);
+                    } else {
+                        log.warn("Failed to capture order {} on APPROVED webhook event", orderId);
+                    }
+                    break;
+
                 case "PAYMENT.CAPTURE.COMPLETED":
-                    log.info("Webhook confirming payment for Order ID: {}", orderId);
-                    confirmBookingByOrder(orderId, null, null, "SYSTEM");
+                    log.info("Webhook received PAYMENT.CAPTURE.COMPLETED for Order ID: {}. Validating and confirming...", orderId);
+                    PayPalOrderDetails completedDetails = paymentGateway.getOrderDetails(orderId);
+                    validateOrderPrice(orderId, completedDetails);
+
+                    confirmBookingByOrder(orderId, null, null, "SYSTEM", true);
                     auditLogService.log("WEBHOOK_PAYMENT_CONFIRMED", "PayPalWebhook", orderId, "Booking confirmed via Webhook event: " + eventType);
                     break;
+
                 case "PAYMENT.CAPTURE.DENIED":
                 case "PAYMENT.CAPTURE.DECLINED":
                 case "CHECKOUT.ORDER.VOIDED":
@@ -195,23 +216,48 @@ public class PaymentService {
                     markBookingAsFailed(orderId, null, null);
                     auditLogService.log("WEBHOOK_PAYMENT_FAILED", "PayPalWebhook", orderId, "Booking marked failed via Webhook event: " + eventType);
                     break;
+
                 default:
                     log.info("Unhandled PayPal webhook event type: {}", eventType);
                     break;
             }
             return true;
+        } catch (ApiException ex) {
+            throw ex;
         } catch (Exception e) {
             log.error("Error processing PayPal webhook payload: {}", e.getMessage(), e);
             throw new ApiException(HttpStatus.BAD_REQUEST, "payment.webhookProcessingError");
         }
     }
 
-    private String confirmBookingByOrder(String orderId, String fallbackBookingId, String bookingType, String userEmail) {
+    private void validateOrderPrice(String orderId, PayPalOrderDetails orderDetails) {
+        BigDecimal expectedAmount = getExpectedPriceForOrder(orderId, null, null);
+        if (expectedAmount != null && orderDetails != null && orderDetails.getAmount() != null) {
+            BigDecimal expectedScaled = expectedAmount.setScale(2, java.math.RoundingMode.HALF_UP);
+            BigDecimal paidScaled = orderDetails.getAmount().setScale(2, java.math.RoundingMode.HALF_UP);
+            if (expectedScaled.compareTo(paidScaled) != 0) {
+                log.error("SECURITY ALERT: Payment amount mismatch in webhook for orderId {}. Expected: {}, Paid: {}",
+                        orderId, expectedScaled, paidScaled);
+                markBookingAsFailed(orderId, null, null);
+                auditLogService.log("WEBHOOK_AMOUNT_MISMATCH", "PayPalWebhook", orderId,
+                        "Price tampering detected in Webhook! Expected: " + expectedScaled + ", Paid: " + paidScaled);
+                throw new ApiException(HttpStatus.BAD_REQUEST, "payment.amountMismatch");
+            }
+        }
+        if (orderDetails != null && orderDetails.getCurrency() != null && !orderDetails.getCurrency().equalsIgnoreCase("EUR")) {
+            log.error("SECURITY ALERT: Payment currency mismatch in webhook for orderId {}. Currency: {}",
+                    orderId, orderDetails.getCurrency());
+            markBookingAsFailed(orderId, null, null);
+            throw new ApiException(HttpStatus.BAD_REQUEST, "payment.currencyMismatch");
+        }
+    }
+
+    private String confirmBookingByOrder(String orderId, String fallbackBookingId, String bookingType, String userEmail, boolean isSystemWebhook) {
         // 1. Try finding ItineraryBooking by orderId
         List<ItineraryBooking> itineraryBookings = itineraryBookingRepository.findByPaymentIntentId(orderId);
         if (!itineraryBookings.isEmpty()) {
             for (ItineraryBooking ib : itineraryBookings) {
-                verifyBookingOwnership(ib.getUser(), userEmail);
+                verifyBookingOwnership(ib.getUser(), userEmail, isSystemWebhook);
                 itineraryService.confirmItineraryBooking(ib.getId().toString());
             }
             return itineraryBookings.get(0).getId().toString();
@@ -221,7 +267,7 @@ public class PaymentService {
         List<ActivityBooking> activityBookings = activityBookingRepository.findByPaymentIntentId(orderId);
         if (!activityBookings.isEmpty()) {
             for (ActivityBooking ab : activityBookings) {
-                verifyBookingOwnership(ab.getUser(), userEmail);
+                verifyBookingOwnership(ab.getUser(), userEmail, isSystemWebhook);
                 activityService.confirmActivityBooking(ab.getId().toString());
             }
             return activityBookings.get(0).getId().toString();
@@ -235,7 +281,7 @@ public class PaymentService {
                     ItineraryBooking ib = itineraryBookingRepository.findById(uuid)
                             .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "itinerary.booking.notFound"));
                     
-                    verifyBookingOwnership(ib.getUser(), userEmail);
+                    verifyBookingOwnership(ib.getUser(), userEmail, isSystemWebhook);
 
                     // Prevent reusing orderId if already bound to another intent
                     if (ib.getPaymentIntentId() != null && !ib.getPaymentIntentId().isBlank() && !ib.getPaymentIntentId().equals(orderId)) {
@@ -251,7 +297,7 @@ public class PaymentService {
                     ActivityBooking ab = activityBookingRepository.findById(uuid)
                             .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "activity.booking.notFound"));
 
-                    verifyBookingOwnership(ab.getUser(), userEmail);
+                    verifyBookingOwnership(ab.getUser(), userEmail, isSystemWebhook);
 
                     if (ab.getPaymentIntentId() != null && !ab.getPaymentIntentId().isBlank() && !ab.getPaymentIntentId().equals(orderId)) {
                         log.error("SECURITY ALERT: Order ID mismatch for booking {}. Existing: {}, Provided: {}",
@@ -274,9 +320,12 @@ public class PaymentService {
         return fallbackBookingId != null ? fallbackBookingId : orderId;
     }
 
-    private void verifyBookingOwnership(it.unical.ea.Travel.Entities.user.User bookingUser, String userEmail) {
-        if (userEmail == null || "SYSTEM".equalsIgnoreCase(userEmail)) {
+    private void verifyBookingOwnership(it.unical.ea.Travel.Entities.user.User bookingUser, String userEmail, boolean isSystemWebhook) {
+        if (isSystemWebhook) {
             return; // Authorized for system/webhooks
+        }
+        if (userEmail == null || "SYSTEM".equalsIgnoreCase(userEmail) || "anonymousUser".equalsIgnoreCase(userEmail)) {
+            throw new it.unical.ea.Travel.Exception.UnauthorizedAccessException("auth.unauthorized");
         }
         if (bookingUser != null && bookingUser.getEmail() != null) {
             if (!bookingUser.getEmail().equalsIgnoreCase(userEmail)) {
@@ -319,17 +368,20 @@ public class PaymentService {
 
     private String extractOrderIdFromResource(JsonNode resource) {
         if (resource == null) return null;
+        String id = null;
         if (resource.has("id") && "order".equalsIgnoreCase(resource.path("intent").asText())) {
-            return resource.path("id").asText();
-        }
-        if (resource.has("supplementary_data")) {
+            id = resource.path("id").asText();
+        } else if (resource.has("supplementary_data")) {
             JsonNode relatedIds = resource.path("supplementary_data").path("related_ids");
             if (relatedIds.has("order_id")) {
-                return relatedIds.path("order_id").asText();
+                id = relatedIds.path("order_id").asText();
             }
         }
-        if (resource.has("id")) {
-            return resource.path("id").asText();
+        if (id == null && resource.has("id")) {
+            id = resource.path("id").asText();
+        }
+        if (id != null && ORDER_ID_PATTERN.matcher(id.trim()).matches()) {
+            return id.trim();
         }
         return null;
     }

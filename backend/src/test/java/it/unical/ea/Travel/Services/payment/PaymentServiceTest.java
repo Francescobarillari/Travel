@@ -15,6 +15,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Collections;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -144,6 +145,68 @@ class PaymentServiceTest {
         assertThrows(it.unical.ea.Travel.Exception.ApiException.class, () -> {
             // Attacker attacker@test.com attempts to confirm legit@test.com's booking
             paymentService.captureAndVerifyPayment(request, "attacker@test.com");
+        });
+    }
+
+    @Test
+    void testHandleWebhookEvent_Approved_CapturesAndConfirms() {
+        String payload = "{\"event_type\":\"CHECKOUT.ORDER.APPROVED\",\"resource\":{\"id\":\"ORDER123\"}}";
+        Map<String, String> headers = Map.of("paypal-auth-algo", "SHA256withRSA");
+
+        PayPalOrderDetails details = PayPalOrderDetails.builder()
+                .orderId("ORDER123")
+                .status("APPROVED")
+                .amount(null)
+                .currency("EUR")
+                .build();
+
+        it.unical.ea.Travel.Entities.user.User user = new it.unical.ea.Travel.Entities.user.User();
+        user.setEmail("user@test.com");
+
+        it.unical.ea.Travel.Entities.itinerary.ItineraryBooking booking = new it.unical.ea.Travel.Entities.itinerary.ItineraryBooking();
+        java.util.UUID bookingId = java.util.UUID.randomUUID();
+        booking.setId(bookingId);
+        booking.setUser(user);
+        booking.setPaymentIntentId("ORDER123");
+
+        when(paymentGateway.verifyWebhookSignature(anyMap(), eq(payload))).thenReturn(true);
+        when(paymentGateway.getOrderDetails("ORDER123")).thenReturn(details);
+        when(paymentGateway.captureOrder("ORDER123")).thenReturn(true);
+        when(itineraryBookingRepository.findByPaymentIntentId("ORDER123")).thenReturn(java.util.List.of(booking));
+
+        boolean result = paymentService.handleWebhookEvent(headers, payload);
+
+        assertTrue(result);
+        verify(paymentGateway).captureOrder("ORDER123");
+        verify(itineraryService).confirmItineraryBooking(bookingId.toString());
+    }
+
+    @Test
+    void testHandleWebhookEvent_PriceTampering_ThrowsException() {
+        String payload = "{\"event_type\":\"PAYMENT.CAPTURE.COMPLETED\",\"resource\":{\"supplementary_data\":{\"related_ids\":{\"order_id\":\"ORDER123\"}}}}";
+        Map<String, String> headers = Map.of("paypal-auth-algo", "SHA256withRSA");
+
+        PayPalOrderDetails details = PayPalOrderDetails.builder()
+                .orderId("ORDER123")
+                .status("COMPLETED")
+                .amount(new java.math.BigDecimal("1.00")) // Attacker paid 1.00 EUR
+                .currency("EUR")
+                .build();
+
+        it.unical.ea.Travel.Entities.activity.Activity activity = new it.unical.ea.Travel.Entities.activity.Activity();
+        activity.setPrice(new java.math.BigDecimal("150.00")); // Real price is 150 EUR
+
+        it.unical.ea.Travel.Entities.activity.ActivityBooking booking = new it.unical.ea.Travel.Entities.activity.ActivityBooking();
+        booking.setActivity(activity);
+        booking.setPaymentIntentId("ORDER123");
+
+        when(paymentGateway.verifyWebhookSignature(anyMap(), eq(payload))).thenReturn(true);
+        when(paymentGateway.getOrderDetails("ORDER123")).thenReturn(details);
+        when(itineraryBookingRepository.findByPaymentIntentId("ORDER123")).thenReturn(Collections.emptyList());
+        when(activityBookingRepository.findByPaymentIntentId("ORDER123")).thenReturn(java.util.List.of(booking));
+
+        assertThrows(it.unical.ea.Travel.Exception.ApiException.class, () -> {
+            paymentService.handleWebhookEvent(headers, payload);
         });
     }
 }

@@ -54,8 +54,10 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(IllegalStateException.class)
-    public ResponseEntity<Map<String, String>> handleIllegalStateException(IllegalStateException ex) {
-        return new ResponseEntity<>(Map.of("error", ex.getMessage() != null ? ex.getMessage() : "Stato operazione non valido."), HttpStatus.BAD_REQUEST);
+    public ResponseEntity<Map<String, String>> handleIllegalStateException(IllegalStateException ex, Locale locale) {
+        log.warn("IllegalStateException captured: {}", ex.getMessage());
+        String translatedMessage = messageSource.getMessage("error.invalidState", null, "Operazione non consentita nello stato corrente.", locale);
+        return new ResponseEntity<>(Map.of("error", translatedMessage), HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(AccessDeniedException.class)

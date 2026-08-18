@@ -19,6 +19,9 @@ public class PaymentController {
     public ResponseEntity<PaymentVerificationResponseDto> captureAndVerifyPayment(
             @RequestBody PaymentCaptureRequestDto request) {
         String userEmail = SecurityUtils.getCurrentUserEmail();
+        if (userEmail == null || "SYSTEM".equalsIgnoreCase(userEmail) || "anonymousUser".equalsIgnoreCase(userEmail)) {
+            throw new it.unical.ea.Travel.Exception.UnauthorizedAccessException("auth.unauthorized");
+        }
         PaymentVerificationResponseDto response = paymentService.captureAndVerifyPayment(request, userEmail);
         return ResponseEntity.ok(response);
     }

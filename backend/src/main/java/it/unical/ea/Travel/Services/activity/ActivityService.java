@@ -508,6 +508,9 @@ public class ActivityService {
         if (booking.getStatus() == BookingStatus.CONFIRMED) {
             return;
         }
+        if (booking.getStatus() == BookingStatus.CANCELLED) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "activity.booking.alreadyCancelled");
+        }
         booking.setStatus(BookingStatus.CONFIRMED);
         activityBookingRepository.save(booking);
         sendBookingConfirmationNotifications(booking);

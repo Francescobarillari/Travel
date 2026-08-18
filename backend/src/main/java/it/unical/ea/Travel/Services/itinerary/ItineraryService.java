@@ -347,6 +347,9 @@ public class ItineraryService {
         if (booking.getStatus() == BookingStatus.CONFIRMED) {
             return;
         }
+        if (booking.getStatus() == BookingStatus.CANCELLED) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "itinerary.booking.alreadyCancelled");
+        }
         booking.setStatus(BookingStatus.CONFIRMED);
         itineraryBookingRepository.save(booking);
 

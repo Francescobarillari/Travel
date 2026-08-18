@@ -28,6 +28,10 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private static final int MAX_UPLOAD_REQUESTS = 3;
     private static final Duration UPLOAD_REFILL_PERIOD = Duration.ofMinutes(1);
 
+    private static final int MAX_WEBHOOK_REQUESTS = 30;
+    private static final Duration WEBHOOK_REFILL_PERIOD = Duration.ofMinutes(1);
+    private static final String WEBHOOK_PATH = "/api/v1/payments/paypal/webhook";
+
     @Value("${app.security.trust-proxy:false}")
     private boolean trustProxy;
 
@@ -40,6 +44,11 @@ public class RateLimitFilter extends OncePerRequestFilter {
             .build();
 
     private final Cache<String, Bucket> uploadBuckets = Caffeine.newBuilder()
+            .expireAfterAccess(Duration.ofMinutes(10))
+            .maximumSize(10000)
+            .build();
+
+    private final Cache<String, Bucket> webhookBuckets = Caffeine.newBuilder()
             .expireAfterAccess(Duration.ofMinutes(10))
             .maximumSize(10000)
             .build();
@@ -58,8 +67,9 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
         boolean isLogin = LOGIN_PATH.equals(uri) && "POST".equalsIgnoreCase(request.getMethod());
         boolean isUpload = isUploadRequest(request, uri);
+        boolean isWebhook = WEBHOOK_PATH.equals(uri) && "POST".equalsIgnoreCase(request.getMethod());
 
-        if (!isLogin && !isUpload) {
+        if (!isLogin && !isUpload && !isWebhook) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -78,7 +88,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
                 logger.warn("RATE_LIMIT_BLOCKED - Login rate limit reached for IP: {}. URI: {}", clientIp, request.getRequestURI());
                 sendErrorResponse(response, retryAfterSeconds, "Troppi tentativi di login. Riprova tra " + retryAfterSeconds + " secondi.");
             }
-        } else {
+        } else if (isUpload) {
             Bucket bucket = uploadBuckets.get(clientIp, k -> createBucket(MAX_UPLOAD_REQUESTS, UPLOAD_REFILL_PERIOD));
             ConsumptionProbe probe = bucket.tryConsumeAndReturnRemaining(1);
 
@@ -89,6 +99,18 @@ public class RateLimitFilter extends OncePerRequestFilter {
                 long retryAfterSeconds = Duration.ofNanos(probe.getNanosToWaitForRefill()).toSeconds() + 1;
                 logger.warn("RATE_LIMIT_BLOCKED - Upload rate limit reached for IP: {}. URI: {}", clientIp, request.getRequestURI());
                 sendErrorResponse(response, retryAfterSeconds, "Troppi tentativi di upload. Riprova tra " + retryAfterSeconds + " secondi.");
+            }
+        } else {
+            Bucket bucket = webhookBuckets.get(clientIp, k -> createBucket(MAX_WEBHOOK_REQUESTS, WEBHOOK_REFILL_PERIOD));
+            ConsumptionProbe probe = bucket.tryConsumeAndReturnRemaining(1);
+
+            if (probe.isConsumed()) {
+                response.setHeader("X-Rate-Limit-Remaining", String.valueOf(probe.getRemainingTokens()));
+                filterChain.doFilter(request, response);
+            } else {
+                long retryAfterSeconds = Duration.ofNanos(probe.getNanosToWaitForRefill()).toSeconds() + 1;
+                logger.warn("RATE_LIMIT_BLOCKED - Webhook rate limit reached for IP: {}. URI: {}", clientIp, request.getRequestURI());
+                sendErrorResponse(response, retryAfterSeconds, "Troppe richieste webhook. Riprova tra " + retryAfterSeconds + " secondi.");
             }
         }
     }
