@@ -40,12 +40,27 @@ class PaymentServiceTest {
 
     @Test
     void testCaptureAndVerifyPayment_Success() {
-        PaymentCaptureRequestDto request = new PaymentCaptureRequestDto("ORDER123", "BOOKING123", "ITINERARY");
+        PaymentCaptureRequestDto request = new PaymentCaptureRequestDto("ORDER123", null, "ITINERARY");
 
-        when(paymentGateway.getOrderStatus("ORDER123")).thenReturn("APPROVED");
+        PayPalOrderDetails details = PayPalOrderDetails.builder()
+                .orderId("ORDER123")
+                .status("APPROVED")
+                .amount(null)
+                .currency("EUR")
+                .build();
+
+        it.unical.ea.Travel.Entities.user.User user = new it.unical.ea.Travel.Entities.user.User();
+        user.setEmail("user@test.com");
+
+        it.unical.ea.Travel.Entities.itinerary.ItineraryBooking booking = new it.unical.ea.Travel.Entities.itinerary.ItineraryBooking();
+        java.util.UUID bookingId = java.util.UUID.randomUUID();
+        booking.setId(bookingId);
+        booking.setUser(user);
+        booking.setPaymentIntentId("ORDER123");
+
+        when(paymentGateway.getOrderDetails("ORDER123")).thenReturn(details);
         when(paymentGateway.captureOrder("ORDER123")).thenReturn(true);
-        when(itineraryBookingRepository.findByPaymentIntentId("ORDER123")).thenReturn(Collections.emptyList());
-        when(activityBookingRepository.findByPaymentIntentId("ORDER123")).thenReturn(Collections.emptyList());
+        when(itineraryBookingRepository.findByPaymentIntentId("ORDER123")).thenReturn(java.util.List.of(booking));
 
         PaymentVerificationResponseDto response = paymentService.captureAndVerifyPayment(request, "user@test.com");
 
@@ -53,14 +68,21 @@ class PaymentServiceTest {
         assertEquals("ORDER123", response.getOrderId());
         assertEquals(BookingStatus.CONFIRMED.name(), response.getBookingStatus());
         verify(paymentGateway).captureOrder("ORDER123");
-        verify(itineraryService).confirmItineraryBooking("BOOKING123");
+        verify(itineraryService).confirmItineraryBooking(bookingId.toString());
     }
 
     @Test
     void testCaptureAndVerifyPayment_Failure() {
         PaymentCaptureRequestDto request = new PaymentCaptureRequestDto("ORDER123", "BOOKING123", "ACTIVITY");
 
-        when(paymentGateway.getOrderStatus("ORDER123")).thenReturn("VOIDED");
+        PayPalOrderDetails details = PayPalOrderDetails.builder()
+                .orderId("ORDER123")
+                .status("VOIDED")
+                .amount(null)
+                .currency("EUR")
+                .build();
+
+        when(paymentGateway.getOrderDetails("ORDER123")).thenReturn(details);
         when(itineraryBookingRepository.findByPaymentIntentId("ORDER123")).thenReturn(Collections.emptyList());
         when(activityBookingRepository.findByPaymentIntentId("ORDER123")).thenReturn(Collections.emptyList());
 
@@ -68,5 +90,60 @@ class PaymentServiceTest {
 
         assertFalse(response.isSuccess());
         assertEquals(BookingStatus.FAILED.name(), response.getBookingStatus());
+    }
+
+    @Test
+    void testCaptureAndVerifyPayment_PriceTampering_ThrowsException() {
+        PaymentCaptureRequestDto request = new PaymentCaptureRequestDto("ORDER123", "BOOKING123", "ACTIVITY");
+
+        PayPalOrderDetails details = PayPalOrderDetails.builder()
+                .orderId("ORDER123")
+                .status("APPROVED")
+                .amount(new java.math.BigDecimal("0.01")) // Attacker paid 0.01 EUR
+                .currency("EUR")
+                .build();
+
+        it.unical.ea.Travel.Entities.activity.Activity activity = new it.unical.ea.Travel.Entities.activity.Activity();
+        activity.setPrice(new java.math.BigDecimal("100.00")); // Real price is 100 EUR
+
+        it.unical.ea.Travel.Entities.activity.ActivityBooking booking = new it.unical.ea.Travel.Entities.activity.ActivityBooking();
+        booking.setActivity(activity);
+        booking.setPaymentIntentId("ORDER123");
+
+        when(paymentGateway.getOrderDetails("ORDER123")).thenReturn(details);
+        when(itineraryBookingRepository.findByPaymentIntentId("ORDER123")).thenReturn(Collections.emptyList());
+        when(activityBookingRepository.findByPaymentIntentId("ORDER123")).thenReturn(java.util.List.of(booking));
+
+        assertThrows(it.unical.ea.Travel.Exception.ApiException.class, () -> {
+            paymentService.captureAndVerifyPayment(request, "user@test.com");
+        });
+    }
+
+    @Test
+    void testCaptureAndVerifyPayment_OwnershipMismatch_ThrowsForbidden() {
+        PaymentCaptureRequestDto request = new PaymentCaptureRequestDto("ORDER123", null, "ACTIVITY");
+
+        PayPalOrderDetails details = PayPalOrderDetails.builder()
+                .orderId("ORDER123")
+                .status("COMPLETED")
+                .amount(null)
+                .currency("EUR")
+                .build();
+
+        it.unical.ea.Travel.Entities.user.User legitimateOwner = new it.unical.ea.Travel.Entities.user.User();
+        legitimateOwner.setEmail("legit@test.com");
+
+        it.unical.ea.Travel.Entities.activity.ActivityBooking booking = new it.unical.ea.Travel.Entities.activity.ActivityBooking();
+        booking.setUser(legitimateOwner);
+        booking.setPaymentIntentId("ORDER123");
+
+        when(paymentGateway.getOrderDetails("ORDER123")).thenReturn(details);
+        when(itineraryBookingRepository.findByPaymentIntentId("ORDER123")).thenReturn(Collections.emptyList());
+        when(activityBookingRepository.findByPaymentIntentId("ORDER123")).thenReturn(java.util.List.of(booking));
+
+        assertThrows(it.unical.ea.Travel.Exception.ApiException.class, () -> {
+            // Attacker attacker@test.com attempts to confirm legit@test.com's booking
+            paymentService.captureAndVerifyPayment(request, "attacker@test.com");
+        });
     }
 }

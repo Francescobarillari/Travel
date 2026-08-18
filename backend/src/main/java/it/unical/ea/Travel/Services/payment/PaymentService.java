@@ -19,6 +19,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -47,9 +48,31 @@ public class PaymentService {
 
         log.info("Initiating server-to-server payment capture & verification for orderId: {}, bookingType: {}", orderId, bookingType);
 
-        // Fetch current status from PayPal
-        String status = paymentGateway.getOrderStatus(orderId);
+        // 1. Fetch full details (status, amount, currency) from PayPal
+        PayPalOrderDetails orderDetails = paymentGateway.getOrderDetails(orderId);
+        String status = orderDetails.getStatus() != null ? orderDetails.getStatus() : "UNKNOWN";
         log.info("PayPal Order status for orderId {}: {}", orderId, status);
+
+        // 2. Validate amount and currency to prevent price tampering
+        BigDecimal expectedAmount = getExpectedPriceForOrder(orderId, request.getBookingId(), bookingType);
+        if (expectedAmount != null && orderDetails.getAmount() != null) {
+            BigDecimal expectedScaled = expectedAmount.setScale(2, java.math.RoundingMode.HALF_UP);
+            BigDecimal paidScaled = orderDetails.getAmount().setScale(2, java.math.RoundingMode.HALF_UP);
+            if (expectedScaled.compareTo(paidScaled) != 0) {
+                log.error("SECURITY ALERT: Payment amount mismatch for orderId {}. Expected: {}, Paid: {}",
+                        orderId, expectedScaled, paidScaled);
+                markBookingAsFailed(orderId, request.getBookingId(), bookingType);
+                auditLogService.log("PAYMENT_AMOUNT_MISMATCH", "PayPalOrder", orderId,
+                        "Price tampering detected! Expected: " + expectedScaled + ", Paid: " + paidScaled);
+                throw new ApiException(HttpStatus.BAD_REQUEST, "payment.amountMismatch");
+            }
+        }
+        if (orderDetails.getCurrency() != null && !orderDetails.getCurrency().equalsIgnoreCase("EUR")) {
+            log.error("SECURITY ALERT: Payment currency mismatch for orderId {}. Currency: {}",
+                    orderId, orderDetails.getCurrency());
+            markBookingAsFailed(orderId, request.getBookingId(), bookingType);
+            throw new ApiException(HttpStatus.BAD_REQUEST, "payment.currencyMismatch");
+        }
 
         boolean isCompleted = "COMPLETED".equalsIgnoreCase(status);
 
@@ -67,7 +90,7 @@ public class PaymentService {
 
         // If payment completed or mock gateway returned true
         if (isCompleted || "COMPLETED".equalsIgnoreCase(status)) {
-            String bookingId = confirmBookingByOrder(orderId, request.getBookingId(), bookingType);
+            String bookingId = confirmBookingByOrder(orderId, request.getBookingId(), bookingType, userEmail);
             auditLogService.log("PAYMENT_VERIFIED", "PayPalOrder", orderId, "Payment verified and captured server-to-server for booking: " + bookingId);
             return PaymentVerificationResponseDto.builder()
                     .success(true)
@@ -87,6 +110,51 @@ public class PaymentService {
                     .message("Payment verification failed with PayPal status: " + status)
                     .build();
         }
+    }
+
+    private BigDecimal getExpectedPriceForOrder(String orderId, String fallbackBookingId, String bookingType) {
+        List<ItineraryBooking> itineraryBookings = itineraryBookingRepository.findByPaymentIntentId(orderId);
+        if (!itineraryBookings.isEmpty()) {
+            return calculateItineraryPrice(itineraryBookings.get(0));
+        }
+
+        List<ActivityBooking> activityBookings = activityBookingRepository.findByPaymentIntentId(orderId);
+        if (!activityBookings.isEmpty()) {
+            return calculateActivityPrice(activityBookings.get(0));
+        }
+
+        if (fallbackBookingId != null && !fallbackBookingId.isBlank()) {
+            try {
+                UUID uuid = UUID.fromString(fallbackBookingId);
+                if ("ITINERARY".equalsIgnoreCase(bookingType)) {
+                    var ib = itineraryBookingRepository.findById(uuid);
+                    if (ib.isPresent()) return calculateItineraryPrice(ib.get());
+                } else if ("ACTIVITY".equalsIgnoreCase(bookingType)) {
+                    var ab = activityBookingRepository.findById(uuid);
+                    if (ab.isPresent()) return calculateActivityPrice(ab.get());
+                }
+            } catch (Exception ignored) {}
+        }
+        return null;
+    }
+
+    private BigDecimal calculateItineraryPrice(ItineraryBooking booking) {
+        BigDecimal total = BigDecimal.ZERO;
+        if (booking.getItinerary() != null && booking.getItinerary().getActivities() != null) {
+            for (it.unical.ea.Travel.Entities.activity.Activity a : booking.getItinerary().getActivities()) {
+                if (a.getPrice() != null) {
+                    total = total.add(a.getPrice());
+                }
+            }
+        }
+        return total;
+    }
+
+    private BigDecimal calculateActivityPrice(ActivityBooking booking) {
+        if (booking.getActivity() != null && booking.getActivity().getPrice() != null) {
+            return booking.getActivity().getPrice();
+        }
+        return BigDecimal.ZERO;
     }
 
     @Transactional
@@ -117,7 +185,7 @@ public class PaymentService {
                 case "CHECKOUT.ORDER.APPROVED":
                 case "PAYMENT.CAPTURE.COMPLETED":
                     log.info("Webhook confirming payment for Order ID: {}", orderId);
-                    confirmBookingByOrder(orderId, null, null);
+                    confirmBookingByOrder(orderId, null, null, "SYSTEM");
                     auditLogService.log("WEBHOOK_PAYMENT_CONFIRMED", "PayPalWebhook", orderId, "Booking confirmed via Webhook event: " + eventType);
                     break;
                 case "PAYMENT.CAPTURE.DENIED":
@@ -138,38 +206,84 @@ public class PaymentService {
         }
     }
 
-    private String confirmBookingByOrder(String orderId, String fallbackBookingId, String bookingType) {
-        // Try finding ItineraryBooking first
+    private String confirmBookingByOrder(String orderId, String fallbackBookingId, String bookingType, String userEmail) {
+        // 1. Try finding ItineraryBooking by orderId
         List<ItineraryBooking> itineraryBookings = itineraryBookingRepository.findByPaymentIntentId(orderId);
         if (!itineraryBookings.isEmpty()) {
             for (ItineraryBooking ib : itineraryBookings) {
+                verifyBookingOwnership(ib.getUser(), userEmail);
                 itineraryService.confirmItineraryBooking(ib.getId().toString());
             }
             return itineraryBookings.get(0).getId().toString();
         }
 
-        // Try finding ActivityBooking
+        // 2. Try finding ActivityBooking by orderId
         List<ActivityBooking> activityBookings = activityBookingRepository.findByPaymentIntentId(orderId);
         if (!activityBookings.isEmpty()) {
             for (ActivityBooking ab : activityBookings) {
+                verifyBookingOwnership(ab.getUser(), userEmail);
                 activityService.confirmActivityBooking(ab.getId().toString());
             }
             return activityBookings.get(0).getId().toString();
         }
 
-        // Fallback using fallbackBookingId if provided
+        // 3. Fallback using fallbackBookingId with strict validation to prevent replay/ID injection attacks
         if (fallbackBookingId != null && !fallbackBookingId.isBlank()) {
-            if ("ITINERARY".equalsIgnoreCase(bookingType)) {
-                itineraryService.confirmItineraryBooking(fallbackBookingId);
-                return fallbackBookingId;
-            } else if ("ACTIVITY".equalsIgnoreCase(bookingType)) {
-                activityService.confirmActivityBooking(fallbackBookingId);
-                return fallbackBookingId;
+            try {
+                UUID uuid = UUID.fromString(fallbackBookingId);
+                if ("ITINERARY".equalsIgnoreCase(bookingType)) {
+                    ItineraryBooking ib = itineraryBookingRepository.findById(uuid)
+                            .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "itinerary.booking.notFound"));
+                    
+                    verifyBookingOwnership(ib.getUser(), userEmail);
+
+                    // Prevent reusing orderId if already bound to another intent
+                    if (ib.getPaymentIntentId() != null && !ib.getPaymentIntentId().isBlank() && !ib.getPaymentIntentId().equals(orderId)) {
+                        log.error("SECURITY ALERT: Order ID mismatch for booking {}. Existing: {}, Provided: {}",
+                                fallbackBookingId, ib.getPaymentIntentId(), orderId);
+                        throw new ApiException(HttpStatus.BAD_REQUEST, "payment.orderMismatch");
+                    }
+                    ib.setPaymentIntentId(orderId);
+                    itineraryBookingRepository.save(ib);
+                    itineraryService.confirmItineraryBooking(ib.getId().toString());
+                    return fallbackBookingId;
+                } else if ("ACTIVITY".equalsIgnoreCase(bookingType)) {
+                    ActivityBooking ab = activityBookingRepository.findById(uuid)
+                            .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "activity.booking.notFound"));
+
+                    verifyBookingOwnership(ab.getUser(), userEmail);
+
+                    if (ab.getPaymentIntentId() != null && !ab.getPaymentIntentId().isBlank() && !ab.getPaymentIntentId().equals(orderId)) {
+                        log.error("SECURITY ALERT: Order ID mismatch for booking {}. Existing: {}, Provided: {}",
+                                fallbackBookingId, ab.getPaymentIntentId(), orderId);
+                        throw new ApiException(HttpStatus.BAD_REQUEST, "payment.orderMismatch");
+                    }
+                    ab.setPaymentIntentId(orderId);
+                    activityBookingRepository.save(ab);
+                    activityService.confirmActivityBooking(ab.getId().toString());
+                    return fallbackBookingId;
+                }
+            } catch (ApiException ex) {
+                throw ex;
+            } catch (Exception e) {
+                log.error("Error confirming booking by fallback ID {}: {}", fallbackBookingId, e.getMessage());
             }
         }
 
         log.warn("No booking found matching paymentIntentId/orderId: {}", orderId);
         return fallbackBookingId != null ? fallbackBookingId : orderId;
+    }
+
+    private void verifyBookingOwnership(it.unical.ea.Travel.Entities.user.User bookingUser, String userEmail) {
+        if (userEmail == null || "SYSTEM".equalsIgnoreCase(userEmail)) {
+            return; // Authorized for system/webhooks
+        }
+        if (bookingUser != null && bookingUser.getEmail() != null) {
+            if (!bookingUser.getEmail().equalsIgnoreCase(userEmail)) {
+                log.error("SECURITY ALERT: User {} attempted to confirm booking owned by {}", userEmail, bookingUser.getEmail());
+                throw new ApiException(HttpStatus.FORBIDDEN, "payment.forbiddenBookingOwnership");
+            }
+        }
     }
 
     private void markBookingAsFailed(String orderId, String fallbackBookingId, String bookingType) {

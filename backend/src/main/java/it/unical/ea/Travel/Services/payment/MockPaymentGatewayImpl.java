@@ -25,6 +25,16 @@ public class MockPaymentGatewayImpl implements PaymentGateway {
     }
 
     @Override
+    public PayPalOrderDetails getOrderDetails(String orderId) {
+        return PayPalOrderDetails.builder()
+                .orderId(orderId)
+                .status("COMPLETED")
+                .amount(null) // Mock will match any requested amount if null or dummy
+                .currency("EUR")
+                .build();
+    }
+
+    @Override
     public boolean verifyWebhookSignature(Map<String, String> headers, String body) {
         return true;
     }

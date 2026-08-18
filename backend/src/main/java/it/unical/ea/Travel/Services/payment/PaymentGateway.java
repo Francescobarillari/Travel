@@ -20,6 +20,11 @@ public interface PaymentGateway {
     String getOrderStatus(String orderId);
 
     /**
+     * Fetches full details (status, amount, currency) of an order from PayPal REST API.
+     */
+    PayPalOrderDetails getOrderDetails(String orderId);
+
+    /**
      * Verifies the authenticity of a PayPal Webhook signature.
      */
     boolean verifyWebhookSignature(Map<String, String> headers, String body);

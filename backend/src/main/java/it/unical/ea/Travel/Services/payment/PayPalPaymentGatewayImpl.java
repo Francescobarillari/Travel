@@ -25,6 +25,8 @@ public class PayPalPaymentGatewayImpl implements PaymentGateway {
     private final String clientId;
     private final String clientSecret;
     private final String webhookId;
+    private final boolean skipVerify;
+    private final boolean isLiveMode;
     private final String baseUrl;
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
@@ -33,15 +35,18 @@ public class PayPalPaymentGatewayImpl implements PaymentGateway {
             @Value("${paypal.client.id:}") String clientId,
             @Value("${paypal.client.secret:}") String clientSecret,
             @Value("${paypal.webhook.id:}") String webhookId,
+            @Value("${paypal.webhook.skip-verify:true}") boolean skipVerify,
             @Value("${paypal.mode:sandbox}") String mode) {
         
         this.clientId = clientId;
         this.clientSecret = clientSecret;
         this.webhookId = webhookId;
+        this.skipVerify = skipVerify;
+        this.isLiveMode = "live".equalsIgnoreCase(mode);
         this.restTemplate = new RestTemplate();
         this.objectMapper = new ObjectMapper();
         
-        if ("live".equalsIgnoreCase(mode)) {
+        if (this.isLiveMode) {
             this.baseUrl = "https://api-m.paypal.com";
         } else {
             this.baseUrl = "https://api-m.sandbox.paypal.com";
@@ -143,6 +148,13 @@ public class PayPalPaymentGatewayImpl implements PaymentGateway {
                 log.info("Captured PayPal Order ID: {} with status: {}", orderId, status);
                 return "COMPLETED".equalsIgnoreCase(status);
             }
+        } catch (org.springframework.web.client.HttpClientErrorException ex) {
+            if (ex.getStatusCode() == HttpStatus.UNPROCESSABLE_ENTITY && ex.getResponseBodyAsString().contains("ORDER_ALREADY_CAPTURED")) {
+                log.info("PayPal Order ID {} was already captured. Fetching latest status.", orderId);
+                String currentStatus = getOrderStatus(orderId);
+                return "COMPLETED".equalsIgnoreCase(currentStatus);
+            }
+            log.error("Error capturing PayPal Order ID {}: {}", orderId, ex.getMessage());
         } catch (Exception e) {
             log.error("Error capturing PayPal Order ID {}: {}", orderId, e.getMessage());
         }
@@ -151,6 +163,12 @@ public class PayPalPaymentGatewayImpl implements PaymentGateway {
 
     @Override
     public String getOrderStatus(String orderId) {
+        PayPalOrderDetails details = getOrderDetails(orderId);
+        return details.getStatus() != null ? details.getStatus() : "UNKNOWN";
+    }
+
+    @Override
+    public PayPalOrderDetails getOrderDetails(String orderId) {
         String token = getAccessToken();
         String url = baseUrl + "/v2/checkout/orders/" + orderId;
 
@@ -162,18 +180,50 @@ public class PayPalPaymentGatewayImpl implements PaymentGateway {
         try {
             ResponseEntity<Map> response = restTemplate.exchange(url, HttpMethod.GET, request, Map.class);
             if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
-                return (String) response.getBody().get("status");
+                Map body = response.getBody();
+                String status = (String) body.get("status");
+                BigDecimal amount = null;
+                String currency = null;
+
+                Object purchaseUnitsObj = body.get("purchase_units");
+                if (purchaseUnitsObj instanceof List<?> list && !list.isEmpty() && list.get(0) instanceof Map<?, ?> pu) {
+                    Object amountObj = pu.get("amount");
+                    if (amountObj instanceof Map<?, ?> amountMap) {
+                        currency = (String) amountMap.get("currency_code");
+                        Object valObj = amountMap.get("value");
+                        if (valObj != null) {
+                            amount = new BigDecimal(valObj.toString());
+                        }
+                    }
+                }
+
+                return PayPalOrderDetails.builder()
+                        .orderId(orderId)
+                        .status(status)
+                        .amount(amount)
+                        .currency(currency)
+                        .build();
             }
         } catch (Exception e) {
-            log.error("Error getting PayPal Order status for ID {}: {}", orderId, e.getMessage());
+            log.error("Error getting PayPal Order details for ID {}: {}", orderId, e.getMessage());
         }
-        return "UNKNOWN";
+        return PayPalOrderDetails.builder()
+                .orderId(orderId)
+                .status("UNKNOWN")
+                .build();
     }
 
     @Override
     public boolean verifyWebhookSignature(Map<String, String> headers, String body) {
         if (webhookId == null || webhookId.isBlank()) {
-            log.warn("PAYPAL_WEBHOOK_ID is not configured. Skipping webhook signature verification for development.");
+            if (isLiveMode) {
+                log.error("SECURITY ALERT: PAYPAL_WEBHOOK_ID is missing in LIVE mode! Rejecting unverified webhook payload.");
+                return false;
+            }
+            if (!skipVerify) {
+                log.warn("PAYPAL_WEBHOOK_ID is not configured in sandbox mode. Set paypal.webhook.skip-verify=true to bypass during local development.");
+                return false;
+            }
             return true;
         }
 
