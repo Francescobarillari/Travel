@@ -43,6 +43,10 @@ class SecurityViewModel(
                 errorMessage = "Inserisci la vecchia password per procedere con il cambio"
                 return
             }
+            if (newPassword == oldPassword) {
+                errorMessage = "La nuova password non può essere uguale a quella precedente"
+                return
+            }
             // Controllo robustezza password (min 8 caratteri, una maiuscola, una minuscola, un numero)
             if (newPassword.length < 8 || !newPassword.matches(Regex("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).*$"))) {
                 errorMessage = "La nuova password deve contenere almeno 8 caratteri, una maiuscola, una minuscola e un numero"

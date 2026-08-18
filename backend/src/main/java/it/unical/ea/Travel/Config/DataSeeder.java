@@ -79,6 +79,11 @@ public class DataSeeder implements CommandLineRunner {
     public void run(String... args) throws Exception {
         seedTestUser();
         
+        if (activityTemplateRepository.count() > 0) {
+            log.info("ℹ️ Dataset già presente nel database, skip pulizia e rigenerazione.");
+            return;
+        }
+
         log.info(" Pulizia database per la generazione del dataset demo...");
         cleanupDatabase();
 

@@ -191,12 +191,19 @@ public class AuthController {
             throw new ApiException(HttpStatus.BAD_REQUEST, "validation.password.pattern");
         }
 
+        // 4. Verifica che la nuova password non coincida con quella precedente
+        if (authService.verifyCredentials(email, newPassword)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "auth.resetPassword.sameAsOld");
+        }
+
         try {
-            // 4. Aggiorna la password in Keycloak
+            // 5. Aggiorna la password in Keycloak
             UserDTO userDto = new UserDTO();
             userDto.setPassword(newPassword);
             userService.updateUser(email, userDto);
             return ResponseEntity.ok(messageSource.getMessage("auth.forgot-password.success", null, LocaleContextHolder.getLocale()));
+        } catch (ApiException e) {
+            throw e;
         } catch (Exception e) {
             throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "error.internalServerError");
         }

@@ -20,4 +20,8 @@ public class AuthService {
     public JwtResponse login(LoginRequest request) {
         return keycloakAuthService.login(request);
     }
+
+    public boolean verifyCredentials(String email, String password) {
+        return keycloakAuthService.verifyCredentials(email, password);
+    }
 }

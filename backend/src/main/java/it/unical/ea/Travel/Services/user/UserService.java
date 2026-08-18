@@ -14,6 +14,7 @@ import it.unical.ea.Travel.Entities.user.User;
 import it.unical.ea.Travel.Exception.ApiException;
 import it.unical.ea.Travel.Repositories.user.UserRepository;
 import it.unical.ea.Travel.Services.keycloak.KeycloakAdminService;
+import it.unical.ea.Travel.Services.keycloak.KeycloakAuthService;
 import it.unical.ea.enums.UserType;
 import lombok.RequiredArgsConstructor;
 
@@ -30,6 +31,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final KeycloakAdminService keycloakAdminService;
+    private final KeycloakAuthService keycloakAuthService;
     private final FileStorageService fileStorageService;
     private final AuditLogService auditLogService;
     private final EmailService emailService;
@@ -186,10 +188,12 @@ public class UserService {
         // Se è specificata una nuova password, validala e aggiornala in Keycloak
         if (userDto.getPassword() != null && !userDto.getPassword().strip().isEmpty()) {
             String pwd = userDto.getPassword();
-            // Controllo robustezza password (min 8 caratteri, una maiuscola, una minuscola,
-            // un numero)
+            // Controllo robustezza password (min 8 caratteri, una maiuscola, una minuscola, un numero)
             if (pwd.length() < 8 || !pwd.matches("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).*$")) {
-                throw new ApiException(HttpStatus.BAD_REQUEST, "Password non conforme ai criteri di sicurezza");
+                throw new ApiException(HttpStatus.BAD_REQUEST, "validation.password.pattern");
+            }
+            if (keycloakAuthService.verifyCredentials(email, pwd)) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "auth.resetPassword.sameAsOld");
             }
             keycloakAdminService.updateUserPassword(email, pwd);
         }

@@ -68,4 +68,29 @@ public class KeycloakAuthService {
             throw new BadCredentialsException("Credenziali Keycloak non valide", exception);
         }
     }
+
+    public boolean verifyCredentials(String email, String password) {
+        if (email == null || password == null || email.isBlank() || password.isBlank()) {
+            return false;
+        }
+        MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
+        body.add("grant_type", "password");
+        body.add("client_id", clientId);
+        body.add("client_secret", clientSecret);
+        body.add("username", email);
+        body.add("password", password);
+
+        try {
+            Map<?, ?> response = restClient.post()
+                    .uri("/realms/{realm}/protocol/openid-connect/token", realm)
+                    .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                    .body(body)
+                    .retrieve()
+                    .body(Map.class);
+
+            return response != null && response.get("access_token") != null;
+        } catch (Exception exception) {
+            return false;
+        }
+    }
 }
