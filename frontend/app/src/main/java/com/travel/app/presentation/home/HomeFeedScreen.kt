@@ -266,7 +266,7 @@ fun HomeFeedScreen(
                         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
                     ) {
                         Box(modifier = Modifier.fillMaxSize()) {
-                            val activityImg: Any = activity.images?.firstOrNull { it.isNotBlank() } ?: com.travel.app.R.drawable.default_image
+                            val activityImg: Any = activity.images?.firstOrNull { !it.isNullOrBlank() } ?: com.travel.app.R.drawable.default_image
                             AsyncImage(
                                 model = activityImg,
                                 contentDescription = activity.name,
@@ -454,7 +454,7 @@ fun HomeFeedScreen(
                         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
                     ) {
                         Box(modifier = Modifier.fillMaxSize()) {
-                            val activityImg: Any = activity.images?.firstOrNull { it.isNotBlank() } ?: com.travel.app.R.drawable.default_image
+                            val activityImg: Any = activity.images?.firstOrNull { !it.isNullOrBlank() } ?: com.travel.app.R.drawable.default_image
                             AsyncImage(
                                 model = activityImg,
                                 contentDescription = activity.name,

@@ -60,7 +60,7 @@ fun ActivityCard(
                     .fillMaxWidth()
                     .height(180.dp)
             ) {
-                val imageUrl: Any = activity.images?.firstOrNull { it.isNotBlank() } ?: com.travel.app.R.drawable.default_image
+                val imageUrl: Any = activity.images?.firstOrNull { !it.isNullOrBlank() } ?: com.travel.app.R.drawable.default_image
                 AsyncImage(
                     model = imageUrl,
                     contentDescription = null,

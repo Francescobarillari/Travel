@@ -449,7 +449,7 @@ fun CercaScreen(
                             }
                             items(
                                 count = viewModel.activities.size,
-                                key = { index -> "activity_${viewModel.activities[index].id ?: index}" },
+                                key = { index -> "activity_${viewModel.activities[index].id ?: index}_$index" },
                                 contentType = { "Activity" }
                             ) { index ->
                                 val template = viewModel.activities[index]
@@ -492,7 +492,7 @@ fun CercaScreen(
                             }
                             items(
                                 count = viewModel.filteredItineraries.size,
-                                key = { index -> "itinerary_${viewModel.filteredItineraries[index].id ?: index}" },
+                                key = { index -> "itinerary_${viewModel.filteredItineraries[index].id ?: index}_$index" },
                                 contentType = { "Itinerary" }
                             ) { index ->
                                 val itinerary = viewModel.filteredItineraries[index]
@@ -523,7 +523,7 @@ fun CercaScreen(
                             }
                             items(
                                 count = viewModel.userList.size,
-                                key = { index -> "user_${viewModel.userList[index].id ?: index}" },
+                                key = { index -> "user_${viewModel.userList[index].id ?: viewModel.userList[index].email}_$index" },
                                 contentType = { "User" }
                             ) { index ->
                                 val user = viewModel.userList[index]

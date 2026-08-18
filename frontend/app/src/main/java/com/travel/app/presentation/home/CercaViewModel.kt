@@ -386,7 +386,7 @@ class CercaViewModel(
             )
             result.fold(
                 onSuccess = { page -> 
-                    localitaList = localitaList + (page.content ?: emptyList())
+                    localitaList = (localitaList + (page.content ?: emptyList())).distinctBy { it.id ?: it.name }
                     isLastLocalitaPage = (page.number ?: 0) >= (page.totalPages ?: 1) - 1
                 },
                 onFailure = { errorMessage = it.message }
@@ -416,7 +416,7 @@ class CercaViewModel(
                             null
                         }
                     }
-                    allActivities = allActivities + results
+                    allActivities = (allActivities + results).distinctBy { it.id }
                     applyFiltersAndSort()
                     isLastActivityPage = (page.number ?: 0) >= (page.totalPages ?: 1) - 1
                 },
