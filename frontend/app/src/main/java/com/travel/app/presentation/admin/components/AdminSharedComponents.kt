@@ -42,11 +42,15 @@ object AdminStatusColors {
         if (isSystemInDarkTheme()) Color(0xFFF87171) else Color(0xFFDC2626)
 }
 
-// Le immagini delle attività pending arrivano come path relativi (l'endpoint admin
-// non li arricchisce): l'URL pubblico va costruito lato client.
-fun adminActivityImageUrl(path: String): String =
-    if (path.startsWith("http")) path
-    else "${BuildConfig.BACKEND_URL}api/activity/images/${path.substringAfterLast("/")}"
+// Le immagini delle attività pending arrivano come path relativi o completi:
+// l'URL pubblico punta all'endpoint /activity/images/{filename}
+fun adminActivityImageUrl(path: String): String {
+    if (path.isBlank()) return ""
+    if (path.startsWith("http://") || path.startsWith("https://")) return path
+    val filename = path.substringAfterLast("/").substringAfterLast("\\")
+    val baseUrl = BuildConfig.BACKEND_URL.trimEnd('/')
+    return "$baseUrl/activity/images/$filename"
+}
 
 @Composable
 fun AdminSectionLabel(

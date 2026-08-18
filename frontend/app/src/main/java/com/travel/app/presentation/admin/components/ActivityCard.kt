@@ -63,7 +63,9 @@ fun ActivityModerationCard(
         else -> "Dal ${firstStart.format(dateFormatter)} al ${lastEnd.format(dateFormatter)}"
     }
 
-    val imageUrl = activity.images?.firstOrNull()?.let { adminActivityImageUrl(it) }
+    val rawImage = activity.images?.firstOrNull { !it.isNullOrBlank() }
+        ?: activity.sessions?.firstOrNull()?.images?.firstOrNull { !it.isNullOrBlank() }
+    val imageUrl = rawImage?.let { adminActivityImageUrl(it) }?.takeIf { it.isNotBlank() }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -79,6 +81,7 @@ fun ActivityModerationCard(
                     AsyncImage(
                         model = imageUrl,
                         contentDescription = "Immagine di ${activity.name ?: "attività"}",
+                        error = androidx.compose.ui.res.painterResource(com.travel.app.R.drawable.default_image),
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(150.dp)
