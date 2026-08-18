@@ -99,6 +99,7 @@ class ReviewServiceTest {
         when(userRepository.getUserByEmail(userEmail)).thenReturn(Optional.of(testUser));
         when(activityTemplateRepository.findById(testTemplate.getId())).thenReturn(Optional.of(testTemplate));
         when(activityBookingRepository.existsByUserIdAndActivityTemplateIdAndStatus(testUser.getId(), testTemplate.getId(), BookingStatus.CONFIRMED)).thenReturn(true);
+        when(activityBookingRepository.existsCompletedBookingByTemplate(eq(testUser.getId()), eq(testTemplate.getId()), eq(BookingStatus.CONFIRMED), any(LocalDateTime.class))).thenReturn(true);
         when(reviewRepository.existsByAuthorIdAndActivityTemplateId(testUser.getId(), testTemplate.getId())).thenReturn(false);
 
         Review savedReview = new Review();
@@ -135,10 +136,26 @@ class ReviewServiceTest {
     }
 
     @Test
+    void createReview_ActivityNotYetCompleted_ThrowsForbidden() {
+        when(userRepository.getUserByEmail(userEmail)).thenReturn(Optional.of(testUser));
+        when(activityTemplateRepository.findById(testTemplate.getId())).thenReturn(Optional.of(testTemplate));
+        when(activityBookingRepository.existsByUserIdAndActivityTemplateIdAndStatus(testUser.getId(), testTemplate.getId(), BookingStatus.CONFIRMED)).thenReturn(true);
+        when(activityBookingRepository.existsCompletedBookingByTemplate(eq(testUser.getId()), eq(testTemplate.getId()), eq(BookingStatus.CONFIRMED), any(LocalDateTime.class))).thenReturn(false);
+
+        CreateReviewDto dto = new CreateReviewDto(testTemplate.getId(), null, 4.0, "Non ancora fatta");
+        ApiException ex = assertThrows(ApiException.class, () -> reviewService.createReview(dto));
+
+        assertEquals(HttpStatus.FORBIDDEN, ex.getStatus());
+        assertEquals("review.activityNotCompleted", ex.getMessage());
+        verify(reviewRepository, never()).save(any());
+    }
+
+    @Test
     void createReview_AlreadyReviewedActivity_ThrowsConflict() {
         when(userRepository.getUserByEmail(userEmail)).thenReturn(Optional.of(testUser));
         when(activityTemplateRepository.findById(testTemplate.getId())).thenReturn(Optional.of(testTemplate));
         when(activityBookingRepository.existsByUserIdAndActivityTemplateIdAndStatus(testUser.getId(), testTemplate.getId(), BookingStatus.CONFIRMED)).thenReturn(true);
+        when(activityBookingRepository.existsCompletedBookingByTemplate(eq(testUser.getId()), eq(testTemplate.getId()), eq(BookingStatus.CONFIRMED), any(LocalDateTime.class))).thenReturn(true);
         when(reviewRepository.existsByAuthorIdAndActivityTemplateId(testUser.getId(), testTemplate.getId())).thenReturn(true);
 
         CreateReviewDto dto = new CreateReviewDto(testTemplate.getId(), null, 4.0, "Bello");
@@ -165,6 +182,7 @@ class ReviewServiceTest {
         when(userRepository.getUserByEmail(userEmail)).thenReturn(Optional.of(testUser));
         when(itineraryRepository.findById(testItinerary.getId())).thenReturn(Optional.of(testItinerary));
         when(itineraryBookingRepository.existsByUserIdAndItineraryIdAndStatus(testUser.getId(), testItinerary.getId(), BookingStatus.CONFIRMED)).thenReturn(true);
+        when(itineraryBookingRepository.existsCompletedBookingByItinerary(eq(testUser.getId()), eq(testItinerary.getId()), eq(BookingStatus.CONFIRMED), any(LocalDateTime.class))).thenReturn(true);
         when(reviewRepository.existsByAuthorIdAndItineraryId(testUser.getId(), testItinerary.getId())).thenReturn(false);
 
         Review savedReview = new Review();

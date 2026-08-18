@@ -681,31 +681,111 @@ fun ItineraryDetailScreen(
                     )
                 }
 
-                // Form inline per aggiungere una nuova recensione
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        AddReviewInline(
-                            onSubmit = { rating, comment ->
-                                scope.launch {
-                                    val id = itinerary.id?.toString()
-                                    if (id != null) {
-                                        val newReview = CreateReviewDto(
-                                            itineraryId = id,
-                                            rating = rating,
-                                            comment = comment
-                                        )
-                                        AppContainer.reviewRepository.createReview(newReview)
-                                        val reviewsResult = AppContainer.reviewRepository.getReviewsForItinerary(id)
-                                        if (reviewsResult.isSuccess) {
-                                            reviews = reviewsResult.getOrNull() ?: emptyList()
+                val hasAlreadyReviewed = reviews.any { it.isEditable == true }
+                val isConcluded = itinerary.endDateTime?.isBefore(LocalDateTime.now()) == true ||
+                        (itinerary.endDateTime == null && itinerary.startDateTime?.isBefore(LocalDateTime.now()) == true)
+
+                if (hasAlreadyReviewed) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f)),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                text = "Hai già recensito questo itinerario. Puoi modificare o eliminare la tua recensione dalla lista qui sotto.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                } else if (!isBooked) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Text(
+                                text = "🔒",
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            Text(
+                                text = "Prenota e partecipa a questo itinerario per poter lasciare una recensione.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                } else if (!isConcluded) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.3f)),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Text(
+                                text = "⏳",
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            Text(
+                                text = "Hai prenotato questo itinerario! Potrai recensirlo una volta conclusa l'esperienza.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                } else {
+                    // Form inline per aggiungere una nuova recensione
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            AddReviewInline(
+                                onSubmit = { rating, comment ->
+                                    scope.launch {
+                                        val id = itinerary.id?.toString()
+                                        if (id != null) {
+                                            val newReview = CreateReviewDto(
+                                                itineraryId = id,
+                                                rating = rating,
+                                                comment = comment
+                                            )
+                                            val createRes = AppContainer.reviewRepository.createReview(newReview)
+                                            if (createRes.isSuccess) {
+                                                Toast.makeText(context, "Recensione pubblicata con successo!", Toast.LENGTH_SHORT).show()
+                                                val reviewsResult = AppContainer.reviewRepository.getReviewsForItinerary(id)
+                                                if (reviewsResult.isSuccess) {
+                                                    reviews = reviewsResult.getOrNull() ?: emptyList()
+                                                }
+                                            } else {
+                                                val errMsg = createRes.exceptionOrNull()?.message ?: "Impossibile pubblicare la recensione"
+                                                Toast.makeText(context, errMsg, Toast.LENGTH_LONG).show()
+                                            }
                                         }
                                     }
                                 }
-                            }
-                        )
+                            )
+                        }
                     }
                 }
                 

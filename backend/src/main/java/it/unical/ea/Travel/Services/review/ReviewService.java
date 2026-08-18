@@ -51,6 +51,8 @@ public class ReviewService {
         review.setRating(dto.getRating());
         review.setComment(dto.getComment());
 
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+
         if (dto.getActivityId() != null) {
             ActivityTemplate activityTemplate = activityTemplateRepository.findById(dto.getActivityId())
                     .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "activity.notFound"));
@@ -59,6 +61,12 @@ public class ReviewService {
                     currentUser.getId(), activityTemplate.getId(), BookingStatus.CONFIRMED);
             if (!hasBooked) {
                 throw new ApiException(HttpStatus.FORBIDDEN, "review.unverifiedPurchase");
+            }
+
+            boolean hasCompleted = activityBookingRepository.existsCompletedBookingByTemplate(
+                    currentUser.getId(), activityTemplate.getId(), BookingStatus.CONFIRMED, now);
+            if (!hasCompleted) {
+                throw new ApiException(HttpStatus.FORBIDDEN, "review.activityNotCompleted");
             }
 
             boolean alreadyReviewed = reviewRepository.existsByAuthorIdAndActivityTemplateId(
@@ -76,6 +84,12 @@ public class ReviewService {
                     currentUser.getId(), itinerary.getId(), BookingStatus.CONFIRMED);
             if (!hasBooked) {
                 throw new ApiException(HttpStatus.FORBIDDEN, "review.unverifiedPurchase");
+            }
+
+            boolean hasCompleted = itineraryBookingRepository.existsCompletedBookingByItinerary(
+                    currentUser.getId(), itinerary.getId(), BookingStatus.CONFIRMED, now);
+            if (!hasCompleted) {
+                throw new ApiException(HttpStatus.FORBIDDEN, "review.activityNotCompleted");
             }
 
             boolean alreadyReviewed = reviewRepository.existsByAuthorIdAndItineraryId(

@@ -13,7 +13,14 @@ class ReviewRepository(
             if (response.isSuccessful && response.body() != null) {
                 Result.success(response.body()!!)
             } else {
-                Result.failure(Exception("Failed to create review: ${response.code()}"))
+                val errorMsg = try {
+                    val raw = response.errorBody()?.string() ?: ""
+                    val json = org.json.JSONObject(raw)
+                    json.optString("error", json.optString("message", "Errore ${response.code()}"))
+                } catch (e: Exception) {
+                    "Errore durante l'invio della recensione (${response.code()})"
+                }
+                Result.failure(Exception(errorMsg))
             }
         } catch (e: Exception) {
             Result.failure(e)
