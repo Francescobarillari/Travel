@@ -24,6 +24,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
 @RequiredArgsConstructor
 public class NotificationService {
 
+    private static final int MAX_EMITTERS_PER_USER = 5;
+    private static final long SSE_TIMEOUT_MS = 10 * 60 * 1000L; // 10 minuti di timeout per evitare leak
+
     private final NotificationRepository notificationRepository;
     private final NotificationMapper notificationMapper;
 
@@ -66,9 +69,22 @@ public class NotificationService {
     }
 
     public SseEmitter registerEmitter(UUID userId) {
-        SseEmitter emitter = new SseEmitter(10 * 60 * 1000L); // 10 minuti di timeout per evitare leak
+        SseEmitter emitter = new SseEmitter(SSE_TIMEOUT_MS);
 
-        emitters.computeIfAbsent(userId, k -> new CopyOnWriteArrayList<>()).add(emitter);
+        List<SseEmitter> userEmitters = emitters.computeIfAbsent(userId, k -> new CopyOnWriteArrayList<>());
+
+        // Limita il numero di connessioni contemporanee per singolo utente (prevenzione DoS / connection starvation)
+        synchronized (userEmitters) {
+            while (userEmitters.size() >= MAX_EMITTERS_PER_USER) {
+                SseEmitter oldest = userEmitters.remove(0);
+                try {
+                    oldest.complete();
+                } catch (Exception e) {
+                    log.debug("Errore durante la chiusura del vecchio emitter per user {}: {}", userId, e.getMessage());
+                }
+            }
+            userEmitters.add(emitter);
+        }
 
         emitter.onCompletion(() -> removeEmitter(userId, emitter));
         emitter.onTimeout(() -> removeEmitter(userId, emitter));
@@ -92,6 +108,11 @@ public class NotificationService {
                 emitters.remove(userId);
             }
         }
+    }
+
+    int getActiveEmittersCount(UUID userId) {
+        List<SseEmitter> userEmitters = emitters.get(userId);
+        return userEmitters != null ? userEmitters.size() : 0;
     }
 
     private void sendRealtimeNotification(UUID userId, NotificationDto dto) {
