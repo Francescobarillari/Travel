@@ -22,6 +22,8 @@ import org.springframework.http.HttpStatus;
 import it.unical.ea.dtos.authDto.SignupRequest;
 import it.unical.ea.enums.UserType;
 
+import it.unical.ea.dtos.user.UserPrivateDTO;
+import it.unical.ea.dtos.user.UserPublicDTO;
 import it.unical.ea.dtos.user.UserDTO;
 import it.unical.ea.Travel.Entities.user.User;
 import it.unical.ea.Travel.Exception.ApiException;
@@ -49,29 +51,43 @@ public class UserController {
 
     @Operation(summary = "Crea un nuovo utente")
     @PostMapping
-    public UserDTO saveUser(@Valid @RequestBody SignupRequest request) {
+    public UserPrivateDTO saveUser(@Valid @RequestBody SignupRequest request) {
         User user = userService.saveUser(request);
-        return toDTO(user);
+        return userMapper.toPrivateDTO(user);
     }
 
-    @Operation(summary = "Ottieni un utente per ID")
+    @Operation(summary = "Ottieni un utente per ID (Dati privati se proprietario/admin, altrimenti pubblici)")
     @GetMapping("/{stringId}")
-    public UserDTO getUser(@Parameter(description = "ID dell'utente", schema = @Schema(format = "uuid"), example = "550e8400-e29b-41d4-a716-446655440000") @PathVariable String stringId){
+    public ResponseEntity<?> getUser(
+            @Parameter(description = "ID dell'utente", schema = @Schema(format = "uuid"), example = "550e8400-e29b-41d4-a716-446655440000") @PathVariable String stringId,
+            @AuthenticationPrincipal Jwt jwt) {
         User user = userService.getUser(stringId);
-        return toDTO(user);
+        if (jwt != null) {
+            String email = jwt.getClaimAsString("email");
+            if (isAdmin(jwt) || (email != null && email.equalsIgnoreCase(user.getEmail()))) {
+                UserPrivateDTO privateDto = userMapper.toPrivateDTO(user);
+                privateDto.setPassword(null);
+                return ResponseEntity.ok(privateDto);
+            }
+        }
+        UserPublicDTO publicDto = userMapper.toPublicDTO(user);
+        return ResponseEntity.ok(publicDto);
     }
 
-    @Operation(summary = "Ottieni tutti gli utenti")
+    @Operation(summary = "Ottieni tutti gli utenti (Riservato agli Admin)")
     @GetMapping
-    public List<UserDTO> getUsers() {
+    public List<UserPrivateDTO> getUsers(@AuthenticationPrincipal Jwt jwt) {
+        if (jwt == null || !isAdmin(jwt)) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "error.forbidden");
+        }
         return userService.getUsers().stream()
-                .map(this::toDTO)
+                .map(userMapper::toPrivateDTO)
                 .toList();
     }
 
     @Operation(summary = "Ottieni il profilo dell'utente autenticato", description = "Restituisce i dati dell'utente autenticato tramite il token JWT")
     @GetMapping("/me")
-    public UserDTO getMe(@AuthenticationPrincipal Jwt jwt) {
+    public UserPrivateDTO getMe(@AuthenticationPrincipal Jwt jwt) {
         if (jwt == null) {
             throw new it.unical.ea.Travel.Exception.ApiException(HttpStatus.UNAUTHORIZED, "auth.login.invalidCredentials");
         }
@@ -79,7 +95,7 @@ public class UserController {
 
         // Gestione speciale per l'utente ADMIN che non risiede nel DB locale
         if (isAdmin(jwt)) {
-            UserDTO adminDTO = new UserDTO();
+            UserPrivateDTO adminDTO = new UserPrivateDTO();
             adminDTO.setEmail(email);
             adminDTO.setFirstName("Admin");
             adminDTO.setLastName("User");
@@ -88,25 +104,28 @@ public class UserController {
         }
 
         User user = userService.getUserByEmail(email);
-        UserDTO userDTO = toDTO(user);
+        UserPrivateDTO userDTO = userMapper.toPrivateDTO(user);
         userDTO.setPassword(null); // Sicurezza extra: Non restituire mai il campo password nelle risposte
         return userDTO;
     }
 
     @Operation(summary = "Aggiorna il profilo dell'utente autenticato")
     @PutMapping("/me")
-    public UserDTO updateMe(@AuthenticationPrincipal Jwt jwt, @Valid @RequestBody UserDTO userDto) {
+    public UserPrivateDTO updateMe(@AuthenticationPrincipal Jwt jwt, @Valid @RequestBody UserPrivateDTO userDto) {
         if (jwt == null) {
             throw new it.unical.ea.Travel.Exception.ApiException(HttpStatus.UNAUTHORIZED, "auth.login.invalidCredentials");
         }
         String email = jwt.getClaimAsString("email");
-        User updatedUser = userService.updateUser(email, userDto);
-        UserDTO result = toDTO(updatedUser);
+        User updatedUser = userService.updateUserFromPrivateDTO(email, userDto);
+        UserPrivateDTO result = userMapper.toPrivateDTO(updatedUser);
         result.setPassword(null); // Sicurezza extra: Non restituire mai il campo password nelle risposte
         return result;
     }
 
     private boolean isAdmin(Jwt jwt) {
+        if (jwt == null) {
+            return false;
+        }
         // 1. Controlla claim top-level "roles"
         List<String> roles = jwt.getClaimAsStringList("roles");
         if (roles != null && roles.contains("ADMIN")) {
@@ -162,14 +181,14 @@ public class UserController {
 
     @Operation(summary = "Carica l'avatar dell'utente", description = "Accetta un file immagine (JPEG, PNG, WebP)")
     @PostMapping(value = "/{stringId}/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public UserDTO uploadAvatar(
+    public UserPrivateDTO uploadAvatar(
             @Parameter(description = "ID dell'utente", schema = @Schema(format = "uuid"), example = "550e8400-e29b-41d4-a716-446655440000")
             @PathVariable String stringId,
             @RequestPart("file") MultipartFile file,
             @AuthenticationPrincipal Jwt jwt) {
         checkUserOwnershipOrAdmin(jwt, stringId);
         User updated = userService.uploadAvatar(stringId, file);
-        return toDTO(updated);
+        return userMapper.toPrivateDTO(updated);
     }
 
     @Operation(summary = "Scarica l'avatar dell'utente", description = "Restituisce l'avatar inline. Endpoint pubblico.")
@@ -192,13 +211,13 @@ public class UserController {
 
     @Operation(summary = "Elimina l'avatar dell'utente")
     @DeleteMapping("/{stringId}/avatar")
-    public UserDTO deleteAvatar(
+    public UserPrivateDTO deleteAvatar(
             @Parameter(description = "ID dell'utente", schema = @Schema(format = "uuid"), example = "550e8400-e29b-41d4-a716-446655440000")
             @PathVariable String stringId,
             @AuthenticationPrincipal Jwt jwt) {
         checkUserOwnershipOrAdmin(jwt, stringId);
         User updated = userService.deleteAvatar(stringId);
-        return toDTO(updated);
+        return userMapper.toPrivateDTO(updated);
     }
 
     // --- Helpers per arricchire URL ---

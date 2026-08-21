@@ -14,6 +14,7 @@ import it.unical.ea.Travel.Services.activity.ActivityService;
 import it.unical.ea.Travel.Services.keycloak.KeycloakAdminService;
 import it.unical.ea.dtos.activity.ActivityDto;
 import it.unical.ea.dtos.user.UserDTO;
+import it.unical.ea.dtos.user.UserPrivateDTO;
 import it.unical.ea.enums.UserType;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -54,9 +55,9 @@ public class AdminController {
 
     @Operation(summary = "Ottieni agenzie in attesa di approvazione")
     @GetMapping("/companies/pending")
-    public List<UserDTO> getPendingCompanies() {
+    public List<UserPrivateDTO> getPendingCompanies() {
         List<User> pending = userRepository.findByUserTypeAndApproved(UserType.SOCIETA, false);
-        return pending.stream().map(userMapper::toDTO).toList();
+        return pending.stream().map(userMapper::toPrivateDTO).toList();
     }
 
     @Operation(summary = "Approva un'agenzia")
@@ -196,9 +197,9 @@ public class AdminController {
 
     @Operation(summary = "Ottieni tutte le agenzie")
     @GetMapping("/companies")
-    public List<UserDTO> getAllCompanies() {
+    public List<UserPrivateDTO> getAllCompanies() {
         List<User> companies = userRepository.findByUserType(UserType.SOCIETA);
-        return companies.stream().map(userMapper::toDTO).toList();
+        return companies.stream().map(userMapper::toPrivateDTO).toList();
     }
 
     @Operation(summary = "Blocca un'agenzia")
