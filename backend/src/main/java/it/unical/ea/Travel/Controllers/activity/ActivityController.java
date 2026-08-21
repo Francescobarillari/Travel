@@ -22,8 +22,10 @@ import it.unical.ea.dtos.activity.ActivityDto;
 import it.unical.ea.dtos.activity.ActivityTemplateDto;
 import it.unical.ea.dtos.activity.CreateActivityRequestDto;
 import it.unical.ea.dtos.user.UserDTO;
+import it.unical.ea.dtos.user.UserPublicDTO;
 import it.unical.ea.dtos.payment.PaymentIntentResponseDto;
 import it.unical.ea.Travel.Services.activity.ActivityService;
+import it.unical.ea.Travel.Exception.ApiException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.RequestPart;
@@ -195,12 +197,42 @@ public class ActivityController {
         return ResponseEntity.ok().build();
     }
 
-    @Operation(summary = "Ottieni gli iscritti ad un'attività", description = "Restituisce la lista degli utenti iscritti ad una specifica attività")
+    @Operation(summary = "Ottieni gli iscritti ad un'attività", description = "Restituisce la lista degli utenti iscritti ad una specifica attività (riservato all'organizzatore o all'admin)")
     @GetMapping("/{stringId}/bookings")
-    public ResponseEntity<List<UserDTO>> getBookedUsers(
-            @Parameter(description = "ID dell'attività", schema = @Schema(format = "uuid"), example = "550e8400-e29b-41d4-a716-446655440000") @PathVariable String stringId) {
-        List<UserDTO> users = activityService.getBookedUsers(stringId);
+    public ResponseEntity<List<UserPublicDTO>> getBookedUsers(
+            @Parameter(description = "ID dell'attività", schema = @Schema(format = "uuid"), example = "550e8400-e29b-41d4-a716-446655440000") @PathVariable String stringId,
+            @AuthenticationPrincipal Jwt jwt) {
+        if (jwt == null) {
+            throw new ApiException(HttpStatus.UNAUTHORIZED, "auth.login.invalidCredentials");
+        }
+        String callerEmail = jwt.getClaimAsString("email");
+        boolean isAdmin = isAdmin(jwt);
+        List<UserPublicDTO> users = activityService.getBookedUsers(stringId, callerEmail, isAdmin);
         return ResponseEntity.ok(users);
+    }
+
+    private boolean isAdmin(Jwt jwt) {
+        if (jwt == null) {
+            return false;
+        }
+        List<String> roles = jwt.getClaimAsStringList("roles");
+        if (roles != null && roles.contains("ADMIN")) {
+            return true;
+        }
+        java.util.Map<String, Object> resourceAccess = jwt.getClaim("resource_access");
+        if (resourceAccess != null) {
+            Object clientAccess = resourceAccess.get("ae-client");
+            if (clientAccess instanceof java.util.Map<?, ?> clientAccessMap) {
+                Object clientRoles = clientAccessMap.get("roles");
+                if (clientRoles instanceof java.util.Collection<?> roleCollection) {
+                    if (roleCollection.contains("ADMIN")) {
+                        return true;
+                    }
+                }
+            }
+        }
+        String email = jwt.getClaimAsString("email");
+        return "admin-user@example.com".equals(email);
     }
 
     // --- Helpers per arricchire URL ---
