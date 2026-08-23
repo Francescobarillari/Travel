@@ -24,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import it.unical.ea.Travel.Config.SecurityUtils;
+import it.unical.ea.Travel.Services.auth.AuthorizationService;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -64,6 +65,7 @@ public class ActivityService {
     private final PaymentGateway paymentGateway;
     private final ReviewRepository reviewRepository;
     private final it.unical.ea.Travel.Services.notification.NotificationService notificationService;
+    private final AuthorizationService authorizationService;
 
     @Value("${payment.mock:true}")
     private boolean paymentMock;
@@ -238,6 +240,13 @@ public class ActivityService {
         Activity activity = activityRepository.findById(uuid)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "activity.notFound"));
 
+        authorizationService.verifyOwnershipOrAdmin(
+                activity.getTemplate() != null && activity.getTemplate().getOrganizer() != null
+                        ? activity.getTemplate().getOrganizer().getId()
+                        : null,
+                "activity"
+        );
+
         // Update schedule fields
         activity.setStartTime(activityDto.getStartTime());
         activity.setEndTime(activityDto.getEndTime());
@@ -327,7 +336,17 @@ public class ActivityService {
     
     public void deleteActivity(String stringId) {
         UUID uuid = UUID.fromString(stringId);
-        activityRepository.deleteById(uuid);
+        Activity activity = activityRepository.findById(uuid)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "activity.notFound"));
+
+        authorizationService.verifyOwnershipOrAdmin(
+                activity.getTemplate() != null && activity.getTemplate().getOrganizer() != null
+                        ? activity.getTemplate().getOrganizer().getId()
+                        : null,
+                "activity"
+        );
+
+        activityRepository.delete(activity);
         auditLogService.log("DELETE_ACTIVITY", "Activity", stringId, "Deleted activity with ID: " + stringId);
     }
 
@@ -569,6 +588,10 @@ public class ActivityService {
         if (activityOpt.isPresent()) {
             Activity activity = activityOpt.get();
             ActivityTemplate template = activity.getTemplate();
+            authorizationService.verifyOwnershipOrAdmin(
+                    template != null && template.getOrganizer() != null ? template.getOrganizer().getId() : null,
+                    "activity"
+            );
             if (template.getImages() == null) {
                 template.setImages(new java.util.ArrayList<>());
             }
@@ -585,6 +608,10 @@ public class ActivityService {
         Optional<ActivityTemplate> templateOpt = activityTemplateRepository.findById(uuid);
         if (templateOpt.isPresent()) {
             ActivityTemplate template = templateOpt.get();
+            authorizationService.verifyOwnershipOrAdmin(
+                    template.getOrganizer() != null ? template.getOrganizer().getId() : null,
+                    "activity"
+            );
             if (template.getImages() == null) {
                 template.setImages(new java.util.ArrayList<>());
             }
@@ -639,6 +666,10 @@ public class ActivityService {
         if (activityOpt.isPresent()) {
             Activity activity = activityOpt.get();
             ActivityTemplate template = activity.getTemplate();
+            authorizationService.verifyOwnershipOrAdmin(
+                    template != null && template.getOrganizer() != null ? template.getOrganizer().getId() : null,
+                    "activity"
+            );
             if (template.getImages() != null && template.getImages().contains(targetPath)) {
                 fileStorageService.delete(targetPath);
                 template.getImages().remove(targetPath);
@@ -653,6 +684,10 @@ public class ActivityService {
         Optional<ActivityTemplate> templateOpt = activityTemplateRepository.findById(uuid);
         if (templateOpt.isPresent()) {
             ActivityTemplate template = templateOpt.get();
+            authorizationService.verifyOwnershipOrAdmin(
+                    template.getOrganizer() != null ? template.getOrganizer().getId() : null,
+                    "activity"
+            );
             if (template.getImages() != null && template.getImages().contains(targetPath)) {
                 fileStorageService.delete(targetPath);
                 template.getImages().remove(targetPath);
