@@ -23,7 +23,7 @@ import com.travel.app.presentation.theme.TravelTheme
 import coil.compose.AsyncImage
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.draw.clip
-import it.unical.ea.dtos.user.UserDTO
+import it.unical.ea.dtos.user.UserPublicDTO
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,9 +37,9 @@ fun CompanyActivityBookingsScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Utenti Iscritti",
+                        text = "Iscritti all'attività",
                         fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.titleLarge
+                        fontSize = 20.sp
                     )
                 },
                 navigationIcon = {
@@ -51,81 +51,100 @@ fun CompanyActivityBookingsScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
+                    containerColor = Color.White,
+                    titleContentColor = Color(0xFF0F172A),
+                    navigationIconContentColor = Color(0xFF0F172A)
                 )
             )
         },
-        modifier = modifier.fillMaxSize()
+        containerColor = Color(0xFFF8FAFC),
+        modifier = modifier
     ) { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .background(Color(0xFFF8FAFC)) // Soft background
         ) {
-            if (viewModel.isLoading) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
+            when {
+                viewModel.isLoading -> {
+                    CircularProgressIndicator(
+                        modifier = Modifier.align(Alignment.Center),
+                        color = MaterialTheme.colorScheme.primary
+                    )
                 }
-            } else if (viewModel.errorMessage != null) {
-                Box(
-                    modifier = Modifier.fillMaxSize().padding(24.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Card(
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+
+                viewModel.errorMessage != null -> {
+                    Column(
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Row(
-                            modifier = Modifier.padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                        Icon(
+                            imageVector = Icons.Default.Error,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(48.dp)
+                        )
+                        Text(
+                            text = viewModel.errorMessage ?: "Errore sconosciuto",
+                            color = MaterialTheme.colorScheme.error,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Button(
+                            onClick = { viewModel.fetchBookings() },
+                            shape = RoundedCornerShape(12.dp)
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Error,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.error
-                            )
-                            Spacer(Modifier.width(8.dp))
-                            Text(
-                                text = viewModel.errorMessage ?: "",
-                                color = MaterialTheme.colorScheme.onErrorContainer
-                            )
+                            Text("Riprova")
                         }
                     }
                 }
-            } else if (viewModel.bookedUsers.isEmpty()) {
-                Box(
-                    modifier = Modifier.fillMaxSize().padding(24.dp),
-                    contentAlignment = Alignment.Center
-                ) {
+
+                viewModel.bookedUsers.isEmpty() -> {
                     Column(
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .padding(24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Text(
-                            text = "Ancora nessun iscritto",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF64748B)
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = null,
+                            tint = Color(0xFF94A3B8),
+                            modifier = Modifier.size(64.dp)
                         )
                         Text(
-                            text = "Le prenotazioni per questa attività appariranno qui appena effettuate.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color(0xFF94A3B8),
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            text = "Nessun utente iscritto a questa attività al momento.",
+                            color = Color(0xFF64748B),
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium
                         )
                     }
                 }
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp, 16.dp, 16.dp, 100.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(viewModel.bookedUsers) { user ->
-                        BookedUserCard(user = user)
+
+                else -> {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        item {
+                            Text(
+                                text = "Totale iscritti: ${viewModel.bookedUsers.size}",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color(0xFF64748B),
+                                modifier = Modifier.padding(bottom = 4.dp)
+                            )
+                        }
+
+                        items(viewModel.bookedUsers) { user ->
+                            BookedUserCard(user = user)
+                        }
                     }
                 }
             }
@@ -135,7 +154,7 @@ fun CompanyActivityBookingsScreen(
 
 @Composable
 fun BookedUserCard(
-    user: UserDTO,
+    user: UserPublicDTO,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -178,50 +197,17 @@ fun BookedUserCard(
                         }
                     }
                 }
-                Text(
-                    text = user.fullName ?: "${user.firstName ?: ""} ${user.lastName ?: ""}".trim().ifEmpty { "Utente senza nome" },
-                    fontSize = 17.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF0F172A)
-                )
-            }
-
-            HorizontalDivider(color = Color(0xFFF1F5F9))
-
-            // Email Info
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Email,
-                    contentDescription = null,
-                    tint = Color(0xFF64748B),
-                    modifier = Modifier.size(18.dp)
-                )
-                Text(
-                    text = user.email ?: "Nessuna email",
-                    fontSize = 14.sp,
-                    color = Color(0xFF475569)
-                )
-            }
-
-            // Phone Info (if exists)
-            if (!user.phone.isNullOrBlank()) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Phone,
-                        contentDescription = null,
-                        tint = Color(0xFF64748B),
-                        modifier = Modifier.size(18.dp)
+                Column {
+                    Text(
+                        text = user.fullName ?: "${user.firstName ?: ""} ${user.lastName ?: ""}".trim().ifEmpty { "Utente senza nome" },
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF0F172A)
                     )
                     Text(
-                        text = user.phone ?: "",
-                        fontSize = 14.sp,
-                        color = Color(0xFF475569)
+                        text = if (user.userType?.name == "SOCIETA") "Società / Agenzia" else "Partecipante",
+                        fontSize = 13.sp,
+                        color = Color(0xFF64748B)
                     )
                 }
             }

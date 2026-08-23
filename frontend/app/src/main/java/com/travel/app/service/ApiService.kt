@@ -11,6 +11,8 @@ import it.unical.ea.dtos.authDto.JwtResponse
 import it.unical.ea.dtos.authDto.ForgotPasswordRequest
 import it.unical.ea.dtos.authDto.ResetPasswordRequest
 import it.unical.ea.dtos.user.UserDTO
+import it.unical.ea.dtos.user.UserPrivateDTO
+import it.unical.ea.dtos.user.UserPublicDTO
 import retrofit2.http.DELETE
 import retrofit2.http.Path
 import it.unical.ea.dtos.activity.ActivityDto
@@ -44,17 +46,17 @@ interface ApiService {
 
     // Chiamata per recuperare il profilo dell'utente autenticato
     @GET("user/me")
-    suspend fun getMe(): UserDTO
+    suspend fun getMe(): UserPrivateDTO
 
     // Chiamata per aggiornare il profilo dell'utente autenticato
     @PUT("user/me")
-    suspend fun updateMe(@Body request: UserDTO): UserDTO
+    suspend fun updateMe(@Body request: UserPrivateDTO): UserPrivateDTO
 
     @GET("user")
-    suspend fun getUsers(): List<UserDTO>
+    suspend fun getUsers(): List<UserPrivateDTO>
 
     @GET("user/{id}")
-    suspend fun getUser(@Path("id") id: String): UserDTO
+    suspend fun getUser(@Path("id") id: String): UserPublicDTO
 
     // Chiamata per eliminare l'account
     @DELETE("user/{id}")
@@ -66,7 +68,12 @@ interface ApiService {
     suspend fun uploadAvatar(
         @Path("id") id: String,
         @Part file: MultipartBody.Part
-    ): UserDTO
+    ): UserPrivateDTO
+
+    @DELETE("user/{id}/avatar")
+    suspend fun deleteAvatar(
+        @Path("id") id: String
+    ): UserPrivateDTO
 
     // Chiamata per creare una nuova attività (batch ricorrente)
     @POST("activity/batch")
@@ -86,7 +93,7 @@ interface ApiService {
     ): ActivityDto
 
     @GET("activity/{id}/bookings")
-    suspend fun getBookedUsers(@Path("id") id: String): List<UserDTO>
+    suspend fun getBookedUsers(@Path("id") id: String): List<UserPublicDTO>
 
     // Chiamata per recuperare tutte le attività
     @GET("activity")
@@ -103,7 +110,7 @@ interface ApiService {
     @GET("api/location/search")
     suspend fun searchLocalita(
         @retrofit2.http.Query("query") query: String,
-        @retrofit2.http.Query("includeExternal") includeExternal: Boolean,
+        @retrofit2.http.Query("includeExternal") includeExternal: Boolean = true,
         @retrofit2.http.Query("page") page: Int = 0,
         @retrofit2.http.Query("size") size: Int = 10
     ): it.unical.ea.dtos.common.PageDto<it.unical.ea.dtos.location.LocationDto>
@@ -153,7 +160,7 @@ interface ApiService {
     @POST("itinerary/{id}/book")
     suspend fun bookItinerary(@Path("id") id: String): PaymentIntentResponseDto
 
-    @GET("itinerary/{id}/isBooked")
+    @GET("itinerary/{id}/is-booked")
     suspend fun isItineraryBooked(@Path("id") id: String): Boolean
 
     @POST("itinerary/booking/{bookingId}/confirm")
@@ -162,7 +169,7 @@ interface ApiService {
     @DELETE("itinerary/{id}/book")
     suspend fun cancelItineraryBooking(@Path("id") id: String): retrofit2.Response<Unit>
 
-    @GET("activity/{id}/isBooked")
+    @GET("activity/{id}/is-booked")
     suspend fun isActivityBooked(@Path("id") id: String): Boolean
 
 
@@ -172,10 +179,10 @@ interface ApiService {
     @DELETE("activity/{id}/book")
     suspend fun cancelActivityBooking(@Path("id") id: String): retrofit2.Response<Unit>
 
-    @GET("activity/booked/me")
+    @GET("activity/me/booked")
     suspend fun getBookedActivities(): List<ActivityDto>
 
-    @GET("itinerary/booked/me")
+    @GET("itinerary/me/booked")
     suspend fun getBookedItineraries(): List<ItineraryDto>
 
     // Chiamata per aggiornare la visibilità di un itinerario
@@ -197,7 +204,7 @@ interface ApiService {
 
     // Endpoint Admin
     @GET("api/admin/companies/pending")
-    suspend fun getPendingCompanies(): List<UserDTO>
+    suspend fun getPendingCompanies(): List<UserPrivateDTO>
 
     @POST("api/admin/companies/{id}/approve")
     suspend fun approveCompany(@Path("id") id: String)
@@ -215,7 +222,7 @@ interface ApiService {
     suspend fun rejectActivity(@Path("id") id: String)
 
     @GET("api/admin/companies")
-    suspend fun getAllCompanies(): List<UserDTO>
+    suspend fun getAllCompanies(): List<UserPrivateDTO>
 
     @POST("api/admin/companies/{id}/block")
     suspend fun blockCompany(@Path("id") id: String)
@@ -250,14 +257,15 @@ open class MockApiService : ApiService {
     override suspend fun register(request: SignupRequest): String = throw NotImplementedError()
     override suspend fun forgotPassword(request: ForgotPasswordRequest): String = throw NotImplementedError()
     override suspend fun resetPassword(request: ResetPasswordRequest): String = throw NotImplementedError()
-    override suspend fun getMe(): UserDTO = throw NotImplementedError()
-    override suspend fun updateMe(request: UserDTO): UserDTO = throw NotImplementedError()
+    override suspend fun getMe(): UserPrivateDTO = throw NotImplementedError()
+    override suspend fun updateMe(request: UserPrivateDTO): UserPrivateDTO = throw NotImplementedError()
     override suspend fun deleteUser(id: String) {}
-    override suspend fun uploadAvatar(id: String, file: MultipartBody.Part): UserDTO = throw NotImplementedError()
+    override suspend fun uploadAvatar(id: String, file: MultipartBody.Part): UserPrivateDTO = throw NotImplementedError()
+    override suspend fun deleteAvatar(id: String): UserPrivateDTO = throw NotImplementedError()
     override suspend fun createActivity(request: CreateActivityRequestDto): ActivityTemplateDto = throw NotImplementedError()
     override suspend fun updateActivity(id: String, request: ActivityDto): ActivityDto = throw NotImplementedError()
     override suspend fun uploadActivityImages(id: String, files: List<MultipartBody.Part>): ActivityDto = throw NotImplementedError()
-    override suspend fun getBookedUsers(id: String): List<UserDTO> = throw NotImplementedError()
+    override suspend fun getBookedUsers(id: String): List<UserPublicDTO> = throw NotImplementedError()
     override suspend fun getActivities(): List<ActivityDto> = throw NotImplementedError()
     override suspend fun searchActivities(
         query: String, minStartTime: String?, page: Int, size: Int
@@ -277,17 +285,17 @@ open class MockApiService : ApiService {
     override suspend fun deleteItinerary(id: String) {}
     override suspend fun deleteActivity(id: String) {}
     override suspend fun uploadDocument(file: okhttp3.MultipartBody.Part): String = throw NotImplementedError()
-    override suspend fun getPendingCompanies(): List<UserDTO> = throw NotImplementedError()
+    override suspend fun getPendingCompanies(): List<UserPrivateDTO> = throw NotImplementedError()
     override suspend fun approveCompany(id: String) {}
     override suspend fun rejectCompany(id: String) {}
     override suspend fun getPendingActivities(): List<ActivityDto> = throw NotImplementedError()
     override suspend fun approveActivity(id: String) {}
     override suspend fun rejectActivity(id: String) {}
-    override suspend fun getAllCompanies(): List<UserDTO> = throw NotImplementedError()
+    override suspend fun getAllCompanies(): List<UserPrivateDTO> = throw NotImplementedError()
     override suspend fun blockCompany(id: String) {}
     override suspend fun unblockCompany(id: String) {}
-    override suspend fun getUsers(): List<UserDTO> = throw NotImplementedError()
-    override suspend fun getUser(id: String): UserDTO = throw NotImplementedError()
+    override suspend fun getUsers(): List<UserPrivateDTO> = throw NotImplementedError()
+    override suspend fun getUser(id: String): UserPublicDTO = throw NotImplementedError()
     override suspend fun getItineraryById(id: String): ItineraryDto = throw NotImplementedError()
     
     override suspend fun bookItinerary(id: String): PaymentIntentResponseDto = throw NotImplementedError()

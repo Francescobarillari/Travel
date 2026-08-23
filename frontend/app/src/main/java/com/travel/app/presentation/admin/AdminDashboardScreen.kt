@@ -513,8 +513,8 @@ fun AdminDashboardScreenPreview() {
     val mockApiService = object : com.travel.app.service.MockApiService() {
         override suspend fun login(request: it.unical.ea.dtos.authDto.LoginRequest) = it.unical.ea.dtos.authDto.JwtResponse("mock", "mock_refresh")
         override suspend fun register(request: it.unical.ea.dtos.authDto.SignupRequest) = "mock"
-        override suspend fun getMe() = it.unical.ea.dtos.user.UserDTO()
-        override suspend fun updateMe(request: it.unical.ea.dtos.user.UserDTO) = request
+        override suspend fun getMe() = it.unical.ea.dtos.user.UserPrivateDTO()
+        override suspend fun updateMe(request: it.unical.ea.dtos.user.UserPrivateDTO) = request
         override suspend fun createActivity(request: it.unical.ea.dtos.activity.CreateActivityRequestDto) = it.unical.ea.dtos.activity.ActivityTemplateDto()
         override suspend fun getActivities() = emptyList<it.unical.ea.dtos.activity.ActivityDto>()
         override suspend fun searchActivities(query: String, minStartTime: String?, page: Int, size: Int) = it.unical.ea.dtos.common.PageDto<it.unical.ea.dtos.activity.ActivityTemplateDto>()
@@ -528,7 +528,7 @@ fun AdminDashboardScreenPreview() {
         override suspend fun bookItinerary(id: String) = it.unical.ea.dtos.payment.PaymentIntentResponseDto()
         override suspend fun confirmItineraryBooking(bookingId: String): retrofit2.Response<Unit> = retrofit2.Response.success(Unit)
         override suspend fun uploadDocument(file: okhttp3.MultipartBody.Part) = "mock"
-        override suspend fun getPendingCompanies(): List<UserDTO> = emptyList()
+        override suspend fun getPendingCompanies(): List<it.unical.ea.dtos.user.UserPrivateDTO> = emptyList()
         override suspend fun approveCompany(id: String) {}
         override suspend fun rejectCompany(id: String) {}
         override suspend fun getPendingActivities(): List<ActivityDto> = emptyList()
