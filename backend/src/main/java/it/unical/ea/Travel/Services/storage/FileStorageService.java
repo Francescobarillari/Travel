@@ -2,6 +2,7 @@ package it.unical.ea.Travel.Services.storage;
 
 import it.unical.ea.Travel.Exception.ApiException;
 import jakarta.annotation.PostConstruct;
+import org.apache.tika.Tika;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -16,6 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -23,11 +25,15 @@ import java.util.UUID;
 @Service
 public class FileStorageService {
 
-    private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of(
-            "image/jpeg",
-            "image/png",
-            "image/webp"
+    private static final Map<String, String> MIME_TO_EXTENSION = Map.of(
+            "image/jpeg", ".jpg",
+            "image/png", ".png",
+            "image/webp", ".webp"
     );
+
+    private static final Set<String> ALLOWED_CONTENT_TYPES = MIME_TO_EXTENSION.keySet();
+
+    private final Tika tika = new Tika();
 
     @Value("${app.upload.dir:./uploads}")
     private String uploadDir;
@@ -46,10 +52,8 @@ public class FileStorageService {
 
 
     public String store(MultipartFile file, String subDir) {
-        validateFile(file);
-
-        String originalFilename = file.getOriginalFilename();
-        String extension = getExtension(originalFilename);
+        String detectedMimeType = detectAndValidateMimeType(file);
+        String extension = getExtensionFromMimeType(detectedMimeType);
         String newFilename = UUID.randomUUID() + extension;
 
         Path targetDir = rootLocation.resolve(subDir).normalize();
@@ -116,26 +120,26 @@ public class FileStorageService {
         }
     }
 
-    private void validateFile(MultipartFile file) {
+    private String detectAndValidateMimeType(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "file.empty");
         }
 
         try {
-            org.apache.tika.Tika tika = new org.apache.tika.Tika();
             String detectedType = tika.detect(file.getInputStream());
             if (detectedType == null || !ALLOWED_CONTENT_TYPES.contains(detectedType)) {
                 throw new ApiException(HttpStatus.BAD_REQUEST, "file.invalidType");
             }
+            return detectedType;
         } catch (IOException e) {
             throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "file.readError");
         }
     }
 
-    private String getExtension(String filename) {
-        if (filename == null || !filename.contains(".")) {
+    private String getExtensionFromMimeType(String mimeType) {
+        if (mimeType == null) {
             return "";
         }
-        return filename.substring(filename.lastIndexOf("."));
+        return MIME_TO_EXTENSION.getOrDefault(mimeType, "");
     }
 }
