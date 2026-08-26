@@ -216,7 +216,7 @@ fun AdminHomeScreenPreview() {
         }
         override suspend fun approveActivity(id: String) {}
         override suspend fun rejectActivity(id: String) {}
-        override suspend fun getAllCompanies() = emptyList<it.unical.ea.dtos.user.UserDTO>()
+        override suspend fun getAllCompanies() = emptyList<it.unical.ea.dtos.user.UserPrivateDTO>()
         override suspend fun blockCompany(id: String) {}
         override suspend fun unblockCompany(id: String) {}
     }

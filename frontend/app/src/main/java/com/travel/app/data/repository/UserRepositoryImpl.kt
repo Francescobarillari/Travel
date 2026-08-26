@@ -13,6 +13,7 @@ import com.travel.app.data.session.SessionManager
 import com.travel.app.domain.model.User
 import com.travel.app.domain.model.toDomain
 import com.travel.app.domain.model.toDto
+import com.travel.app.domain.model.toPrivateDto
 import com.travel.app.domain.repository.UserRepository
 import com.travel.app.service.ApiService
 import retrofit2.HttpException

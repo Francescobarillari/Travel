@@ -25,7 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
 import com.travel.app.presentation.theme.TravelTheme
 import it.unical.ea.dtos.activity.ActivityDto
-import it.unical.ea.dtos.user.UserDTO
+import it.unical.ea.dtos.user.UserPrivateDTO
 import com.travel.app.presentation.admin.components.ZoomableImageDialog
 import com.travel.app.domain.model.User
 import com.travel.app.presentation.admin.components.AdminSectionLabel
@@ -438,7 +438,7 @@ private fun ModerationQueueRow(
 
 @Composable
 fun PendingCompaniesList(
-    companies: List<UserDTO>,
+    companies: List<UserPrivateDTO>,
     actingIds: Set<String>,
     onApprove: (String) -> Unit,
     onReject: (String) -> Unit,
@@ -534,7 +534,7 @@ fun AdminDashboardScreenPreview() {
         override suspend fun getPendingActivities(): List<ActivityDto> = emptyList()
         override suspend fun approveActivity(id: String) {}
         override suspend fun rejectActivity(id: String) {}
-        override suspend fun getAllCompanies() = emptyList<it.unical.ea.dtos.user.UserDTO>()
+        override suspend fun getAllCompanies() = emptyList<it.unical.ea.dtos.user.UserPrivateDTO>()
         override suspend fun blockCompany(id: String) {}
         override suspend fun unblockCompany(id: String) {}
     }
