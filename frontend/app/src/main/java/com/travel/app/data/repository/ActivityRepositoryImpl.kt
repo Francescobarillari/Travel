@@ -75,7 +75,7 @@ class ActivityRepositoryImpl(
         }
     }
 
-    override suspend fun getBookedUsers(id: String): Result<List<it.unical.ea.dtos.user.UserDTO>> {
+    override suspend fun getBookedUsers(id: String): Result<List<it.unical.ea.dtos.user.UserPublicDTO>> {
         return try {
             val result = apiService.getBookedUsers(id)
             Result.success(result)

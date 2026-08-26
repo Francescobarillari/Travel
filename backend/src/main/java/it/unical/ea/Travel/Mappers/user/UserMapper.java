@@ -1,6 +1,8 @@
 package it.unical.ea.Travel.Mappers.user;
 
 import it.unical.ea.dtos.user.UserDTO;
+import it.unical.ea.dtos.user.UserPrivateDTO;
+import it.unical.ea.dtos.user.UserPublicDTO;
 import it.unical.ea.Travel.Entities.user.User;
 import it.unical.ea.enums.UserType;
 import org.mapstruct.Mapper;
@@ -14,6 +16,13 @@ public interface UserMapper {
     @Mapping(target = "fullName", source = ".", qualifiedByName = "mapFullName")
     @Mapping(target = "password", ignore = true)
     UserDTO toDTO(User user);
+
+    @Mapping(target = "fullName", source = ".", qualifiedByName = "mapFullName")
+    UserPublicDTO toPublicDTO(User user);
+
+    @Mapping(target = "fullName", source = ".", qualifiedByName = "mapFullName")
+    @Mapping(target = "password", ignore = true)
+    UserPrivateDTO toPrivateDTO(User user);
 
     @Named("mapFullName")
     default String mapFullName(User user) {
@@ -33,25 +42,40 @@ public interface UserMapper {
 
     @org.mapstruct.AfterMapping
     default void mapAvatarUrl(User user, @org.mapstruct.MappingTarget UserDTO dto) {
+        dto.setAvatarUrl(buildAvatarUrl(user));
+    }
+
+    @org.mapstruct.AfterMapping
+    default void mapAvatarUrlPublic(User user, @org.mapstruct.MappingTarget UserPublicDTO dto) {
+        dto.setAvatarUrl(buildAvatarUrl(user));
+    }
+
+    @org.mapstruct.AfterMapping
+    default void mapAvatarUrlPrivate(User user, @org.mapstruct.MappingTarget UserPrivateDTO dto) {
+        dto.setAvatarUrl(buildAvatarUrl(user));
+    }
+
+    default String buildAvatarUrl(User user) {
+        if (user == null) {
+            return null;
+        }
         if (user.getAvatarUrl() != null) {
             if (user.getAvatarUrl().startsWith("http://") || user.getAvatarUrl().startsWith("https://")) {
-                dto.setAvatarUrl(user.getAvatarUrl());
+                return user.getAvatarUrl();
             } else {
-                String avatarUrl;
                 try {
                     if (org.springframework.web.context.request.RequestContextHolder.getRequestAttributes() != null) {
-                        avatarUrl = org.springframework.web.servlet.support.ServletUriComponentsBuilder.fromCurrentContextPath()
+                        return org.springframework.web.servlet.support.ServletUriComponentsBuilder.fromCurrentContextPath()
                                 .path("/user/")
                                 .path(user.getId().toString())
                                 .path("/avatar")
                                 .toUriString();
                     } else {
-                        avatarUrl = "/api/user/" + user.getId() + "/avatar";
+                        return "/api/user/" + user.getId() + "/avatar";
                     }
                 } catch (Exception e) {
-                    avatarUrl = "/api/user/" + user.getId() + "/avatar";
+                    return "/api/user/" + user.getId() + "/avatar";
                 }
-                dto.setAvatarUrl(avatarUrl);
             }
         } else {
             String seed;
@@ -67,7 +91,7 @@ public interface UserMapper {
                 style = "glyphs";
             }
             String encodedSeed = java.net.URLEncoder.encode(seed, java.nio.charset.StandardCharsets.UTF_8).replace("+", "%20");
-            dto.setAvatarUrl("https://api.dicebear.com/10.x/" + style + "/png?seed=" + encodedSeed);
+            return "https://api.dicebear.com/10.x/" + style + "/png?seed=" + encodedSeed;
         }
     }
 }

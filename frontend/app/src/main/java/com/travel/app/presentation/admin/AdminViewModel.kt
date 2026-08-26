@@ -10,7 +10,7 @@ import com.travel.app.domain.model.User
 import com.travel.app.domain.repository.UserRepository
 import com.travel.app.service.ApiService
 import it.unical.ea.dtos.activity.ActivityDto
-import it.unical.ea.dtos.user.UserDTO
+import it.unical.ea.dtos.user.UserPrivateDTO
 import kotlinx.coroutines.launch
 
 class AdminViewModel(
@@ -18,7 +18,7 @@ class AdminViewModel(
     private val userRepository: UserRepository = AppContainer.userRepository
 ) : ViewModel() {
 
-    var pendingCompanies by mutableStateOf<List<UserDTO>>(emptyList())
+    var pendingCompanies by mutableStateOf<List<UserPrivateDTO>>(emptyList())
         private set
 
     var pendingActivities by mutableStateOf<List<ActivityDto>>(emptyList())
@@ -85,7 +85,7 @@ class AdminViewModel(
     }
 
     fun loadDataForPreview(
-        companies: List<UserDTO>,
+        companies: List<UserPrivateDTO>,
         activities: List<ActivityDto>,
         allComps: List<User>
     ) {

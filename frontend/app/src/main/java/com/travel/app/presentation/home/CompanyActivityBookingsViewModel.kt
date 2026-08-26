@@ -6,7 +6,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.travel.app.domain.repository.ActivityRepository
-import it.unical.ea.dtos.user.UserDTO
+import it.unical.ea.dtos.user.UserPublicDTO
 import kotlinx.coroutines.launch
 
 class CompanyActivityBookingsViewModel(
@@ -14,7 +14,7 @@ class CompanyActivityBookingsViewModel(
     private val activityId: String
 ) : ViewModel() {
 
-    var bookedUsers by mutableStateOf<List<UserDTO>>(emptyList())
+    var bookedUsers by mutableStateOf<List<UserPublicDTO>>(emptyList())
     var isLoading by mutableStateOf(false)
     var errorMessage by mutableStateOf<String?>(null)
 

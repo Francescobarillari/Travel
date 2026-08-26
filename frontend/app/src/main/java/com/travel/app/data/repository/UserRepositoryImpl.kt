@@ -206,7 +206,7 @@ class UserRepositoryImpl(
 
     override suspend fun updateMe(user: User): Result<User> {
         return try {
-            val dtoToSend = user.toDto().apply { password = user.password }
+            val dtoToSend = user.toPrivateDto().apply { password = user.password }
             val returnedDto = apiService.updateMe(dtoToSend)
             val updatedUser = returnedDto.toDomain().copy(password = user.password)
             val token = sessionManagerProvider().getSessionToken().orEmpty()

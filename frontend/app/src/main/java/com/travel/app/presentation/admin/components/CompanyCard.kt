@@ -18,11 +18,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import it.unical.ea.dtos.user.UserDTO
+import it.unical.ea.dtos.user.UserPrivateDTO
 
 @Composable
 fun CompanyCard(
-    company: UserDTO,
+    company: UserPrivateDTO,
     onApprove: () -> Unit,
     onReject: () -> Unit,
     onImageClick: (String) -> Unit,

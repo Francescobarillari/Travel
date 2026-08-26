@@ -14,6 +14,7 @@ import it.unical.ea.Travel.Repositories.user.UserRepository;
 import it.unical.ea.Travel.Services.storage.FileStorageService;
 import it.unical.ea.Travel.Services.audit.AuditLogService;
 import it.unical.ea.dtos.user.UserDTO;
+import it.unical.ea.dtos.user.UserPublicDTO;
 import it.unical.ea.Travel.Mappers.user.UserMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -725,15 +726,25 @@ public class ActivityService {
         throw new ApiException(HttpStatus.NOT_FOUND, "activity.notFound");
     }
 
-    public List<UserDTO> getBookedUsers(String activityId) {
+    public List<UserPublicDTO> getBookedUsers(String activityId, String callerEmail, boolean isAdmin) {
         UUID uuid = UUID.fromString(activityId);
 
         // L'ID ricevuto può essere di una singola sessione o del template:
-        // gli iscritti vanno raccolti su tutte le sessioni (date) dell'attività.
-        UUID templateId = activityRepository.findById(uuid)
-                .map(activity -> activity.getTemplate().getId())
-                .orElse(uuid);
+        ActivityTemplate template = activityRepository.findById(uuid)
+                .map(Activity::getTemplate)
+                .orElseGet(() -> activityTemplateRepository.findById(uuid)
+                        .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "activity.notFound")));
 
+        // Controllo autorizzazione: solo l'organizzatore o un admin possono vedere la lista iscritti
+        boolean isOrganizer = template.getOrganizer() != null &&
+                callerEmail != null &&
+                callerEmail.equalsIgnoreCase(template.getOrganizer().getEmail());
+
+        if (!isAdmin && !isOrganizer) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "error.forbidden");
+        }
+
+        UUID templateId = template.getId();
         List<Activity> sessions = activityRepository.findSessionsByTemplate(templateId, null);
 
         java.util.Map<UUID, User> uniqueUsers = new java.util.LinkedHashMap<>();
@@ -746,7 +757,7 @@ public class ActivityService {
         }
 
         return uniqueUsers.values().stream()
-                .map(userMapper::toDTO)
+                .map(userMapper::toPublicDTO)
                 .toList();
     }
 }

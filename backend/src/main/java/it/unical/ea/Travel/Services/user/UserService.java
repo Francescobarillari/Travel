@@ -204,6 +204,19 @@ public class UserService {
     }
 
     @Transactional
+    public User updateUserFromPrivateDTO(String email, it.unical.ea.dtos.user.UserPrivateDTO userDto) {
+        UserDTO legacyDto = new UserDTO();
+        legacyDto.setFirstName(userDto.getFirstName());
+        legacyDto.setLastName(userDto.getLastName());
+        legacyDto.setCompanyName(userDto.getCompanyName());
+        legacyDto.setVatNumber(userDto.getVatNumber());
+        legacyDto.setPhone(userDto.getPhone());
+        legacyDto.setPreferences(userDto.getPreferences());
+        legacyDto.setPassword(userDto.getPassword());
+        return updateUser(email, legacyDto);
+    }
+
+    @Transactional
     public void deleteUser(String stringId) {
         UUID uuid = UUID.fromString(stringId);
         User user = userRepository.findById(uuid)
