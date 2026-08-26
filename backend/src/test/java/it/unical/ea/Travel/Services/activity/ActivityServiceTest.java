@@ -53,6 +53,9 @@ class ActivityServiceTest {
     @Mock
     private AuditLogService auditLogService;
 
+    @Mock
+    private it.unical.ea.Travel.Services.auth.AuthorizationService authorizationService;
+
     @InjectMocks
     private ActivityService activityService;
 
