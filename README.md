@@ -155,8 +155,7 @@ Per facilitare la fase di test e valutazione del progetto, sono disponibili le s
 
 | Ruolo | Username | Password | Email | Note |
 | :--- | :--- | :--- | :--- | :--- |
-| **Basic User** | `a` | `a` | `a@a.com` | Profilo utente rapido per test veloci |
-| **Basic User** | `basic-user` | `password` | `basic-user@example.com` | Profilo utente standard |
+| **Basic User** | `a@a.it` | `aaa` | `a@a.it` | Profilo utente rapido per test veloci (seed predefinito) |
 | **Administrator** | `admin-user` | `password` | `admin-user@example.com` | Profilo con permessi amministrativi completi |
 
 ---
