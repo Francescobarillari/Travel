@@ -13,9 +13,13 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 
+import it.unical.ea.Travel.Exception.ApiException;
 import it.unical.ea.dtos.authDto.SignupRequest;
 import it.unical.ea.enums.UserType;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 
+@Slf4j
 @Service
 public class KeycloakAdminService {
 
@@ -98,7 +102,7 @@ public class KeycloakAdminService {
                         .retrieve()
                         .toBodilessEntity();
             } catch (Exception e) {
-                System.err.println("Errore nell'invio dell'email di verifica tramite Keycloak: " + e.getMessage());
+                log.error("Errore nell'invio dell'email di verifica tramite Keycloak per utente {}: {}", userId, e.getMessage());
             }
 
             return userId;
@@ -118,8 +122,8 @@ public class KeycloakAdminService {
                     .header("Authorization", "Bearer " + getAdminAccessToken())
                     .retrieve()
                     .toBodilessEntity();
-        } catch (RuntimeException ignored) {
-            // Best-effort rollback: il chiamante sta gia gestendo il fallimento DB.
+        } catch (Exception e) {
+            log.warn("Best-effort rollback delete failed for Keycloak user {}: {}", keycloakUserId, e.getMessage());
         }
     }
     public void verifyEmail(String keycloakUserId) {
@@ -139,13 +143,13 @@ public class KeycloakAdminService {
                     .retrieve()
                     .toBodilessEntity();
         } catch (Exception e) {
-            System.err.println("Errore nella verifica dell'email dell'utente: " + e.getMessage());
+            log.error("Errore nella verifica dell'email dell'utente {}: {}", keycloakUserId, e.getMessage());
         }
     }
 
     public void disableUser(String keycloakUserId) {
         if (keycloakUserId == null || keycloakUserId.isBlank()) {
-            return; // oppure lancia eccezione, a seconda delle tue policy
+            return;
         }
         String token = getAdminAccessToken();
         Map<String, Object> payload = Map.of("enabled", false);
@@ -157,7 +161,8 @@ public class KeycloakAdminService {
                     .retrieve()
                     .toBodilessEntity();
         } catch (Exception e) {
-            throw new RuntimeException("Errore durante la disabilitazione dell'utente Keycloak con ID: " + keycloakUserId, e);
+            log.error("Errore durante la disabilitazione dell'utente Keycloak con ID {}: {}", keycloakUserId, e.getMessage());
+            throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "auth.keycloak.error");
         }
     }
 
@@ -177,11 +182,10 @@ public class KeycloakAdminService {
                     .body(List.class);
 
             if (users == null || users.isEmpty()) {
-                throw new IllegalStateException("Utente non trovato in Keycloak: " + email);
+                throw new ApiException(HttpStatus.NOT_FOUND, "user.notFound");
             }
 
-            // Sicurezza extra: verifica corrispondenza esatta dell'email per evitare fuzzy
-            // matching
+            // Sicurezza extra: verifica corrispondenza esatta dell'email per evitare fuzzy matching
             Map<?, ?> matchingUser = null;
             for (Object obj : users) {
                 if (obj instanceof Map<?, ?> uMap) {
@@ -193,13 +197,12 @@ public class KeycloakAdminService {
             }
 
             if (matchingUser == null) {
-                throw new IllegalStateException(
-                        "Nessun utente con email corrispondente esatta trovato in Keycloak: " + email);
+                throw new ApiException(HttpStatus.NOT_FOUND, "user.notFound");
             }
 
             String userId = (String) matchingUser.get("id");
             if (userId == null || userId.isBlank()) {
-                throw new IllegalStateException("ID utente Keycloak nullo o non valido");
+                throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "auth.keycloak.error");
             }
 
             // 2. Esegui il reset della password in Keycloak
@@ -214,8 +217,11 @@ public class KeycloakAdminService {
                     .body(credential)
                     .retrieve()
                     .toBodilessEntity();
+        } catch (ApiException ex) {
+            throw ex;
         } catch (Exception e) {
-            throw new RuntimeException("Errore durante l'aggiornamento della password in Keycloak", e);
+            log.error("Errore durante l'aggiornamento della password in Keycloak per {}: {}", email, e.getMessage());
+            throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "auth.keycloak.error");
         }
     }
 

@@ -114,7 +114,8 @@ fun ItineraryDetailScreen(
         PayPalCheckout.registerCallbacks(
             onApprove = OnApprove { approval ->
                 Toast.makeText(context, "Pagamento completato!", Toast.LENGTH_SHORT).show()
-                viewModel.confirmPaymentSuccess()
+                val orderId = approval.data.orderId
+                viewModel.confirmPaymentSuccess(orderId)
             },
             onCancel = OnCancel {
                 Toast.makeText(context, "Pagamento annullato", Toast.LENGTH_SHORT).show()

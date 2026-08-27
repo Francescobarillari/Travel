@@ -243,6 +243,9 @@ interface ApiService {
 
     @DELETE("api/favorites/itineraries/{id}")
     suspend fun removeFavoriteItinerary(@Path("id") id: String): retrofit2.Response<Unit>
+
+    @POST("api/v1/payments/paypal/capture")
+    suspend fun captureAndVerifyPayment(@Body request: it.unical.ea.dtos.payment.PaymentCaptureRequestDto): it.unical.ea.dtos.payment.PaymentVerificationResponseDto
 }
 
 open class MockApiService : ApiService {
@@ -308,4 +311,13 @@ open class MockApiService : ApiService {
     override suspend fun removeFavoriteActivity(id: String): retrofit2.Response<Unit> = retrofit2.Response.success(Unit)
     override suspend fun addFavoriteItinerary(id: String): retrofit2.Response<Unit> = retrofit2.Response.success(Unit)
     override suspend fun removeFavoriteItinerary(id: String): retrofit2.Response<Unit> = retrofit2.Response.success(Unit)
+
+    override suspend fun captureAndVerifyPayment(request: it.unical.ea.dtos.payment.PaymentCaptureRequestDto): it.unical.ea.dtos.payment.PaymentVerificationResponseDto {
+        return it.unical.ea.dtos.payment.PaymentVerificationResponseDto.builder()
+            .success(true)
+            .orderId(request.orderId)
+            .bookingId(request.bookingId)
+            .bookingStatus("CONFIRMED")
+            .build()
+    }
 }

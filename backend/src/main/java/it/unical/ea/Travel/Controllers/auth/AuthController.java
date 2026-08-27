@@ -19,6 +19,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.context.MessageSource;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -35,6 +36,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.http.MediaType;
 import it.unical.ea.Travel.Services.storage.FileStorageService;
 
+@Slf4j
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/auth")
@@ -69,7 +71,7 @@ public class AuthController {
             try {
                 userService.markEmailAsVerified(email);
             } catch (Exception e) {
-                System.err.println("Impossibile aggiornare lo stato di verifica email in DB locale: " + e.getMessage());
+                log.warn("Impossibile aggiornare lo stato di verifica email in DB locale per {}: {}", email, e.getMessage());
             }
 
             // Verifica approvazione per profili Società

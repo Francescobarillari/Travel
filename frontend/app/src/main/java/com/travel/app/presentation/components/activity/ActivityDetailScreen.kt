@@ -129,7 +129,25 @@ fun ActivityDetailScreen(
                 Toast.makeText(context, "Pagamento completato!", Toast.LENGTH_SHORT).show()
                 scope.launch {
                     val bId = currentBookingId
-                    if (bId != null) {
+                    val orderId = approval.data.orderId ?: paymentClientSecret
+                    if (bId != null && orderId != null) {
+                        isLoading = true
+                        try {
+                            val captureReq = it.unical.ea.dtos.payment.PaymentCaptureRequestDto(orderId, bId, "ACTIVITY")
+                            val verification = AppContainer.apiService.captureAndVerifyPayment(captureReq)
+                            isLoading = false
+                            if (verification.isSuccess) {
+                                isBooked = true
+                                showCheckoutSummary = false
+                                showSuccessDialog = true
+                            } else {
+                                Toast.makeText(context, "Errore nella verifica del pagamento: ${verification.message}", Toast.LENGTH_LONG).show()
+                            }
+                        } catch (e: Exception) {
+                            isLoading = false
+                            Toast.makeText(context, "Errore nella verifica: ${e.message}", Toast.LENGTH_LONG).show()
+                        }
+                    } else if (bId != null) {
                         isLoading = true
                         val confirmRes = AppContainer.activityRepository.confirmActivityBooking(bId)
                         isLoading = false

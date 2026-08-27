@@ -1,5 +1,6 @@
 package it.unical.ea.Travel.Services.payment;
 
+import it.unical.ea.Travel.Exception.PaymentException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -105,9 +106,9 @@ public class PayPalPaymentGatewayImpl implements PaymentGateway {
                 }
             } catch (Exception e) {
                 log.error("Error fetching PayPal access token: {}", e.getMessage());
-                throw new RuntimeException("Failed to authenticate with PayPal", e);
+                throw new PaymentException(HttpStatus.INTERNAL_SERVER_ERROR, "payment.gatewayError");
             }
-            throw new RuntimeException("Failed to fetch PayPal access token");
+            throw new PaymentException(HttpStatus.INTERNAL_SERVER_ERROR, "payment.gatewayError");
         }
     }
 
@@ -149,10 +150,10 @@ public class PayPalPaymentGatewayImpl implements PaymentGateway {
             }
         } catch (Exception e) {
             log.error("Error creating PayPal Order: {}", e.getMessage());
-            throw new RuntimeException("Failed to create PayPal Order", e);
+            throw new PaymentException(HttpStatus.INTERNAL_SERVER_ERROR, "payment.gatewayError");
         }
 
-        throw new RuntimeException("Failed to create PayPal Order - Unknown error");
+        throw new PaymentException(HttpStatus.INTERNAL_SERVER_ERROR, "payment.gatewayError");
     }
 
     @Override

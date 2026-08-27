@@ -80,6 +80,38 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(Map.of("error", translatedMessage), HttpStatus.PAYLOAD_TOO_LARGE);
     }
 
+    @ExceptionHandler(org.springframework.security.authentication.BadCredentialsException.class)
+    public ResponseEntity<Map<String, String>> handleBadCredentialsException(
+            org.springframework.security.authentication.BadCredentialsException ex, Locale locale) {
+        log.warn("BadCredentialsException captured: {}", ex.getMessage());
+        String translatedMessage = messageSource.getMessage("auth.login.invalidCredentials", null, "Credenziali non valide.", locale);
+        return new ResponseEntity<>(Map.of("error", translatedMessage), HttpStatus.UNAUTHORIZED);
+    }
+
+    @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+    public ResponseEntity<Map<String, String>> handleDataIntegrityViolationException(
+            org.springframework.dao.DataIntegrityViolationException ex, Locale locale) {
+        log.warn("DataIntegrityViolationException captured: {}", ex.getMessage());
+        String message = ex.getMostSpecificCause() != null ? ex.getMostSpecificCause().getMessage() : "";
+        if (message != null && (message.contains("idx_user_email") || message.contains("Email gia registrata") || message.contains("duplicate key"))) {
+            String translatedMessage = messageSource.getMessage("auth.signup.emailAlreadyExists", null, "Esiste già un account con questa email.", locale);
+            return new ResponseEntity<>(Map.of("error", translatedMessage), HttpStatus.CONFLICT);
+        }
+        String translatedMessage = messageSource.getMessage("error.conflict", null, "Conflitto nei dati inviati.", locale);
+        return new ResponseEntity<>(Map.of("error", translatedMessage), HttpStatus.CONFLICT);
+    }
+
+    @ExceptionHandler(jakarta.validation.ConstraintViolationException.class)
+    public ResponseEntity<Map<String, Object>> handleConstraintViolationException(
+            jakarta.validation.ConstraintViolationException ex) {
+        Map<String, String> errors = new HashMap<>();
+        ex.getConstraintViolations().forEach(violation -> {
+            String property = violation.getPropertyPath().toString();
+            errors.put(property, violation.getMessage());
+        });
+        return new ResponseEntity<>(Map.of("errors", errors), HttpStatus.BAD_REQUEST);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> handleGenericException(Exception ex, Locale locale) {
         log.error("Unhandled exception captured by GlobalExceptionHandler: {}", ex.getMessage(), ex);
