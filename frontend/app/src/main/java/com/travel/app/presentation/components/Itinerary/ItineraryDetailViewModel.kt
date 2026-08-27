@@ -70,7 +70,6 @@ class ItineraryDetailViewModel : ViewModel() {
     }
 
     fun confirmBooking() {
-        val bookingId = currentBookingId ?: _bookingId.value ?: return
         val orderId = _paymentClientSecret.value
         confirmPaymentSuccess(orderId)
     }
