@@ -184,3 +184,11 @@ Se si desidera analizzare o connettersi direttamente al database PostgreSQL (por
 Tutte le email inviate dal backend (es. registrazioni, notifiche o conferme) vengono intercettate localmente e possono essere visualizzate tramite la dashboard web:
 *   **URL Dashboard**: `http://localhost:8025/`
 
+---
+
+### 💳 Pagamenti PayPal Sandbox
+Per completare i pagamenti di test con PayPal Sandbox all'interno dell'app:
+*   **Email Buyer Sandbox**: `giuseppe.muriale05@gmail.com`
+*   **Password**: `MockPay123@`
+*   *In alternativa (pagamento con carta di test)*: Numero Carta `4032 0300 0000 0000` (o `4111 1111 1111 1111`), Scadenza `12/28`, CVV `123`.
+
