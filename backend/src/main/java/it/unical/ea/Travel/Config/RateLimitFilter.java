@@ -33,6 +33,10 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private static final String FORGOT_PASSWORD_PATH = "/api/auth/forgot-password";
     private static final String RESET_PASSWORD_PATH = "/api/auth/reset-password";
 
+    private static final int MAX_WEBHOOK_REQUESTS = 30;
+    private static final Duration WEBHOOK_REFILL_PERIOD = Duration.ofMinutes(1);
+    private static final String WEBHOOK_PATH = "/api/v1/payments/paypal/webhook";
+
     @Value("${app.security.trust-proxy:false}")
     private boolean trustProxy;
 
@@ -53,6 +57,11 @@ public class RateLimitFilter extends OncePerRequestFilter {
             .maximumSize(10000)
             .build();
 
+    private final Cache<String, Bucket> webhookBuckets = Caffeine.newBuilder()
+            .expireAfterAccess(Duration.ofMinutes(10))
+            .maximumSize(10000)
+            .build();
+
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
@@ -68,8 +77,9 @@ public class RateLimitFilter extends OncePerRequestFilter {
         boolean isLogin = LOGIN_PATH.equals(uri) && "POST".equalsIgnoreCase(request.getMethod());
         boolean isUpload = isUploadRequest(request, uri);
         boolean isPasswordReset = (FORGOT_PASSWORD_PATH.equals(uri) || RESET_PASSWORD_PATH.equals(uri)) && "POST".equalsIgnoreCase(request.getMethod());
+        boolean isWebhook = WEBHOOK_PATH.equals(uri) && "POST".equalsIgnoreCase(request.getMethod());
 
-        if (!isLogin && !isUpload && !isPasswordReset) {
+        if (!isLogin && !isUpload && !isPasswordReset && !isWebhook) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -100,7 +110,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
                 logger.warn("RATE_LIMIT_BLOCKED - Upload rate limit reached for IP: {}. URI: {}", clientIp, request.getRequestURI());
                 sendErrorResponse(response, retryAfterSeconds, "Troppi tentativi di upload. Riprova tra " + retryAfterSeconds + " secondi.");
             }
-        } else {
+        } else if (isPasswordReset) {
             Bucket bucket = passwordResetBuckets.get(clientIp, k -> createBucket(MAX_PASSWORD_RESET_REQUESTS, PASSWORD_RESET_REFILL_PERIOD));
             ConsumptionProbe probe = bucket.tryConsumeAndReturnRemaining(1);
 
@@ -111,6 +121,18 @@ public class RateLimitFilter extends OncePerRequestFilter {
                 long retryAfterSeconds = Duration.ofNanos(probe.getNanosToWaitForRefill()).toSeconds() + 1;
                 logger.warn("RATE_LIMIT_BLOCKED - Password reset rate limit reached for IP: {}. URI: {}", clientIp, request.getRequestURI());
                 sendErrorResponse(response, retryAfterSeconds, "Troppi tentativi di recupero password. Riprova tra " + retryAfterSeconds + " secondi.");
+            }
+        } else if (isWebhook) {
+            Bucket bucket = webhookBuckets.get(clientIp, k -> createBucket(MAX_WEBHOOK_REQUESTS, WEBHOOK_REFILL_PERIOD));
+            ConsumptionProbe probe = bucket.tryConsumeAndReturnRemaining(1);
+
+            if (probe.isConsumed()) {
+                response.setHeader("X-Rate-Limit-Remaining", String.valueOf(probe.getRemainingTokens()));
+                filterChain.doFilter(request, response);
+            } else {
+                long retryAfterSeconds = Duration.ofNanos(probe.getNanosToWaitForRefill()).toSeconds() + 1;
+                logger.warn("RATE_LIMIT_BLOCKED - Webhook rate limit reached for IP: {}. URI: {}", clientIp, request.getRequestURI());
+                sendErrorResponse(response, retryAfterSeconds, "Troppe richieste webhook. Riprova tra " + retryAfterSeconds + " secondi.");
             }
         }
     }

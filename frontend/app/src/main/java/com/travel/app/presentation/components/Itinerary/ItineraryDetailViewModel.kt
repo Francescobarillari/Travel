@@ -70,18 +70,37 @@ class ItineraryDetailViewModel : ViewModel() {
     }
 
     fun confirmBooking() {
-        val bookingId = currentBookingId ?: return
+        val orderId = _paymentClientSecret.value
+        confirmPaymentSuccess(orderId)
+    }
+
+    fun confirmPaymentSuccess(orderId: String? = null) {
+        val bookingId = currentBookingId ?: _bookingId.value ?: return
+        val finalOrderId = orderId ?: _paymentClientSecret.value
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                val response = apiService.confirmItineraryBooking(bookingId)
-                if (response.isSuccessful) {
-                    _isBooked.value = true
-                    _showSummaryDialog.value = true
-                    _error.value = "Prenotazione confermata!"
-                    _showCheckoutSummary.value = false
+                if (finalOrderId != null) {
+                    val req = it.unical.ea.dtos.payment.PaymentCaptureRequestDto(finalOrderId, bookingId, "ITINERARY")
+                    val verification = apiService.captureAndVerifyPayment(req)
+                    if (verification.isSuccess) {
+                        _isBooked.value = true
+                        _showSummaryDialog.value = true
+                        _error.value = "Prenotazione confermata!"
+                        _showCheckoutSummary.value = false
+                    } else {
+                        _error.value = "Errore durante la verifica del pagamento: ${verification.message}"
+                    }
                 } else {
-                    _error.value = "Errore durante la conferma: ${response.code()}"
+                    val response = apiService.confirmItineraryBooking(bookingId)
+                    if (response.isSuccessful) {
+                        _isBooked.value = true
+                        _showSummaryDialog.value = true
+                        _error.value = "Prenotazione confermata!"
+                        _showCheckoutSummary.value = false
+                    } else {
+                        _error.value = "Errore durante la conferma: ${response.code()}"
+                    }
                 }
             } catch (e: Exception) {
                 _error.value = "Errore durante la conferma: ${e.message}"
@@ -119,10 +138,6 @@ class ItineraryDetailViewModel : ViewModel() {
 
     fun dismissCancelSuccess() {
         _showCancelSuccessDialog.value = false
-    }
-
-    fun confirmPaymentSuccess() {
-        confirmBooking()
     }
 
     fun clearClientSecret() {

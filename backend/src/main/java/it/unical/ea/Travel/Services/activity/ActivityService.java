@@ -430,8 +430,12 @@ public class ActivityService {
 
         if (activity.getPrice() != null && activity.getPrice().compareTo(BigDecimal.ZERO) > 0 && !paymentMock) {
             clientSecret = paymentGateway.createPaymentIntent(activity.getPrice(), "eur", "Booking for Activity: " + activity.getTemplate().getName());
-            if (clientSecret != null && clientSecret.contains("_secret_")) {
-                paymentIntentId = clientSecret.substring(0, clientSecret.indexOf("_secret_"));
+            if (clientSecret != null) {
+                if (clientSecret.contains("_secret_")) {
+                    paymentIntentId = clientSecret.substring(0, clientSecret.indexOf("_secret_"));
+                } else {
+                    paymentIntentId = clientSecret;
+                }
             }
         } else {
             status = BookingStatus.CONFIRMED;
@@ -527,6 +531,9 @@ public class ActivityService {
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "activity.booking.notFound"));
         if (booking.getStatus() == BookingStatus.CONFIRMED) {
             return;
+        }
+        if (booking.getStatus() == BookingStatus.CANCELLED) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "activity.booking.alreadyCancelled");
         }
         booking.setStatus(BookingStatus.CONFIRMED);
         activityBookingRepository.save(booking);

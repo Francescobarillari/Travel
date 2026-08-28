@@ -249,8 +249,12 @@ public class ItineraryService {
 
         if (totalPrice.compareTo(BigDecimal.ZERO) > 0 && !paymentMock) {
             clientSecret = paymentGateway.createPaymentIntent(totalPrice, "eur", "Prenotazione Itinerario: " + itinerary.getTitle());
-            if (clientSecret != null && clientSecret.contains("_secret_")) {
-                paymentIntentId = clientSecret.substring(0, clientSecret.indexOf("_secret_"));
+            if (clientSecret != null) {
+                if (clientSecret.contains("_secret_")) {
+                    paymentIntentId = clientSecret.substring(0, clientSecret.indexOf("_secret_"));
+                } else {
+                    paymentIntentId = clientSecret;
+                }
             }
         } else {
             status = BookingStatus.CONFIRMED;
@@ -298,11 +302,22 @@ public class ItineraryService {
     public void confirmItineraryBooking(String bookingId) {
         ItineraryBooking booking = itineraryBookingRepository.findById(UUID.fromString(bookingId))
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "itinerary.booking.notFound"));
-
+        if (booking.getStatus() == BookingStatus.CONFIRMED) {
+            return;
+        }
+        if (booking.getStatus() == BookingStatus.CANCELLED) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "itinerary.booking.alreadyCancelled");
+        }
         booking.setStatus(BookingStatus.CONFIRMED);
         itineraryBookingRepository.save(booking);
 
-        List<ActivityBooking> activityBookings = activityBookingRepository.findByPaymentIntentId(booking.getPaymentIntentId());
+        List<ActivityBooking> activityBookings = null;
+        if (booking.getPaymentIntentId() != null) {
+            activityBookings = activityBookingRepository.findByPaymentIntentId(booking.getPaymentIntentId());
+        }
+        if (activityBookings == null || activityBookings.isEmpty()) {
+            activityBookings = activityBookingRepository.findByUserIdAndItineraryId(booking.getUser().getId(), booking.getItinerary().getId());
+        }
         for (ActivityBooking ab : activityBookings) {
             ab.setStatus(BookingStatus.CONFIRMED);
             activityBookingRepository.save(ab);

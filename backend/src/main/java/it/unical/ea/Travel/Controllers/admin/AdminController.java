@@ -16,6 +16,8 @@ import it.unical.ea.dtos.activity.ActivityDto;
 import it.unical.ea.dtos.user.UserDTO;
 import it.unical.ea.dtos.user.UserPrivateDTO;
 import it.unical.ea.enums.UserType;
+import it.unical.ea.Travel.Exception.ResourceNotFoundException;
+import lombok.extern.slf4j.Slf4j;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +36,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/admin")
 @RequiredArgsConstructor
@@ -82,7 +85,7 @@ public class AdminController {
         try {
             emailService.sendCompanyApprovedEmail(user.getEmail(), user.getCompanyName());
         } catch (Exception e) {
-            System.err.println("Errore nell'invio della mail di approvazione: " + e.getMessage());
+            log.error("Errore nell'invio della mail di approvazione per {}: {}", user.getEmail(), e.getMessage());
         }
         
         return ResponseEntity.ok().build();
@@ -92,7 +95,7 @@ public class AdminController {
     @PostMapping("/companies/{id}/reject")
     public ResponseEntity<Void> rejectCompany(@PathVariable String id) {
         User user = userRepository.findById(UUID.fromString(id))
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "user.notFound"));
+                .orElseThrow(() -> new ResourceNotFoundException("user.notFound"));
         
         String email = user.getEmail();
         String companyName = user.getCompanyName();
@@ -102,7 +105,7 @@ public class AdminController {
         try {
             emailService.sendCompanyRejectedEmail(email, companyName);
         } catch (Exception e) {
-            System.err.println("Errore nell'invio della mail di rifiuto: " + e.getMessage());
+            log.error("Errore nell'invio della mail di rifiuto per {}: {}", email, e.getMessage());
         }
         
         // Elimina l'utente da Keycloak
@@ -159,7 +162,7 @@ public class AdminController {
     public ResponseEntity<Void> approveActivity(@PathVariable String id, @RequestParam(required = false, defaultValue = "true") Boolean approved) {
         UUID uuid = UUID.fromString(id);
         Activity activity = activityRepository.findById(uuid)
-                .orElseThrow(() -> new RuntimeException("Attività non trovata"));
+                .orElseThrow(() -> new ResourceNotFoundException("activity.notFound"));
 
         activity.getTemplate().setApproved(approved);
         activityTemplateRepository.save(activity.getTemplate());
@@ -172,7 +175,7 @@ public class AdminController {
     public ResponseEntity<Void> rejectActivity(@PathVariable String id) {
         UUID uuid = UUID.fromString(id);
         Activity activity = activityRepository.findById(uuid)
-                .orElseThrow(() -> new RuntimeException("Attività non trovata"));
+                .orElseThrow(() -> new ResourceNotFoundException("activity.notFound"));
 
         activityRepository.delete(activity);
         auditLogService.log("DELETE_ACTIVITY_ADMIN", "Activity", id, "Admin ha eliminato l'attività: " + activity.getTemplate().getName());

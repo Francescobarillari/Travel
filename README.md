@@ -155,8 +155,7 @@ Per facilitare la fase di test e valutazione del progetto, sono disponibili le s
 
 | Ruolo | Username | Password | Email | Note |
 | :--- | :--- | :--- | :--- | :--- |
-| **Basic User** | `a` | `a` | `a@a.com` | Profilo utente rapido per test veloci |
-| **Basic User** | `basic-user` | `password` | `basic-user@example.com` | Profilo utente standard |
+| **Basic User** | `a@a.it` | `aaa` | `a@a.it` | Profilo utente rapido per test veloci (seed predefinito) |
 | **Administrator** | `admin-user` | `password` | `admin-user@example.com` | Profilo con permessi amministrativi completi |
 
 ---
@@ -184,4 +183,12 @@ Se si desidera analizzare o connettersi direttamente al database PostgreSQL (por
 ### ✉️ Server di Posta Locale (Mailpit)
 Tutte le email inviate dal backend (es. registrazioni, notifiche o conferme) vengono intercettate localmente e possono essere visualizzate tramite la dashboard web:
 *   **URL Dashboard**: `http://localhost:8025/`
+
+---
+
+### 💳 Pagamenti PayPal Sandbox
+Per completare i pagamenti di test con PayPal Sandbox all'interno dell'app:
+*   **Email Buyer Sandbox**: `giuseppe.muriale05@gmail.com`
+*   **Password**: `MockPay123@`
+*   *In alternativa (pagamento con carta di test)*: Numero Carta `4032 0300 0000 0000` (o `4111 1111 1111 1111`), Scadenza `12/28`, CVV `123`.
 
