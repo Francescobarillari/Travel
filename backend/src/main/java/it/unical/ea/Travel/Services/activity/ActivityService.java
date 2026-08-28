@@ -149,20 +149,32 @@ public class ActivityService {
 
     @Transactional
     public ActivityDto createActivity(ActivityDto activityDto) {
+        String email = SecurityUtils.getCurrentUserEmail();
+        User organizer = userRepository.getUserByEmail(email)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "user.notFound"));
+
+        if (organizer.getUserType() != it.unical.ea.enums.UserType.SOCIETA) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "activity.onlySocietaAllowed");
+        }
+        if (!Boolean.TRUE.equals(organizer.getApproved()) || Boolean.TRUE.equals(organizer.getBlocked())) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "activity.societaNotApprovedOrBlocked");
+        }
+
         Activity activity = activityMapper.toEntity(activityDto);
         ActivityTemplate template;
 
         if (activityDto.getTemplateId() != null) {
             template = activityTemplateRepository.findById(activityDto.getTemplateId())
                     .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "activity.templateNotFound"));
+            authorizationService.verifyOwnershipOrAdmin(
+                    template.getOrganizer() != null ? template.getOrganizer().getId() : null,
+                    "activity"
+            );
         } else {
             template = activityMapper.toTemplateEntity(activityDto);
             template.setApproved(false);
             it.unical.ea.Travel.Entities.location.Location locationEntity = locationService.getOrCreateLocation(activityDto.getLocation());
             template.setLocationEntity(locationEntity);
-            String email = SecurityUtils.getCurrentUserEmail();
-            User organizer = userRepository.getUserByEmail(email)
-                    .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "user.notFound"));
             template.setOrganizer(organizer);
             template = activityTemplateRepository.save(template);
         }
@@ -175,6 +187,17 @@ public class ActivityService {
 
     @Transactional
     public ActivityTemplateDto createActivityBatch(CreateActivityRequestDto request) {
+        String email = SecurityUtils.getCurrentUserEmail();
+        User organizer = userRepository.getUserByEmail(email)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "user.notFound"));
+
+        if (organizer.getUserType() != it.unical.ea.enums.UserType.SOCIETA) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "activity.onlySocietaAllowed");
+        }
+        if (!Boolean.TRUE.equals(organizer.getApproved()) || Boolean.TRUE.equals(organizer.getBlocked())) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "activity.societaNotApprovedOrBlocked");
+        }
+
         ActivityTemplate template = new ActivityTemplate();
         template.setName(request.getName().trim());
         template.setDescription(request.getDescription() != null ? request.getDescription().trim() : null);
@@ -184,10 +207,6 @@ public class ActivityService {
 
         it.unical.ea.Travel.Entities.location.Location locationEntity = locationService.getOrCreateLocation(request.getLocation());
         template.setLocationEntity(locationEntity);
-
-        String email = SecurityUtils.getCurrentUserEmail();
-        User organizer = userRepository.getUserByEmail(email)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "user.notFound"));
         template.setOrganizer(organizer);
 
         template = activityTemplateRepository.save(template);
@@ -354,26 +373,15 @@ public class ActivityService {
     // --- Logica Prenotazione ---
 
     /**
-     * Calcola il numero attuale di partecipanti per un'attività.
-     * Include le prenotazioni dirette e (in futuro) quelle tramite itinerari.
+     * Calcola il numero attuale di partecipanti attivi per un'attività.
+     * Include tutte le prenotazioni confermate/attive sia dirette che tramite itinerario.
      */
     public int calculateCurrentParticipants(Activity activity) {
-        // 1. Conteggio diretto
+        if (activity == null || activity.getId() == null) {
+            return 0;
+        }
         long direct = activityBookingRepository.countDirectParticipants(activity.getId());
-
-        // 2. Conteggio tramite itinerari (sarà implementato integrando ItineraryBookingRepository)
-        long fromItineraries = countParticipantsFromItineraries(activity.getId());
-
-        return (int) (direct + fromItineraries);
-    }
-
-    /**
-     * Placeholder per il conteggio dei partecipanti provenienti da prenotazioni di itinerari.
-     * Da implementare quando verrà creata l'entità ItineraryBooking.
-     */
-    private long countParticipantsFromItineraries(UUID activityId) {
-        // TODO: Implementare con ItineraryBookingRepository quando disponibile
-        return 0;
+        return (int) direct;
     }
 
     @Transactional

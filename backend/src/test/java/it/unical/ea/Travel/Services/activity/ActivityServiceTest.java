@@ -333,4 +333,46 @@ class ActivityServiceTest {
             assertTrue(futureActivity.getTemplate().getImages().contains("activities/img2.jpg"));
         }
     }
+
+    @Nested
+    @DisplayName("createActivity Security Tests")
+    class CreateActivitySecurityTests {
+
+        @Test
+        @DisplayName("Dovrebbe bloccare la creazione di attività da parte di utenti non SOCIETA")
+        void shouldBlockNonSocietaUser() {
+            User normalUser = new User();
+            normalUser.setId(UUID.randomUUID());
+            normalUser.setEmail("traveler@example.com");
+            normalUser.setUserType(it.unical.ea.enums.UserType.VIAGGIATORE);
+
+            when(userRepository.getUserByEmail(any())).thenReturn(Optional.of(normalUser));
+
+            ActivityDto dto = new ActivityDto();
+            dto.setName("Attività Prova");
+
+            ApiException ex = assertThrows(ApiException.class, () -> activityService.createActivity(dto));
+            assertEquals(HttpStatus.FORBIDDEN, ex.getStatus());
+            assertEquals("activity.onlySocietaAllowed", ex.getMessageKey());
+        }
+
+        @Test
+        @DisplayName("Dovrebbe bloccare agenzie non ancora approvate")
+        void shouldBlockUnapprovedSocieta() {
+            User unapprovedSocieta = new User();
+            unapprovedSocieta.setId(UUID.randomUUID());
+            unapprovedSocieta.setEmail("company@example.com");
+            unapprovedSocieta.setUserType(it.unical.ea.enums.UserType.SOCIETA);
+            unapprovedSocieta.setApproved(false);
+
+            when(userRepository.getUserByEmail(any())).thenReturn(Optional.of(unapprovedSocieta));
+
+            ActivityDto dto = new ActivityDto();
+            dto.setName("Attività Prova");
+
+            ApiException ex = assertThrows(ApiException.class, () -> activityService.createActivity(dto));
+            assertEquals(HttpStatus.FORBIDDEN, ex.getStatus());
+            assertEquals("activity.societaNotApprovedOrBlocked", ex.getMessageKey());
+        }
+    }
 }

@@ -14,7 +14,7 @@ public interface ActivityBookingRepository extends JpaRepository<ActivityBooking
 
     Optional<ActivityBooking> findByUserIdAndActivityId(UUID userId, UUID activityId);
 
-    @Query("SELECT COUNT(DISTINCT ab.user.id) FROM ActivityBooking ab WHERE ab.activity.id = :activityId AND ab.status != it.unical.ea.Travel.Entities.payment.BookingStatus.FAILED")
+    @Query("SELECT COUNT(DISTINCT ab.user.id) FROM ActivityBooking ab WHERE ab.activity.id = :activityId AND ab.status != it.unical.ea.Travel.Entities.payment.BookingStatus.FAILED AND ab.status != it.unical.ea.Travel.Entities.payment.BookingStatus.CANCELLED")
     long countDirectParticipants(@Param("activityId") UUID activityId);
 
     List<ActivityBooking> findByActivityId(UUID activityId);

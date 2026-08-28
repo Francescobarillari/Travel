@@ -189,14 +189,6 @@ public class ActivityController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Conferma la prenotazione di un'attività", description = "Conferma la prenotazione dell'attività in seguito a un pagamento andato a buon fine")
-    @PostMapping("/booking/{bookingId}/confirm")
-    public ResponseEntity<Void> confirmActivityBooking(
-            @PathVariable String bookingId) {
-        activityService.confirmActivityBooking(bookingId);
-        return ResponseEntity.ok().build();
-    }
-
     @Operation(summary = "Ottieni gli iscritti ad un'attività", description = "Restituisce la lista degli utenti iscritti ad una specifica attività (riservato all'organizzatore o all'admin)")
     @GetMapping("/{stringId}/bookings")
     public ResponseEntity<List<UserPublicDTO>> getBookedUsers(
@@ -231,8 +223,7 @@ public class ActivityController {
                 }
             }
         }
-        String email = jwt.getClaimAsString("email");
-        return "admin-user@example.com".equals(email);
+        return false;
     }
 
     // --- Helpers per arricchire URL ---

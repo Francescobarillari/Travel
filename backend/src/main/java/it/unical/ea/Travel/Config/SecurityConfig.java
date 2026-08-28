@@ -56,7 +56,7 @@ public class SecurityConfig {
                 // Capability: accesso pubblico in sola lettura a una lista preferiti tramite link con token
                 .requestMatchers(HttpMethod.GET, "/api/favorite-lists/shared/*").permitAll()
                 .requestMatchers("/api/basic").hasRole("BASIC")
-                .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                .requestMatchers("/api/admin", "/api/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated()              
             )
             .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)

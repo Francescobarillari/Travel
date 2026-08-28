@@ -128,7 +128,7 @@ public class UserController {
         }
         // 1. Controlla claim top-level "roles"
         List<String> roles = jwt.getClaimAsStringList("roles");
-        if (roles != null && roles.contains("ADMIN")) {
+        if (roles != null && (roles.contains("ADMIN") || roles.contains("ROLE_ADMIN"))) {
             return true;
         }
 
@@ -139,17 +139,11 @@ public class UserController {
             if (clientAccess instanceof java.util.Map<?, ?> clientAccessMap) {
                 Object clientRoles = clientAccessMap.get("roles");
                 if (clientRoles instanceof java.util.Collection<?> roleCollection) {
-                    if (roleCollection.contains("ADMIN")) {
+                    if (roleCollection.contains("ADMIN") || roleCollection.contains("ROLE_ADMIN")) {
                         return true;
                     }
                 }
             }
-        }
-
-        // 3. Controlla fallback basato sull'email dell'amministratore
-        String email = jwt.getClaimAsString("email");
-        if ("admin-user@example.com".equals(email)) {
-            return true;
         }
 
         return false;

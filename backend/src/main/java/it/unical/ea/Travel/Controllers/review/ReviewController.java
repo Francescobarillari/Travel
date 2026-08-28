@@ -71,8 +71,7 @@ public class ReviewController {
                 }
             }
         }
-        String email = jwt.getClaimAsString("email");
-        return "admin-user@example.com".equalsIgnoreCase(email);
+        return false;
     }
 }
 
