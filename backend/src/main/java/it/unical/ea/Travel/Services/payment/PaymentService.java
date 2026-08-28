@@ -117,14 +117,24 @@ public class PaymentService {
     }
 
     private BigDecimal getExpectedPriceForOrder(String orderId, String fallbackBookingId, String bookingType) {
-        List<ItineraryBooking> itineraryBookings = itineraryBookingRepository.findByPaymentIntentId(orderId);
-        if (!itineraryBookings.isEmpty()) {
-            return calculateItineraryPrice(itineraryBookings.get(0));
-        }
-
-        List<ActivityBooking> activityBookings = activityBookingRepository.findByPaymentIntentId(orderId);
-        if (!activityBookings.isEmpty()) {
-            return calculateActivityPrice(activityBookings.get(0));
+        if ("ACTIVITY".equalsIgnoreCase(bookingType)) {
+            List<ActivityBooking> activityBookings = activityBookingRepository.findByPaymentIntentId(orderId);
+            if (!activityBookings.isEmpty()) {
+                return calculateActivityPrice(activityBookings.get(0));
+            }
+            List<ItineraryBooking> itineraryBookings = itineraryBookingRepository.findByPaymentIntentId(orderId);
+            if (!itineraryBookings.isEmpty()) {
+                return calculateItineraryPrice(itineraryBookings.get(0));
+            }
+        } else {
+            List<ItineraryBooking> itineraryBookings = itineraryBookingRepository.findByPaymentIntentId(orderId);
+            if (!itineraryBookings.isEmpty()) {
+                return calculateItineraryPrice(itineraryBookings.get(0));
+            }
+            List<ActivityBooking> activityBookings = activityBookingRepository.findByPaymentIntentId(orderId);
+            if (!activityBookings.isEmpty()) {
+                return calculateActivityPrice(activityBookings.get(0));
+            }
         }
 
         if (fallbackBookingId != null && !fallbackBookingId.isBlank()) {
@@ -253,24 +263,46 @@ public class PaymentService {
     }
 
     private String confirmBookingByOrder(String orderId, String fallbackBookingId, String bookingType, String userEmail, boolean isSystemWebhook) {
-        // 1. Try finding ItineraryBooking by orderId
-        List<ItineraryBooking> itineraryBookings = itineraryBookingRepository.findByPaymentIntentId(orderId);
-        if (!itineraryBookings.isEmpty()) {
-            for (ItineraryBooking ib : itineraryBookings) {
-                verifyBookingOwnership(ib.getUser(), userEmail, isSystemWebhook);
-                itineraryService.confirmItineraryBooking(ib.getId().toString());
+        if ("ACTIVITY".equalsIgnoreCase(bookingType)) {
+            // 1. Try finding ActivityBooking by orderId first
+            List<ActivityBooking> activityBookings = activityBookingRepository.findByPaymentIntentId(orderId);
+            if (!activityBookings.isEmpty()) {
+                for (ActivityBooking ab : activityBookings) {
+                    verifyBookingOwnership(ab.getUser(), userEmail, isSystemWebhook);
+                    activityService.confirmActivityBooking(ab.getId().toString());
+                }
+                return activityBookings.get(0).getId().toString();
             }
-            return itineraryBookings.get(0).getId().toString();
-        }
 
-        // 2. Try finding ActivityBooking by orderId
-        List<ActivityBooking> activityBookings = activityBookingRepository.findByPaymentIntentId(orderId);
-        if (!activityBookings.isEmpty()) {
-            for (ActivityBooking ab : activityBookings) {
-                verifyBookingOwnership(ab.getUser(), userEmail, isSystemWebhook);
-                activityService.confirmActivityBooking(ab.getId().toString());
+            // 2. Try finding ItineraryBooking by orderId
+            List<ItineraryBooking> itineraryBookings = itineraryBookingRepository.findByPaymentIntentId(orderId);
+            if (!itineraryBookings.isEmpty()) {
+                for (ItineraryBooking ib : itineraryBookings) {
+                    verifyBookingOwnership(ib.getUser(), userEmail, isSystemWebhook);
+                    itineraryService.confirmItineraryBooking(ib.getId().toString());
+                }
+                return itineraryBookings.get(0).getId().toString();
             }
-            return activityBookings.get(0).getId().toString();
+        } else {
+            // 1. Try finding ItineraryBooking by orderId first
+            List<ItineraryBooking> itineraryBookings = itineraryBookingRepository.findByPaymentIntentId(orderId);
+            if (!itineraryBookings.isEmpty()) {
+                for (ItineraryBooking ib : itineraryBookings) {
+                    verifyBookingOwnership(ib.getUser(), userEmail, isSystemWebhook);
+                    itineraryService.confirmItineraryBooking(ib.getId().toString());
+                }
+                return itineraryBookings.get(0).getId().toString();
+            }
+
+            // 2. Try finding ActivityBooking by orderId
+            List<ActivityBooking> activityBookings = activityBookingRepository.findByPaymentIntentId(orderId);
+            if (!activityBookings.isEmpty()) {
+                for (ActivityBooking ab : activityBookings) {
+                    verifyBookingOwnership(ab.getUser(), userEmail, isSystemWebhook);
+                    activityService.confirmActivityBooking(ab.getId().toString());
+                }
+                return activityBookings.get(0).getId().toString();
+            }
         }
 
         // 3. Fallback using fallbackBookingId with strict validation to prevent replay/ID injection attacks

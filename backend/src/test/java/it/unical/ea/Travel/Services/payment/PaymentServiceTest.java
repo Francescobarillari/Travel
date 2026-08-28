@@ -112,7 +112,6 @@ class PaymentServiceTest {
         booking.setPaymentIntentId("ORDER123");
 
         when(paymentGateway.getOrderDetails("ORDER123")).thenReturn(details);
-        when(itineraryBookingRepository.findByPaymentIntentId("ORDER123")).thenReturn(Collections.emptyList());
         when(activityBookingRepository.findByPaymentIntentId("ORDER123")).thenReturn(java.util.List.of(booking));
 
         assertThrows(it.unical.ea.Travel.Exception.ApiException.class, () -> {
@@ -139,7 +138,6 @@ class PaymentServiceTest {
         booking.setPaymentIntentId("ORDER123");
 
         when(paymentGateway.getOrderDetails("ORDER123")).thenReturn(details);
-        when(itineraryBookingRepository.findByPaymentIntentId("ORDER123")).thenReturn(Collections.emptyList());
         when(activityBookingRepository.findByPaymentIntentId("ORDER123")).thenReturn(java.util.List.of(booking));
 
         assertThrows(it.unical.ea.Travel.Exception.ApiException.class, () -> {
@@ -200,7 +198,6 @@ class PaymentServiceTest {
         booking.setPaymentIntentId("ORDER123");
 
         when(paymentGateway.getOrderDetails("ORDER123")).thenReturn(details);
-        when(itineraryBookingRepository.findByPaymentIntentId("ORDER123")).thenReturn(Collections.emptyList());
         when(activityBookingRepository.findByPaymentIntentId("ORDER123")).thenReturn(java.util.List.of(booking));
 
         it.unical.ea.Travel.Exception.ApiException ex = assertThrows(it.unical.ea.Travel.Exception.ApiException.class, () -> {

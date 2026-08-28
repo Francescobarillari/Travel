@@ -132,9 +132,16 @@ public class PayPalPaymentGatewayImpl implements PaymentGateway {
                 "amount", amountMap
         );
 
+        Map<String, Object> applicationContext = Map.of(
+                "return_url", "com.travel.app://paypalpay",
+                "cancel_url", "com.travel.app://paypalpay",
+                "user_action", "PAY_NOW"
+        );
+
         Map<String, Object> requestBody = Map.of(
                 "intent", "CAPTURE",
-                "purchase_units", List.of(purchaseUnit)
+                "purchase_units", List.of(purchaseUnit),
+                "application_context", applicationContext
         );
 
         HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
