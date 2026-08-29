@@ -191,6 +191,7 @@ fun HomeScreen(
                         CercaScreen(
                             viewModel = cercaViewModel,
                             favoritesTrigger = favoritesTrigger,
+                            onFavoritesChanged = { favoritesTrigger++ },
                             onItemClick = { id, isTrip ->
                                 selectedItemId = id
                                 selectedItemIsTrip = isTrip
@@ -229,6 +230,8 @@ fun HomeScreen(
                         )
                     } else {
                         PreferitiScreen(
+                            favoritesTrigger = favoritesTrigger,
+                            onFavoritesChanged = { favoritesTrigger++ },
                             onActivityClick = { activityId -> 
                                 selectedItemId = activityId
                                 selectedItemIsTrip = false

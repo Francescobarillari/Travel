@@ -30,16 +30,18 @@ enum class FavoritesTab { ITINERARI, ATTIVITA }
 fun PreferitiScreen(
     onActivityClick: (String) -> Unit,
     onItineraryClick: (ItineraryDto) -> Unit,
+    favoritesTrigger: Int = 0,
+    onFavoritesChanged: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var selectedTab by remember { mutableStateOf(FavoritesTab.ITINERARI) }
     var activities by remember { mutableStateOf<List<ActivityDto>>(emptyList()) }
     var itineraries by remember { mutableStateOf<List<ItineraryDto>>(emptyList()) }
     
-    var favoriteActivityIds by remember { 
+    var favoriteActivityIds by remember(favoritesTrigger) { 
         mutableStateOf(AppContainer.sessionManager.getFavoriteActivityIds()) 
     }
-    var favoriteItineraryIds by remember { 
+    var favoriteItineraryIds by remember(favoritesTrigger) { 
         mutableStateOf(AppContainer.sessionManager.getFavoriteItineraryIds()) 
     }
 
@@ -49,6 +51,10 @@ fun PreferitiScreen(
     val reloadFavorites = {
         favoriteActivityIds = AppContainer.sessionManager.getFavoriteActivityIds()
         favoriteItineraryIds = AppContainer.sessionManager.getFavoriteItineraryIds()
+    }
+
+    LaunchedEffect(favoritesTrigger) {
+        reloadFavorites()
     }
 
     LaunchedEffect(Unit) {
@@ -163,6 +169,7 @@ fun PreferitiScreen(
                                         onFavoriteClick = {
                                             AppContainer.sessionManager.toggleFavoriteItinerary(idStr)
                                             reloadFavorites()
+                                            onFavoritesChanged()
                                         },
                                         onClick = { onItineraryClick(itinerary) }
                                     )
@@ -186,6 +193,7 @@ fun PreferitiScreen(
                                         onFavoriteClick = {
                                             AppContainer.sessionManager.toggleFavoriteActivity(idStr)
                                             reloadFavorites()
+                                            onFavoritesChanged()
                                         },
                                         onClick = { onActivityClick(idStr) }
                                     )

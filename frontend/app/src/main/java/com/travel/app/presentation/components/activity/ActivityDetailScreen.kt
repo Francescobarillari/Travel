@@ -148,16 +148,10 @@ fun ActivityDetailScreen(
                             Toast.makeText(context, "Errore nella verifica: ${e.message}", Toast.LENGTH_LONG).show()
                         }
                     } else if (bId != null) {
-                        isLoading = true
-                        val confirmRes = AppContainer.activityRepository.confirmActivityBooking(bId)
-                        isLoading = false
-                        if (confirmRes.isSuccess) {
-                            isBooked = true
-                            showCheckoutSummary = false
-                            showSuccessDialog = true
-                        } else {
-                            Toast.makeText(context, "Errore nella conferma: ${confirmRes.exceptionOrNull()?.message}", Toast.LENGTH_LONG).show()
-                        }
+                        // Prenotazione a costo zero: già confermata sul backend
+                        isBooked = true
+                        showCheckoutSummary = false
+                        showSuccessDialog = true
                     }
                     paymentClientSecret = null
                     currentBookingId = null
@@ -933,20 +927,11 @@ fun ActivityDetailScreen(
                 if (paymentClientSecret != null) {
                     startPayPalCheckout = true
                 } else {
-                    scope.launch {
-                        val bId = currentBookingId
-                        if (bId != null) {
-                            isLoading = true
-                            val confirmRes = AppContainer.activityRepository.confirmActivityBooking(bId)
-                            isLoading = false
-                            if (confirmRes.isSuccess) {
-                                isBooked = true
-                                showCheckoutSummary = false
-                                showSuccessDialog = true
-                            } else {
-                                Toast.makeText(context, "Errore nella conferma: ${confirmRes.exceptionOrNull()?.message}", Toast.LENGTH_LONG).show()
-                            }
-                        }
+                    val bId = currentBookingId
+                    if (bId != null) {
+                        isBooked = true
+                        showCheckoutSummary = false
+                        showSuccessDialog = true
                     }
                 }
             },

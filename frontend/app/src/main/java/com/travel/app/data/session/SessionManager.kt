@@ -110,11 +110,24 @@ class SessionManager(context: Context) {
     }
 
     fun getFavoriteActivityIds(): Set<String> {
-        return prefs.getStringSet(KEY_FAVORITE_ACTIVITIES, emptySet()) ?: emptySet()
+        val json = prefs.getString(KEY_FAVORITE_ACTIVITIES, null)
+        if (json != null) {
+            return try {
+                val type = object : TypeToken<Set<String>>() {}.type
+                gson.fromJson<Set<String>>(json, type) ?: emptySet()
+            } catch (e: Exception) {
+                emptySet()
+            }
+        }
+        return try {
+            prefs.getStringSet(KEY_FAVORITE_ACTIVITIES, emptySet())?.toSet() ?: emptySet()
+        } catch (e: Exception) {
+            emptySet()
+        }
     }
 
     fun setFavoriteActivities(ids: Set<String>) {
-        prefs.edit().putStringSet(KEY_FAVORITE_ACTIVITIES, ids).apply()
+        prefs.edit().putString(KEY_FAVORITE_ACTIVITIES, gson.toJson(ids)).apply()
     }
 
     fun toggleFavoriteActivity(id: String) {
@@ -126,7 +139,7 @@ class SessionManager(context: Context) {
             current.add(id)
             true
         }
-        prefs.edit().putStringSet(KEY_FAVORITE_ACTIVITIES, current).apply()
+        setFavoriteActivities(current)
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
@@ -146,11 +159,24 @@ class SessionManager(context: Context) {
     }
 
     fun getFavoriteItineraryIds(): Set<String> {
-        return prefs.getStringSet(KEY_FAVORITE_ITINERARIES, emptySet()) ?: emptySet()
+        val json = prefs.getString(KEY_FAVORITE_ITINERARIES, null)
+        if (json != null) {
+            return try {
+                val type = object : TypeToken<Set<String>>() {}.type
+                gson.fromJson<Set<String>>(json, type) ?: emptySet()
+            } catch (e: Exception) {
+                emptySet()
+            }
+        }
+        return try {
+            prefs.getStringSet(KEY_FAVORITE_ITINERARIES, emptySet())?.toSet() ?: emptySet()
+        } catch (e: Exception) {
+            emptySet()
+        }
     }
 
     fun setFavoriteItineraries(ids: Set<String>) {
-        prefs.edit().putStringSet(KEY_FAVORITE_ITINERARIES, ids).apply()
+        prefs.edit().putString(KEY_FAVORITE_ITINERARIES, gson.toJson(ids)).apply()
     }
 
     fun toggleFavoriteItinerary(id: String) {
@@ -162,7 +188,7 @@ class SessionManager(context: Context) {
             current.add(id)
             true
         }
-        prefs.edit().putStringSet(KEY_FAVORITE_ITINERARIES, current).apply()
+        setFavoriteItineraries(current)
 
         CoroutineScope(Dispatchers.IO).launch {
             try {

@@ -526,7 +526,6 @@ fun AdminDashboardScreenPreview() {
         override suspend fun deleteItinerary(id: String) {}
         override suspend fun bookActivity(id: String) = it.unical.ea.dtos.payment.PaymentIntentResponseDto()
         override suspend fun bookItinerary(id: String) = it.unical.ea.dtos.payment.PaymentIntentResponseDto()
-        override suspend fun confirmItineraryBooking(bookingId: String): retrofit2.Response<Unit> = retrofit2.Response.success(Unit)
         override suspend fun uploadDocument(file: okhttp3.MultipartBody.Part) = "mock"
         override suspend fun getPendingCompanies(): List<it.unical.ea.dtos.user.UserPrivateDTO> = emptyList()
         override suspend fun approveCompany(id: String) {}

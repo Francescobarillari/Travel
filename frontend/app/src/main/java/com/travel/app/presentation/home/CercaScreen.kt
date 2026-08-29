@@ -54,29 +54,23 @@ fun CercaScreen(
     onItemClick: (String, Boolean) -> Unit = { _, _ -> },
     onUserClick: (User) -> Unit = {},
     favoritesTrigger: Int = 0,
+    onFavoritesChanged: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val focusManager = LocalFocusManager.current
     var isSearchActive by remember(viewModel.searchQuery) { mutableStateOf(viewModel.searchQuery.isNotEmpty()) }
 
-    val favoriteActivities = remember { mutableStateMapOf<String, Boolean>() }
-    val favoriteItineraries = remember { mutableStateMapOf<String, Boolean>() }
-
-    LaunchedEffect(viewModel.activities, viewModel.filteredItineraries, favoritesTrigger) {
-        val favActIds = com.travel.app.data.AppContainer.sessionManager.getFavoriteActivityIds()
-        viewModel.activities.forEach { act ->
-            val idStr = act.id?.toString() ?: ""
-            favoriteActivities[idStr] = favActIds.contains(idStr)
-        }
-        
-        val favItIds = com.travel.app.data.AppContainer.sessionManager.getFavoriteItineraryIds()
-        viewModel.filteredItineraries.forEach { itin ->
-            val idStr = itin.id?.toString() ?: ""
-            favoriteItineraries[idStr] = favItIds.contains(idStr)
-        }
+    var favoriteActivityIds by remember(favoritesTrigger) {
+        mutableStateOf(com.travel.app.data.AppContainer.sessionManager.getFavoriteActivityIds())
+    }
+    var favoriteItineraryIds by remember(favoritesTrigger) {
+        mutableStateOf(com.travel.app.data.AppContainer.sessionManager.getFavoriteItineraryIds())
     }
 
-
+    LaunchedEffect(favoritesTrigger) {
+        favoriteActivityIds = com.travel.app.data.AppContainer.sessionManager.getFavoriteActivityIds()
+        favoriteItineraryIds = com.travel.app.data.AppContainer.sessionManager.getFavoriteItineraryIds()
+    }
 
     LaunchedEffect(Unit) {
         viewModel.selectedTab = CercaTab.TUTTI
@@ -453,26 +447,34 @@ fun CercaScreen(
                                 contentType = { "Activity" }
                             ) { index ->
                                 val template = viewModel.activities[index]
+                                val session = template.sessions?.firstOrNull()
                                 val activity = ActivityDto().apply {
-                                    id = template.sessions?.firstOrNull()?.id ?: template.id
+                                    id = session?.id ?: template.id
                                     name = template.name
                                     description = template.description
                                     location = template.location
-                                    price = template.sessions?.firstOrNull()?.price
-                                    startTime = template.sessions?.firstOrNull()?.startTime
-                                    endTime = template.sessions?.firstOrNull()?.endTime
+                                    price = session?.price
+                                    startTime = session?.startTime
+                                    endTime = session?.endTime
                                     tags = template.tags
                                     images = template.images?.takeIf { it.isNotEmpty() }
-                                        ?: template.sessions?.firstOrNull()?.images
+                                        ?: session?.images
                                 }
                                 val actId = activity.id?.toString() ?: ""
-                                val isFav = favoriteActivities[actId] == true
+                                val templateId = template.id?.toString() ?: ""
+                                val isFav = (actId.isNotEmpty() && favoriteActivityIds.contains(actId)) ||
+                                            (templateId.isNotEmpty() && favoriteActivityIds.contains(templateId)) ||
+                                            (template.sessions?.any { s -> s.id != null && favoriteActivityIds.contains(s.id.toString()) } == true)
                                 ActivityCard(
                                     activity = activity,
                                     isFavorite = isFav,
                                     onFavoriteClick = {
-                                        com.travel.app.data.AppContainer.sessionManager.toggleFavoriteActivity(actId)
-                                        favoriteActivities[actId] = !isFav
+                                        val targetId = if (actId.isNotEmpty()) actId else templateId
+                                        if (targetId.isNotEmpty()) {
+                                            com.travel.app.data.AppContainer.sessionManager.toggleFavoriteActivity(targetId)
+                                            favoriteActivityIds = com.travel.app.data.AppContainer.sessionManager.getFavoriteActivityIds()
+                                            onFavoritesChanged()
+                                        }
                                     },
                                     onClick = { onItemClick(actId, false) }
                                 )
@@ -497,13 +499,16 @@ fun CercaScreen(
                             ) { index ->
                                 val itinerary = viewModel.filteredItineraries[index]
                                 val itinId = itinerary.id?.toString() ?: ""
-                                val isFav = favoriteItineraries[itinId] == true
+                                val isFav = itinId.isNotEmpty() && favoriteItineraryIds.contains(itinId)
                                 ItineraryCard(
                                     itinerary = itinerary,
                                     isFavorite = isFav,
                                     onFavoriteClick = {
-                                        com.travel.app.data.AppContainer.sessionManager.toggleFavoriteItinerary(itinId)
-                                        favoriteItineraries[itinId] = !isFav
+                                        if (itinId.isNotEmpty()) {
+                                            com.travel.app.data.AppContainer.sessionManager.toggleFavoriteItinerary(itinId)
+                                            favoriteItineraryIds = com.travel.app.data.AppContainer.sessionManager.getFavoriteItineraryIds()
+                                            onFavoritesChanged()
+                                        }
                                     },
                                     onClick = { onItemClick(itinId, true) }
                                 )

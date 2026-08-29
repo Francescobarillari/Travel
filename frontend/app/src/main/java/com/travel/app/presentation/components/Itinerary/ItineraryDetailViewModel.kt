@@ -92,15 +92,11 @@ class ItineraryDetailViewModel : ViewModel() {
                         _error.value = "Errore durante la verifica del pagamento: ${verification.message}"
                     }
                 } else {
-                    val response = apiService.confirmItineraryBooking(bookingId)
-                    if (response.isSuccessful) {
-                        _isBooked.value = true
-                        _showSummaryDialog.value = true
-                        _error.value = "Prenotazione confermata!"
-                        _showCheckoutSummary.value = false
-                    } else {
-                        _error.value = "Errore durante la conferma: ${response.code()}"
-                    }
+                    // Prenotazione a costo zero: già confermata dal backend all'atto della prenotazione
+                    _isBooked.value = true
+                    _showSummaryDialog.value = true
+                    _error.value = "Prenotazione confermata!"
+                    _showCheckoutSummary.value = false
                 }
             } catch (e: Exception) {
                 _error.value = "Errore durante la conferma: ${e.message}"
