@@ -167,7 +167,7 @@ public class ItineraryController {
     }
 
     @Operation(summary = "Ottieni gli itinerari prenotati dall'utente autenticato")
-    @GetMapping("/booked/me")
+    @GetMapping({"/booked/me", "/me/booked"})
     public List<ItineraryDto> getBookedItineraries(@AuthenticationPrincipal Jwt jwt) {
         if (jwt == null) {
             throw new it.unical.ea.Travel.Exception.ApiException(HttpStatus.UNAUTHORIZED, "User not authenticated");
@@ -179,7 +179,7 @@ public class ItineraryController {
     }
 
     @Operation(summary = "Verifica se l'utente ha prenotato l'itinerario")
-    @GetMapping("/{stringId}/isBooked")
+    @GetMapping({"/{stringId}/isBooked", "/{stringId}/is-booked"})
     public ResponseEntity<Boolean> isItineraryBooked(
             @Parameter(description = "ID dell'itinerario", schema = @Schema(format = "uuid")) @PathVariable String stringId,
             @AuthenticationPrincipal Jwt jwt) {

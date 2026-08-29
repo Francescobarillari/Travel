@@ -141,7 +141,7 @@ public class ActivityController {
     }
 
     @Operation(summary = "Ottieni le attività prenotate dall'utente autenticato")
-    @GetMapping("/booked/me")
+    @GetMapping({"/booked/me", "/me/booked"})
     public List<ActivityDto> getBookedActivities(@AuthenticationPrincipal Jwt jwt) {
         if (jwt == null) {
             throw new it.unical.ea.Travel.Exception.ApiException(HttpStatus.UNAUTHORIZED, "User not authenticated");
@@ -153,7 +153,7 @@ public class ActivityController {
     }
 
     @Operation(summary = "Verifica se l'utente ha prenotato l'attività")
-    @GetMapping("/{stringId}/isBooked")
+    @GetMapping({"/{stringId}/isBooked", "/{stringId}/is-booked"})
     public ResponseEntity<Boolean> isActivityBooked(
             @Parameter(description = "ID dell'attività", schema = @Schema(format = "uuid")) @PathVariable String stringId,
             @AuthenticationPrincipal Jwt jwt) {

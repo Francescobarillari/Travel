@@ -160,22 +160,22 @@ interface ApiService {
     @POST("itinerary/{id}/book")
     suspend fun bookItinerary(@Path("id") id: String): PaymentIntentResponseDto
 
-    @GET("itinerary/{id}/is-booked")
+    @GET("itinerary/{id}/isBooked")
     suspend fun isItineraryBooked(@Path("id") id: String): Boolean
 
     @DELETE("itinerary/{id}/book")
     suspend fun cancelItineraryBooking(@Path("id") id: String): retrofit2.Response<Unit>
 
-    @GET("activity/{id}/is-booked")
+    @GET("activity/{id}/isBooked")
     suspend fun isActivityBooked(@Path("id") id: String): Boolean
 
     @DELETE("activity/{id}/book")
     suspend fun cancelActivityBooking(@Path("id") id: String): retrofit2.Response<Unit>
 
-    @GET("activity/me/booked")
+    @GET("activity/booked/me")
     suspend fun getBookedActivities(): List<ActivityDto>
 
-    @GET("itinerary/me/booked")
+    @GET("itinerary/booked/me")
     suspend fun getBookedItineraries(): List<ItineraryDto>
 
     // Chiamata per aggiornare la visibilità di un itinerario
