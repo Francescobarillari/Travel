@@ -37,9 +37,13 @@ import it.unical.ea.dtos.payment.PaymentIntentResponseDto;
 import it.unical.ea.Travel.Entities.itinerary.Itinerary;
 import it.unical.ea.Travel.Entities.activity.Activity;
 import it.unical.ea.Travel.Mappers.itinerary.ItineraryMapper;
+import it.unical.ea.Travel.Entities.itinerary.ItineraryJoinRequest;
+import it.unical.ea.Travel.Mappers.itinerary.ItineraryJoinRequestMapper;
 import it.unical.ea.Travel.Services.itinerary.ItineraryService;
 import it.unical.ea.Travel.Services.activity.ActivityService;
 import it.unical.ea.dtos.activity.ActivityDto;
+import it.unical.ea.dtos.itinerary.ItineraryJoinRequestDto;
+import it.unical.ea.dtos.itinerary.ItineraryParticipantDto;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -51,6 +55,7 @@ public class ItineraryController {
 
     private final ItineraryService itineraryService;
     private final ItineraryMapper itineraryMapper;
+    private final ItineraryJoinRequestMapper itineraryJoinRequestMapper;
     private final ActivityService activityService;
 
     @Operation(summary = "Crea un nuovo itinerario", description = "Crea un itinerario associandolo a un creatore e opzionalmente a delle attività")
@@ -167,7 +172,7 @@ public class ItineraryController {
     }
 
     @Operation(summary = "Ottieni gli itinerari prenotati dall'utente autenticato")
-    @GetMapping({"/booked/me", "/me/booked"})
+    @GetMapping({ "/booked/me", "/me/booked" })
     public List<ItineraryDto> getBookedItineraries(@AuthenticationPrincipal Jwt jwt) {
         if (jwt == null) {
             throw new it.unical.ea.Travel.Exception.ApiException(HttpStatus.UNAUTHORIZED, "User not authenticated");
@@ -179,7 +184,7 @@ public class ItineraryController {
     }
 
     @Operation(summary = "Verifica se l'utente ha prenotato l'itinerario")
-    @GetMapping({"/{stringId}/isBooked", "/{stringId}/is-booked"})
+    @GetMapping({ "/{stringId}/isBooked", "/{stringId}/is-booked" })
     public ResponseEntity<Boolean> isItineraryBooked(
             @Parameter(description = "ID dell'itinerario", schema = @Schema(format = "uuid")) @PathVariable String stringId,
             @AuthenticationPrincipal Jwt jwt) {
@@ -216,6 +221,83 @@ public class ItineraryController {
         return ResponseEntity.noContent().build();
     }
 
+    @Operation(summary = "Invia richiesta di partecipazione a un itinerario tramite codice di condivisione")
+    @PostMapping("/join/{shareCode}")
+    public ResponseEntity<ItineraryJoinRequestDto> requestJoinByCode(
+            @Parameter(description = "Codice di condivisione dell'itinerario", example = "TRV8K2") @PathVariable String shareCode,
+            @AuthenticationPrincipal Jwt jwt) {
+        if (jwt == null) {
+            throw new it.unical.ea.Travel.Exception.ApiException(HttpStatus.UNAUTHORIZED, "User not authenticated");
+        }
+        String email = jwt.getClaimAsString("email");
+        ItineraryJoinRequest request = itineraryService.requestJoinByCode(shareCode, email);
+        return ResponseEntity.status(HttpStatus.CREATED).body(itineraryJoinRequestMapper.toDTO(request));
+    }
+
+    @Operation(summary = "Ottieni le richieste di partecipazione per un itinerario (solo organizzatore/admin)")
+    @GetMapping("/{stringId}/requests")
+    public List<ItineraryJoinRequestDto> getJoinRequests(
+            @Parameter(description = "ID dell'itinerario", schema = @Schema(format = "uuid")) @PathVariable String stringId,
+            @AuthenticationPrincipal Jwt jwt) {
+        if (jwt == null) {
+            throw new it.unical.ea.Travel.Exception.ApiException(HttpStatus.UNAUTHORIZED, "User not authenticated");
+        }
+        String email = jwt.getClaimAsString("email");
+        boolean admin = isAdmin(jwt);
+        List<ItineraryJoinRequest> requests = itineraryService.getJoinRequestsForItinerary(stringId, email, admin);
+        return itineraryJoinRequestMapper.toDTOList(requests);
+    }
+
+    @Operation(summary = "Accetta una richiesta di partecipazione")
+    @PostMapping("/requests/{requestId}/accept")
+    public ItineraryJoinRequestDto acceptJoinRequest(
+            @Parameter(description = "ID della richiesta di partecipazione", schema = @Schema(format = "uuid")) @PathVariable String requestId,
+            @AuthenticationPrincipal Jwt jwt) {
+        if (jwt == null) {
+            throw new it.unical.ea.Travel.Exception.ApiException(HttpStatus.UNAUTHORIZED, "User not authenticated");
+        }
+        String email = jwt.getClaimAsString("email");
+        boolean admin = isAdmin(jwt);
+        ItineraryJoinRequest request = itineraryService.acceptJoinRequest(requestId, email, admin);
+        return itineraryJoinRequestMapper.toDTO(request);
+    }
+
+    @Operation(summary = "Rifiuta una richiesta di partecipazione")
+    @PostMapping("/requests/{requestId}/reject")
+    public ItineraryJoinRequestDto rejectJoinRequest(
+            @Parameter(description = "ID della richiesta di partecipazione", schema = @Schema(format = "uuid")) @PathVariable String requestId,
+            @AuthenticationPrincipal Jwt jwt) {
+        if (jwt == null) {
+            throw new it.unical.ea.Travel.Exception.ApiException(HttpStatus.UNAUTHORIZED, "User not authenticated");
+        }
+        String email = jwt.getClaimAsString("email");
+        boolean admin = isAdmin(jwt);
+        ItineraryJoinRequest request = itineraryService.rejectJoinRequest(requestId, email, admin);
+        return itineraryJoinRequestMapper.toDTO(request);
+    }
+
+    @Operation(summary = "Ottieni i partecipanti di un itinerario")
+    @GetMapping("/{stringId}/participants")
+    public List<ItineraryParticipantDto> getParticipants(
+            @Parameter(description = "ID dell'itinerario", schema = @Schema(format = "uuid")) @PathVariable String stringId,
+            @AuthenticationPrincipal Jwt jwt) {
+        String email = jwt != null ? jwt.getClaimAsString("email") : null;
+        boolean admin = isAdmin(jwt);
+        return itineraryService.getParticipants(stringId, email, admin);
+    }
+
+    @Operation(summary = "Ottieni gli itinerari a cui l'utente partecipa come membro approvato")
+    @GetMapping("/joined/me")
+    public List<ItineraryDto> getJoinedItineraries(@AuthenticationPrincipal Jwt jwt) {
+        if (jwt == null) {
+            throw new it.unical.ea.Travel.Exception.ApiException(HttpStatus.UNAUTHORIZED, "User not authenticated");
+        }
+        String email = jwt.getClaimAsString("email");
+        return itineraryService.getJoinedItinerariesForUser(email).stream()
+                .map(this::toDTO)
+                .toList();
+    }
+
     // --- Helper per costruire imageUrl ---
 
     private ItineraryDto toDTO(Itinerary itinerary) {
@@ -245,13 +327,25 @@ public class ItineraryController {
             }
         }
 
+        if (itinerary.getId() != null) {
+            dto.setPendingRequestsCount(itineraryService.getPendingRequestsCount(itinerary.getId()));
+        }
+
+        if (itinerary.getShareCode() != null && !itinerary.getShareCode().isBlank()) {
+            dto.setShareCode(itinerary.getShareCode());
+        } else if (itinerary.getVisibility() != null && "SHARED".equalsIgnoreCase(itinerary.getVisibility().trim())) {
+            dto.setShareCode(itineraryService.ensureShareCode(itinerary));
+        }
+
         return dto;
     }
 
     private boolean isAdmin(Jwt jwt) {
-        if (jwt == null) return false;
+        if (jwt == null)
+            return false;
         List<String> roles = jwt.getClaimAsStringList("roles");
-        if (roles != null && roles.stream().anyMatch(r -> r.equalsIgnoreCase("ADMIN") || r.equalsIgnoreCase("ROLE_ADMIN"))) {
+        if (roles != null
+                && roles.stream().anyMatch(r -> r.equalsIgnoreCase("ADMIN") || r.equalsIgnoreCase("ROLE_ADMIN"))) {
             return true;
         }
         Map<String, Object> resourceAccess = jwt.getClaim("resource_access");
@@ -260,7 +354,8 @@ public class ItineraryController {
             if (clientAccess instanceof Map<?, ?> clientAccessMap) {
                 Object clientRoles = clientAccessMap.get("roles");
                 if (clientRoles instanceof Collection<?> roleCollection) {
-                    if (roleCollection.stream().anyMatch(r -> "ADMIN".equalsIgnoreCase(String.valueOf(r)) || "ROLE_ADMIN".equalsIgnoreCase(String.valueOf(r)))) {
+                    if (roleCollection.stream().anyMatch(r -> "ADMIN".equalsIgnoreCase(String.valueOf(r))
+                            || "ROLE_ADMIN".equalsIgnoreCase(String.valueOf(r)))) {
                         return true;
                     }
                 }

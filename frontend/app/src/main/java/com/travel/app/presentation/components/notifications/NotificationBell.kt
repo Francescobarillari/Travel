@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.People
+import androidx.compose.material.icons.filled.GroupAdd
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -284,5 +285,8 @@ private fun notificationVisuals(type: NotificationType?): Pair<ImageVector, Colo
     NotificationType.APPROVAZIONE_SOCIETA -> Icons.Default.CheckCircle to Color(0xFF16A34A)
     NotificationType.RIFIUTO_SOCIETA -> Icons.Default.Close to Color(0xFFDC2626)
     NotificationType.NUOVO_ANNUNCIO -> Icons.Default.Info to MaterialTheme.colorScheme.primary
+    NotificationType.RICHIESTA_PARTECIPAZIONE_ITINERARIO -> Icons.Default.GroupAdd to MaterialTheme.colorScheme.primary
+    NotificationType.ACCETTAZIONE_PARTECIPAZIONE_ITINERARIO -> Icons.Default.CheckCircle to Color(0xFF16A34A)
+    NotificationType.RIFIUTO_PARTECIPAZIONE_ITINERARIO -> Icons.Default.Close to Color(0xFFDC2626)
     else -> Icons.Outlined.Notifications to MaterialTheme.colorScheme.onSurfaceVariant
 }

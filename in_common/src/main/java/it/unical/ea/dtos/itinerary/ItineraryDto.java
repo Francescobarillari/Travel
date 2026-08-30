@@ -35,4 +35,10 @@ public class ItineraryDto {
     private String imageUrl;
     @Schema(example = "PRIVATE")
     private String visibility = "PRIVATE";
+    @Schema(example = "TRV8K2")
+    private String shareCode;
+    @Schema(example = "false")
+    private Boolean isParticipant;
+    @Schema(example = "0")
+    private Integer pendingRequestsCount;
 }

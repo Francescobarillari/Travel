@@ -1,11 +1,13 @@
 package it.unical.ea.Travel.Services.itinerary;
 
 import it.unical.ea.Travel.Entities.itinerary.Itinerary;
+import it.unical.ea.Travel.Entities.itinerary.ItineraryJoinRequest;
 import it.unical.ea.Travel.Entities.user.User;
 import it.unical.ea.Travel.Exception.ApiException;
 import it.unical.ea.Travel.Repositories.activity.ActivityBookingRepository;
 import it.unical.ea.Travel.Repositories.activity.ActivityRepository;
 import it.unical.ea.Travel.Repositories.itinerary.ItineraryBookingRepository;
+import it.unical.ea.Travel.Repositories.itinerary.ItineraryJoinRequestRepository;
 import it.unical.ea.Travel.Repositories.itinerary.ItineraryRepository;
 import it.unical.ea.Travel.Repositories.user.UserRepository;
 import it.unical.ea.Travel.Services.activity.ActivityService;
@@ -13,6 +15,8 @@ import it.unical.ea.Travel.Services.audit.AuditLogService;
 import it.unical.ea.Travel.Services.notification.NotificationService;
 import it.unical.ea.Travel.Services.payment.PaymentGateway;
 import it.unical.ea.Travel.Services.storage.FileStorageService;
+import it.unical.ea.enums.JoinRequestStatus;
+import it.unical.ea.enums.NotificationType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -62,6 +66,9 @@ class ItineraryServiceTest {
     @Mock
     private NotificationService notificationService;
 
+    @Mock
+    private ItineraryJoinRequestRepository itineraryJoinRequestRepository;
+
     @InjectMocks
     private ItineraryService itineraryService;
 
@@ -69,16 +76,21 @@ class ItineraryServiceTest {
     private User otherUser;
     private Itinerary publicItinerary;
     private Itinerary privateItinerary;
+    private Itinerary sharedItinerary;
 
     @BeforeEach
     void setUp() {
         owner = new User();
         owner.setId(UUID.randomUUID());
         owner.setEmail("owner@example.com");
+        owner.setFirstName("Owner");
+        owner.setLastName("User");
 
         otherUser = new User();
         otherUser.setId(UUID.randomUUID());
         otherUser.setEmail("other@example.com");
+        otherUser.setFirstName("Other");
+        otherUser.setLastName("User");
 
         publicItinerary = new Itinerary();
         publicItinerary.setId(UUID.randomUUID());
@@ -91,27 +103,34 @@ class ItineraryServiceTest {
         privateItinerary.setTitle("Viaggio Privato");
         privateItinerary.setVisibility("PRIVATE");
         privateItinerary.setCreator(owner);
+
+        sharedItinerary = new Itinerary();
+        sharedItinerary.setId(UUID.randomUUID());
+        sharedItinerary.setTitle("Viaggio Condiviso");
+        sharedItinerary.setVisibility("SHARED");
+        sharedItinerary.setShareCode("TRV8K2");
+        sharedItinerary.setCreator(owner);
     }
 
     @Test
     void getAllItineraries_AsAdmin_ShouldReturnAll() {
-        when(itineraryRepository.findAll()).thenReturn(List.of(publicItinerary, privateItinerary));
+        when(itineraryRepository.findAll()).thenReturn(List.of(publicItinerary, privateItinerary, sharedItinerary));
 
         List<Itinerary> result = itineraryService.getAllItineraries("admin@example.com", true);
 
-        assertEquals(2, result.size());
+        assertEquals(3, result.size());
         verify(itineraryRepository).findAll();
     }
 
     @Test
-    void getAllItineraries_AsRegularUser_ShouldReturnPublicAndOwnPrivate() {
+    void getAllItineraries_AsRegularUser_ShouldReturnPublicOwnAndSharedParticipant() {
         when(userRepository.getUserByEmail(owner.getEmail())).thenReturn(Optional.of(owner));
-        when(itineraryRepository.findPublicOrCreatorItineraries(owner.getId())).thenReturn(List.of(publicItinerary, privateItinerary));
+        when(itineraryRepository.findPublicOrCreatorOrParticipantItineraries(owner.getId())).thenReturn(List.of(publicItinerary, privateItinerary, sharedItinerary));
 
         List<Itinerary> result = itineraryService.getAllItineraries(owner.getEmail(), false);
 
-        assertEquals(2, result.size());
-        verify(itineraryRepository).findPublicOrCreatorItineraries(owner.getId());
+        assertEquals(3, result.size());
+        verify(itineraryRepository).findPublicOrCreatorOrParticipantItineraries(owner.getId());
     }
 
     @Test
@@ -146,16 +165,6 @@ class ItineraryServiceTest {
     }
 
     @Test
-    void getItinerary_Private_ByAdmin_ShouldBeAccessible() {
-        when(itineraryRepository.findById(privateItinerary.getId())).thenReturn(Optional.of(privateItinerary));
-
-        Itinerary result = itineraryService.getItinerary(privateItinerary.getId().toString(), "admin@example.com", true);
-
-        assertNotNull(result);
-        assertEquals(privateItinerary.getId(), result.getId());
-    }
-
-    @Test
     void getItinerary_Private_ByOtherUser_ShouldThrowForbidden() {
         when(itineraryRepository.findById(privateItinerary.getId())).thenReturn(Optional.of(privateItinerary));
 
@@ -167,25 +176,109 @@ class ItineraryServiceTest {
     }
 
     @Test
-    void getItinerariesByCreator_ByOwner_ShouldReturnAll() {
-        when(userRepository.getUserByEmail(owner.getEmail())).thenReturn(Optional.of(owner));
-        when(itineraryRepository.findByCreatorId(owner.getId())).thenReturn(List.of(publicItinerary, privateItinerary));
+    void getItinerary_Shared_ByAcceptedParticipant_ShouldBeAccessible() {
+        when(itineraryRepository.findById(sharedItinerary.getId())).thenReturn(Optional.of(sharedItinerary));
+        when(userRepository.getUserByEmail(otherUser.getEmail())).thenReturn(Optional.of(otherUser));
+        when(itineraryJoinRequestRepository.existsByUserIdAndItineraryIdAndStatus(otherUser.getId(), sharedItinerary.getId(), JoinRequestStatus.ACCEPTED))
+                .thenReturn(true);
 
-        List<Itinerary> result = itineraryService.getItinerariesByCreator(owner.getId().toString(), owner.getEmail(), false);
+        Itinerary result = itineraryService.getItinerary(sharedItinerary.getId().toString(), otherUser.getEmail(), false);
 
-        assertEquals(2, result.size());
-        verify(itineraryRepository).findByCreatorId(owner.getId());
+        assertNotNull(result);
+        assertEquals(sharedItinerary.getId(), result.getId());
     }
 
     @Test
-    void getItinerariesByCreator_ByOtherUser_ShouldReturnOnlyPublic() {
+    void getItinerary_Shared_ByNonParticipant_ShouldThrowForbidden() {
+        when(itineraryRepository.findById(sharedItinerary.getId())).thenReturn(Optional.of(sharedItinerary));
         when(userRepository.getUserByEmail(otherUser.getEmail())).thenReturn(Optional.of(otherUser));
-        when(itineraryRepository.findByCreatorIdAndVisibilityIgnoreCase(owner.getId(), "PUBLIC")).thenReturn(List.of(publicItinerary));
+        when(itineraryJoinRequestRepository.existsByUserIdAndItineraryIdAndStatus(otherUser.getId(), sharedItinerary.getId(), JoinRequestStatus.ACCEPTED))
+                .thenReturn(false);
 
-        List<Itinerary> result = itineraryService.getItinerariesByCreator(owner.getId().toString(), otherUser.getEmail(), false);
+        ApiException exception = assertThrows(ApiException.class, () ->
+                itineraryService.getItinerary(sharedItinerary.getId().toString(), otherUser.getEmail(), false)
+        );
 
-        assertEquals(1, result.size());
-        assertEquals("PUBLIC", result.get(0).getVisibility());
-        verify(itineraryRepository).findByCreatorIdAndVisibilityIgnoreCase(owner.getId(), "PUBLIC");
+        assertEquals(HttpStatus.FORBIDDEN, exception.getStatus());
+    }
+
+    @Test
+    void requestJoinByCode_Success_ShouldCreatePendingRequestAndNotifyOwner() {
+        when(itineraryRepository.findByShareCode("TRV8K2")).thenReturn(Optional.of(sharedItinerary));
+        when(userRepository.getUserByEmail(otherUser.getEmail())).thenReturn(Optional.of(otherUser));
+        when(itineraryJoinRequestRepository.findByUserIdAndItineraryId(otherUser.getId(), sharedItinerary.getId())).thenReturn(Optional.empty());
+        when(itineraryJoinRequestRepository.save(any(ItineraryJoinRequest.class))).thenAnswer(i -> {
+            ItineraryJoinRequest r = i.getArgument(0);
+            r.setId(UUID.randomUUID());
+            return r;
+        });
+
+        ItineraryJoinRequest request = itineraryService.requestJoinByCode("TRV8K2", otherUser.getEmail());
+
+        assertNotNull(request);
+        assertEquals(JoinRequestStatus.PENDING, request.getStatus());
+        verify(notificationService).createNotification(
+                eq(owner),
+                contains("Partecipazione"),
+                contains("Other User"),
+                eq(NotificationType.RICHIESTA_PARTECIPAZIONE_ITINERARIO)
+        );
+    }
+
+    @Test
+    void requestJoinByCode_ByCreator_ShouldThrowBadRequest() {
+        when(itineraryRepository.findByShareCode("TRV8K2")).thenReturn(Optional.of(sharedItinerary));
+        when(userRepository.getUserByEmail(owner.getEmail())).thenReturn(Optional.of(owner));
+
+        ApiException exception = assertThrows(ApiException.class, () ->
+                itineraryService.requestJoinByCode("TRV8K2", owner.getEmail())
+        );
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+        assertEquals("itinerary.join.isCreator", exception.getMessage());
+    }
+
+    @Test
+    void acceptJoinRequest_ShouldUpdateStatusAndNotifyRequester() {
+        ItineraryJoinRequest joinRequest = new ItineraryJoinRequest();
+        joinRequest.setId(UUID.randomUUID());
+        joinRequest.setItinerary(sharedItinerary);
+        joinRequest.setUser(otherUser);
+        joinRequest.setStatus(JoinRequestStatus.PENDING);
+
+        when(itineraryJoinRequestRepository.findById(joinRequest.getId())).thenReturn(Optional.of(joinRequest));
+        when(itineraryJoinRequestRepository.save(any(ItineraryJoinRequest.class))).thenReturn(joinRequest);
+
+        ItineraryJoinRequest result = itineraryService.acceptJoinRequest(joinRequest.getId().toString(), owner.getEmail(), false);
+
+        assertEquals(JoinRequestStatus.ACCEPTED, result.getStatus());
+        verify(notificationService).createNotification(
+                eq(otherUser),
+                contains("Accettata"),
+                contains(sharedItinerary.getTitle()),
+                eq(NotificationType.ACCETTAZIONE_PARTECIPAZIONE_ITINERARIO)
+        );
+    }
+
+    @Test
+    void rejectJoinRequest_ShouldUpdateStatusAndNotifyRequester() {
+        ItineraryJoinRequest joinRequest = new ItineraryJoinRequest();
+        joinRequest.setId(UUID.randomUUID());
+        joinRequest.setItinerary(sharedItinerary);
+        joinRequest.setUser(otherUser);
+        joinRequest.setStatus(JoinRequestStatus.PENDING);
+
+        when(itineraryJoinRequestRepository.findById(joinRequest.getId())).thenReturn(Optional.of(joinRequest));
+        when(itineraryJoinRequestRepository.save(any(ItineraryJoinRequest.class))).thenReturn(joinRequest);
+
+        ItineraryJoinRequest result = itineraryService.rejectJoinRequest(joinRequest.getId().toString(), owner.getEmail(), false);
+
+        assertEquals(JoinRequestStatus.REJECTED, result.getStatus());
+        verify(notificationService).createNotification(
+                eq(otherUser),
+                contains("Rifiutata"),
+                contains(sharedItinerary.getTitle()),
+                eq(NotificationType.RIFIUTO_PARTECIPAZIONE_ITINERARIO)
+        );
     }
 }

@@ -6,6 +6,8 @@ import com.travel.app.domain.repository.ItineraryRepository
 import com.travel.app.service.ApiService
 import it.unical.ea.dtos.itinerary.ItineraryDto
 import it.unical.ea.dtos.itinerary.CreateItineraryRequest
+import it.unical.ea.dtos.itinerary.ItineraryJoinRequestDto
+import it.unical.ea.dtos.itinerary.ItineraryParticipantDto
 import retrofit2.HttpException
 import java.io.IOException
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -93,6 +95,60 @@ class ItineraryRepositoryImpl(
     override suspend fun getBookedItineraries(): Result<List<ItineraryDto>> {
         return try {
             val result = apiService.getBookedItineraries()
+            Result.success(result)
+        } catch (e: Exception) {
+            Result.failure(Exception(handleError(e)))
+        }
+    }
+
+    override suspend fun joinItineraryByCode(shareCode: String): Result<ItineraryJoinRequestDto> {
+        return try {
+            val result = apiService.joinItineraryByCode(shareCode)
+            Result.success(result)
+        } catch (e: Exception) {
+            Result.failure(Exception(handleError(e)))
+        }
+    }
+
+    override suspend fun getItineraryJoinRequests(id: String): Result<List<ItineraryJoinRequestDto>> {
+        return try {
+            val result = apiService.getItineraryJoinRequests(id)
+            Result.success(result)
+        } catch (e: Exception) {
+            Result.failure(Exception(handleError(e)))
+        }
+    }
+
+    override suspend fun acceptJoinRequest(requestId: String): Result<ItineraryJoinRequestDto> {
+        return try {
+            val result = apiService.acceptJoinRequest(requestId)
+            Result.success(result)
+        } catch (e: Exception) {
+            Result.failure(Exception(handleError(e)))
+        }
+    }
+
+    override suspend fun rejectJoinRequest(requestId: String): Result<ItineraryJoinRequestDto> {
+        return try {
+            val result = apiService.rejectJoinRequest(requestId)
+            Result.success(result)
+        } catch (e: Exception) {
+            Result.failure(Exception(handleError(e)))
+        }
+    }
+
+    override suspend fun getItineraryParticipants(id: String): Result<List<ItineraryParticipantDto>> {
+        return try {
+            val result = apiService.getItineraryParticipants(id)
+            Result.success(result)
+        } catch (e: Exception) {
+            Result.failure(Exception(handleError(e)))
+        }
+    }
+
+    override suspend fun getJoinedItineraries(): Result<List<ItineraryDto>> {
+        return try {
+            val result = apiService.getJoinedItineraries()
             Result.success(result)
         } catch (e: Exception) {
             Result.failure(Exception(handleError(e)))

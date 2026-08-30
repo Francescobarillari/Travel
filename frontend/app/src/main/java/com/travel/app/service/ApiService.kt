@@ -26,7 +26,8 @@ import retrofit2.http.Multipart
 import retrofit2.http.Part
 import it.unical.ea.dtos.notification.NotificationDto
 import it.unical.ea.dtos.favorite.UserFavoritesDto
-
+import it.unical.ea.dtos.itinerary.ItineraryJoinRequestDto
+import it.unical.ea.dtos.itinerary.ItineraryParticipantDto
 
 interface ApiService {
 
@@ -103,6 +104,7 @@ interface ApiService {
     suspend fun searchActivities(
         @retrofit2.http.Query("query") query: String,
         @retrofit2.http.Query("minStartTime") minStartTime: String? = null,
+        @retrofit2.http.Query("maxEndTime") maxEndTime: String? = null,
         @retrofit2.http.Query("page") page: Int = 0,
         @retrofit2.http.Query("size") size: Int = 10
     ): it.unical.ea.dtos.common.PageDto<ActivityTemplateDto>
@@ -185,6 +187,30 @@ interface ApiService {
         @Query("visibility") visibility: String
     ): ItineraryDto
 
+    // Chiamata per inviare richiesta di partecipazione con codice
+    @POST("itinerary/join/{shareCode}")
+    suspend fun joinItineraryByCode(@Path("shareCode") shareCode: String): ItineraryJoinRequestDto
+
+    // Chiamata per ottenere le richieste di partecipazione all'itinerario (organizzatore)
+    @GET("itinerary/{id}/requests")
+    suspend fun getItineraryJoinRequests(@Path("id") id: String): List<ItineraryJoinRequestDto>
+
+    // Chiamata per accettare una richiesta di partecipazione
+    @POST("itinerary/requests/{requestId}/accept")
+    suspend fun acceptJoinRequest(@Path("requestId") requestId: String): ItineraryJoinRequestDto
+
+    // Chiamata per rifiutare una richiesta di partecipazione
+    @POST("itinerary/requests/{requestId}/reject")
+    suspend fun rejectJoinRequest(@Path("requestId") requestId: String): ItineraryJoinRequestDto
+
+    // Chiamata per ottenere la lista dei partecipanti di un itinerario
+    @GET("itinerary/{id}/participants")
+    suspend fun getItineraryParticipants(@Path("id") id: String): List<ItineraryParticipantDto>
+
+    // Chiamata per ottenere gli itinerari a cui l'utente partecipa come membro approvato
+    @GET("itinerary/joined/me")
+    suspend fun getJoinedItineraries(): List<ItineraryDto>
+
     @DELETE("activity/{id}")
     suspend fun deleteActivity(@Path("id") id: String) { throw NotImplementedError() }
 
@@ -264,7 +290,7 @@ open class MockApiService : ApiService {
     override suspend fun getBookedUsers(id: String): List<UserPublicDTO> = throw NotImplementedError()
     override suspend fun getActivities(): List<ActivityDto> = throw NotImplementedError()
     override suspend fun searchActivities(
-        query: String, minStartTime: String?, page: Int, size: Int
+        query: String, minStartTime: String?, maxEndTime: String?, page: Int, size: Int
     ): it.unical.ea.dtos.common.PageDto<ActivityTemplateDto> = throw NotImplementedError()
     override suspend fun searchLocalita(
         query: String, includeExternal: Boolean, page: Int, size: Int
@@ -310,6 +336,13 @@ open class MockApiService : ApiService {
     override suspend fun removeFavoriteActivity(id: String): retrofit2.Response<Unit> = retrofit2.Response.success(Unit)
     override suspend fun addFavoriteItinerary(id: String): retrofit2.Response<Unit> = retrofit2.Response.success(Unit)
     override suspend fun removeFavoriteItinerary(id: String): retrofit2.Response<Unit> = retrofit2.Response.success(Unit)
+
+    override suspend fun joinItineraryByCode(shareCode: String): ItineraryJoinRequestDto = throw NotImplementedError()
+    override suspend fun getItineraryJoinRequests(id: String): List<ItineraryJoinRequestDto> = emptyList()
+    override suspend fun acceptJoinRequest(requestId: String): ItineraryJoinRequestDto = throw NotImplementedError()
+    override suspend fun rejectJoinRequest(requestId: String): ItineraryJoinRequestDto = throw NotImplementedError()
+    override suspend fun getItineraryParticipants(id: String): List<ItineraryParticipantDto> = emptyList()
+    override suspend fun getJoinedItineraries(): List<ItineraryDto> = emptyList()
 
     override suspend fun captureAndVerifyPayment(request: it.unical.ea.dtos.payment.PaymentCaptureRequestDto): it.unical.ea.dtos.payment.PaymentVerificationResponseDto {
         return it.unical.ea.dtos.payment.PaymentVerificationResponseDto.builder()
