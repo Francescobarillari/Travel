@@ -33,6 +33,8 @@ import com.travel.app.data.AppContainer
 import com.travel.app.presentation.components.activity.ActivityCard
 import com.travel.app.presentation.components.itinerary.ItineraryCard
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.filled.GroupAdd
+import com.travel.app.presentation.components.itinerary.JoinItineraryDialog
 import it.unical.ea.enums.TravelTag
 import androidx.compose.ui.text.style.TextOverflow
 import coil.compose.AsyncImage
@@ -59,6 +61,7 @@ fun CercaScreen(
 ) {
     val focusManager = LocalFocusManager.current
     var isSearchActive by remember(viewModel.searchQuery) { mutableStateOf(viewModel.searchQuery.isNotEmpty()) }
+    var showJoinDialog by remember { mutableStateOf(false) }
 
     var favoriteActivityIds by remember(favoritesTrigger) {
         mutableStateOf(com.travel.app.data.AppContainer.sessionManager.getFavoriteActivityIds())
@@ -75,6 +78,15 @@ fun CercaScreen(
     LaunchedEffect(Unit) {
         viewModel.selectedTab = CercaTab.TUTTI
         viewModel.performSearch()
+    }
+
+    if (showJoinDialog) {
+        JoinItineraryDialog(
+            onDismiss = { showJoinDialog = false },
+            onJoinSuccess = {
+                viewModel.performSearch()
+            }
+        )
     }
 
     Column(
@@ -94,8 +106,26 @@ fun CercaScreen(
                 style = MaterialTheme.typography.headlineMedium.copy(
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
-                )
+                ),
+                modifier = Modifier.weight(1f)
             )
+            FilledTonalButton(
+                onClick = { showJoinDialog = true },
+                shape = RoundedCornerShape(12.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.GroupAdd,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = "Unisciti",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
 
         var isFilterPanelVisible by remember { mutableStateOf(false) }

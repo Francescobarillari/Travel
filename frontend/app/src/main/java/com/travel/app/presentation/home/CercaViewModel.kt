@@ -157,7 +157,7 @@ class CercaViewModel(
         viewModelScope.launch {
             try {
                 val activityDeferred = viewModelScope.launch {
-                    val result = activityRepository.searchActivities(searchQuery, null, currentActivityPage, PAGE_SIZE)
+                    val result = activityRepository.searchActivities(query = searchQuery, minStartTime = null, maxEndTime = null, page = currentActivityPage, size = PAGE_SIZE)
                     result.fold(
                         onSuccess = { page -> 
                             var results = page.content ?: emptyList()
@@ -211,7 +211,9 @@ class CercaViewModel(
                                 }
                             }
                         },
-                        onFailure = { errorMessage = it.message }
+                        onFailure = { 
+                            userList = emptyList()
+                        }
                     )
                 }
 
@@ -399,7 +401,7 @@ class CercaViewModel(
         isLoadingMore = true
         currentActivityPage++
         viewModelScope.launch {
-            val result = activityRepository.searchActivities(searchQuery, null, currentActivityPage, PAGE_SIZE)
+            val result = activityRepository.searchActivities(query = searchQuery, minStartTime = null, maxEndTime = null, page = currentActivityPage, size = PAGE_SIZE)
             result.fold(
                 onSuccess = { page -> 
                     var results = page.content ?: emptyList()

@@ -93,9 +93,15 @@ public class GlobalExceptionHandler {
             org.springframework.dao.DataIntegrityViolationException ex, Locale locale) {
         log.warn("DataIntegrityViolationException captured: {}", ex.getMessage());
         String message = ex.getMostSpecificCause() != null ? ex.getMostSpecificCause().getMessage() : "";
-        if (message != null && (message.contains("idx_user_email") || message.contains("Email gia registrata") || message.contains("duplicate key"))) {
-            String translatedMessage = messageSource.getMessage("auth.signup.emailAlreadyExists", null, "Esiste già un account con questa email.", locale);
-            return new ResponseEntity<>(Map.of("error", translatedMessage), HttpStatus.CONFLICT);
+        if (message != null) {
+            if (message.contains("idx_user_email") || message.contains("Email gia registrata")) {
+                String translatedMessage = messageSource.getMessage("auth.signup.emailAlreadyExists", null, "Esiste già un account con questa email.", locale);
+                return new ResponseEntity<>(Map.of("error", translatedMessage), HttpStatus.CONFLICT);
+            }
+            if (message.contains("itinerary_join_requests")) {
+                String translatedMessage = messageSource.getMessage("itinerary.join.alreadyPending", null, "Hai già inviato una richiesta di partecipazione per questo itinerario.", locale);
+                return new ResponseEntity<>(Map.of("error", translatedMessage), HttpStatus.CONFLICT);
+            }
         }
         String translatedMessage = messageSource.getMessage("error.conflict", null, "Conflitto nei dati inviati.", locale);
         return new ResponseEntity<>(Map.of("error", translatedMessage), HttpStatus.CONFLICT);

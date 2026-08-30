@@ -74,14 +74,21 @@ public class UserController {
         return ResponseEntity.ok(publicDto);
     }
 
-    @Operation(summary = "Ottieni tutti gli utenti (Riservato agli Admin)")
+    @Operation(summary = "Ottieni tutti gli utenti")
     @GetMapping
     public List<UserPrivateDTO> getUsers(@AuthenticationPrincipal Jwt jwt) {
-        if (jwt == null || !isAdmin(jwt)) {
-            throw new ApiException(HttpStatus.FORBIDDEN, "error.forbidden");
-        }
+        boolean isAdmin = isAdmin(jwt);
         return userService.getUsers().stream()
-                .map(userMapper::toPrivateDTO)
+                .map(user -> {
+                    UserPrivateDTO dto = userMapper.toPrivateDTO(user);
+                    dto.setPassword(null);
+                    if (!isAdmin) {
+                        dto.setPhone(null);
+                        dto.setVatNumber(null);
+                        dto.setDocumentPhotos(null);
+                    }
+                    return dto;
+                })
                 .toList();
     }
 
