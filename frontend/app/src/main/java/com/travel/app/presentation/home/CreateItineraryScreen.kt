@@ -295,11 +295,17 @@ fun CreateItineraryScreen(
                             val initYear = if (startYear > 0) startYear else calendar.get(Calendar.YEAR)
                             val initMonth = if (startYear > 0) startMonth - 1 else calendar.get(Calendar.MONTH)
                             val initDay = if (startYear > 0) startDay else calendar.get(Calendar.DAY_OF_MONTH)
-                            DatePickerDialog(context, { _, year, month, day ->
+                            val dp = DatePickerDialog(context, { _, year, month, day ->
                                 startYear = year
                                 startMonth = month + 1
                                 startDay = day
-                            }, initYear, initMonth, initDay).show()
+                                if (startHour == 0 && startMinute == 0) {
+                                    startHour = 9
+                                    startMinute = 0
+                                }
+                            }, initYear, initMonth, initDay)
+                            dp.datePicker.minDate = System.currentTimeMillis() - 1000
+                            dp.show()
                         }
                         .padding(16.dp)
                 ) {
@@ -324,8 +330,8 @@ fun CreateItineraryScreen(
                         .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
                         .weight(1f)
                         .clickable {
-                            val initHour = if (startYear > 0) startHour else 9
-                            val initMinute = if (startYear > 0) startMinute else 0
+                            val initHour = if (startYear > 0 && (startHour > 0 || startMinute > 0)) startHour else 9
+                            val initMinute = if (startYear > 0 && (startHour > 0 || startMinute > 0)) startMinute else 0
                             TimePickerDialog(context, { _, hour, minute ->
                                 startHour = hour
                                 startMinute = minute
@@ -363,11 +369,24 @@ fun CreateItineraryScreen(
                             val initYear = if (endYear > 0) endYear else if (startYear > 0) startYear else calendar.get(Calendar.YEAR)
                             val initMonth = if (endYear > 0) endMonth - 1 else if (startYear > 0) startMonth - 1 else calendar.get(Calendar.MONTH)
                             val initDay = if (endYear > 0) endDay else if (startYear > 0) startDay else calendar.get(Calendar.DAY_OF_MONTH)
-                            DatePickerDialog(context, { _, year, month, day ->
+                            val dp = DatePickerDialog(context, { _, year, month, day ->
                                 endYear = year
                                 endMonth = month + 1
                                 endDay = day
-                            }, initYear, initMonth, initDay).show()
+                                if (endHour == 0 && endMinute == 0) {
+                                    endHour = 23
+                                    endMinute = 59
+                                }
+                            }, initYear, initMonth, initDay)
+                            if (isStartDateSet) {
+                                val startCal = Calendar.getInstance().apply {
+                                    set(startYear, startMonth - 1, startDay, 0, 0, 0)
+                                }
+                                dp.datePicker.minDate = startCal.timeInMillis
+                            } else {
+                                dp.datePicker.minDate = System.currentTimeMillis() - 1000
+                            }
+                            dp.show()
                         }
                         .padding(16.dp)
                 ) {
@@ -492,6 +511,11 @@ fun CreateItineraryScreen(
 
                     val startLdt = LocalDateTime.of(startYear, startMonth, startDay, startHour, startMinute)
                     val endLdt = LocalDateTime.of(endYear, endMonth, endDay, endHour, endMinute)
+
+                    if (startLdt.isBefore(LocalDateTime.now().minusMinutes(5))) {
+                        Toast.makeText(context, "La data di inizio non può essere nel passato", Toast.LENGTH_SHORT).show()
+                        return@Button
+                    }
 
                     if (endLdt.isBefore(startLdt)) {
                         Toast.makeText(context, "La data di fine deve seguire quella di inizio", Toast.LENGTH_SHORT).show()

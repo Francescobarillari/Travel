@@ -81,7 +81,7 @@ fun LoginScreenPreview() {
         override suspend fun createActivity(request: it.unical.ea.dtos.activity.CreateActivityRequestDto) = it.unical.ea.dtos.activity.ActivityTemplateDto()
         override suspend fun getActivities() = emptyList<it.unical.ea.dtos.activity.ActivityDto>()
         override suspend fun searchActivities(
-            query: String, minStartTime: String?, page: Int, size: Int
+            query: String, minStartTime: String?, maxEndTime: String?, page: Int, size: Int
         ) = it.unical.ea.dtos.common.PageDto<it.unical.ea.dtos.activity.ActivityTemplateDto>()
         override suspend fun searchLocalita(
             query: String, includeExternal: Boolean, page: Int, size: Int

@@ -124,7 +124,7 @@ public class ActivityService {
     }
 
     @Transactional(readOnly = true)
-    public org.springframework.data.domain.Page<ActivityTemplateDto> searchActivities(String keyword, java.time.LocalDateTime minStartTime, int page, int size) {
+    public org.springframework.data.domain.Page<ActivityTemplateDto> searchActivities(String keyword, java.time.LocalDateTime minStartTime, java.time.LocalDateTime maxEndTime, int page, int size) {
         org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
         String safeKeyword = (keyword == null) ? "" : keyword.trim();
         org.springframework.data.domain.Page<ActivityTemplate> templates = activityTemplateRepository.searchTemplatesByKeywordSortedByRating(safeKeyword, pageable);
@@ -135,7 +135,7 @@ public class ActivityService {
             Double avgRating = reviewRepository.getAverageRatingForTemplate(template.getId());
             dto.setAverageRating(avgRating != null ? avgRating : 0.0);
             
-            List<Activity> sessions = activityRepository.findSessionsByTemplate(template.getId(), minStartTime);
+            List<Activity> sessions = activityRepository.findSessionsByTemplate(template.getId(), minStartTime, maxEndTime);
             List<ActivityDto> sessionDtos = sessions.stream().map(session -> {
                 ActivityDto sessionDto = activityMapper.toDTO(session);
                 sessionDto.setCurrentParticipants(calculateCurrentParticipants(session));
@@ -145,6 +145,11 @@ public class ActivityService {
             dto.setSessions(sessionDtos);
             return dto;
         });
+    }
+
+    @Transactional(readOnly = true)
+    public org.springframework.data.domain.Page<ActivityTemplateDto> searchActivities(String keyword, java.time.LocalDateTime minStartTime, int page, int size) {
+        return searchActivities(keyword, minStartTime, null, page, size);
     }
 
     @Transactional

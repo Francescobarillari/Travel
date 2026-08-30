@@ -89,10 +89,11 @@ public class ActivityController {
     public ResponseEntity<org.springframework.data.domain.Page<ActivityTemplateDto>> searchActivities(
             @RequestParam(required = false) String query,
             @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime minStartTime,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime maxEndTime,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        org.springframework.data.domain.Page<ActivityTemplateDto> results = activityService.searchActivities(query, minStartTime, page, size);
+        org.springframework.data.domain.Page<ActivityTemplateDto> results = activityService.searchActivities(query, minStartTime, maxEndTime, page, size);
         results.forEach(this::enrichTemplateImageUrls);
         return ResponseEntity.ok(results);
     }

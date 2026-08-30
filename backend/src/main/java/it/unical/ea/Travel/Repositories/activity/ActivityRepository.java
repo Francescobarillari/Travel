@@ -34,6 +34,16 @@ public interface ActivityRepository extends JpaRepository<Activity, UUID> {
             @Param("minStartTime") java.time.LocalDateTime minStartTime,
             Pageable pageable);
 
-    @Query("SELECT a FROM Activity a WHERE a.template.id = :templateId AND (cast(:minStartTime as timestamp) IS NULL OR a.startTime >= :minStartTime) ORDER BY a.startTime ASC")
-    List<Activity> findSessionsByTemplate(@Param("templateId") UUID templateId, @Param("minStartTime") java.time.LocalDateTime minStartTime);
+    @Query("SELECT a FROM Activity a WHERE a.template.id = :templateId " +
+           "AND (cast(:minStartTime as timestamp) IS NULL OR a.startTime >= :minStartTime) " +
+           "AND (cast(:maxEndTime as timestamp) IS NULL OR a.startTime <= :maxEndTime) " +
+           "ORDER BY a.startTime ASC")
+    List<Activity> findSessionsByTemplate(
+            @Param("templateId") UUID templateId, 
+            @Param("minStartTime") java.time.LocalDateTime minStartTime,
+            @Param("maxEndTime") java.time.LocalDateTime maxEndTime);
+
+    default List<Activity> findSessionsByTemplate(UUID templateId, java.time.LocalDateTime minStartTime) {
+        return findSessionsByTemplate(templateId, minStartTime, null);
+    }
 }

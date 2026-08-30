@@ -11,7 +11,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Favorite
@@ -28,6 +28,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.paypal.checkout.PayPalCheckout
@@ -51,6 +52,22 @@ import com.travel.app.presentation.components.review.AddReviewInline
 import kotlinx.coroutines.launch
 import com.travel.app.utils.CalendarExportUtil
 import androidx.compose.material.icons.filled.EditNote
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.content.Intent
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Public
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.ui.text.font.FontFamily
+import it.unical.ea.dtos.itinerary.ItineraryJoinRequestDto
+import it.unical.ea.dtos.itinerary.ItineraryParticipantDto
+import it.unical.ea.enums.JoinRequestStatus
 import com.travel.app.presentation.components.checkout.CheckoutSummaryScreen
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.material.icons.filled.Check
@@ -83,6 +100,33 @@ fun ItineraryDetailScreen(
     val isPreview = androidx.compose.ui.platform.LocalInspectionMode.current
     val currentUser = remember { if (isPreview) null else AppContainer.sessionManager.getSessionUser() }
     val isViaggiatore = currentUser?.userType == "VIAGGIATORE"
+    val isCreator = currentUser != null && itinerary.creatorId?.toString() == currentUser.id
+    val isShared = "SHARED".equals(itinerary.visibility, ignoreCase = true)
+    var currentShareCode by remember(itinerary.id, itinerary.shareCode) { 
+        mutableStateOf(itinerary.shareCode) 
+    }
+
+    var joinRequests by remember { mutableStateOf<List<ItineraryJoinRequestDto>>(emptyList()) }
+    var participants by remember { mutableStateOf<List<ItineraryParticipantDto>>(emptyList()) }
+    var requestsActionLoadingId by remember { mutableStateOf<String?>(null) }
+
+    val reloadRequestsAndParticipants = {
+        val itinId = itinerary.id?.toString()
+        if (itinId != null) {
+            scope.launch {
+                if (isCreator) {
+                    val reqRes = AppContainer.itineraryRepository.getItineraryJoinRequests(itinId)
+                    if (reqRes.isSuccess) {
+                        joinRequests = reqRes.getOrNull() ?: emptyList()
+                    }
+                }
+                val partRes = AppContainer.itineraryRepository.getItineraryParticipants(itinId)
+                if (partRes.isSuccess) {
+                    participants = partRes.getOrNull() ?: emptyList()
+                }
+            }
+        }
+    }
 
     LaunchedEffect(itinerary.id) {
         val id = itinerary.id?.toString()
@@ -91,6 +135,21 @@ fun ItineraryDetailScreen(
             if (reviewsResult.isSuccess) {
                 reviews = reviewsResult.getOrNull() ?: emptyList()
             }
+            if (isShared && isCreator && currentShareCode.isNullOrBlank()) {
+                val shareRes = AppContainer.itineraryRepository.updateItineraryVisibility(id, "SHARED")
+                val code = shareRes.getOrNull()?.shareCode
+                if (!code.isNullOrBlank()) {
+                    currentShareCode = code
+                    itinerary.shareCode = code
+                } else {
+                    val getRes = AppContainer.itineraryRepository.getItineraryById(id)
+                    getRes.getOrNull()?.shareCode?.let { fallbackCode ->
+                        currentShareCode = fallbackCode
+                        itinerary.shareCode = fallbackCode
+                    }
+                }
+            }
+            reloadRequestsAndParticipants()
         }
     }
 
@@ -192,7 +251,6 @@ fun ItineraryDetailScreen(
     Scaffold(
         floatingActionButton = {
             if (isViaggiatore) {
-                val isCreator = itinerary.creatorId?.toString() == currentUser?.id
                 FloatingActionButton(
                     onClick = { onPersonalizeClick(itinerary) },
                     shape = CircleShape,
@@ -242,24 +300,41 @@ fun ItineraryDetailScreen(
                     } == true
 
                     if (isBooked) {
-                        Button(
-                            onClick = {
-                                showCancelConfirmationDialog = true
-                            },
-                            enabled = !isLoading,
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.errorContainer,
-                                contentColor = MaterialTheme.colorScheme.onErrorContainer
-                            ),
-                            modifier = Modifier
-                                .width(210.dp)
-                                .height(52.dp),
-                            shape = RoundedCornerShape(26.dp)
-                        ) {
-                            if (isLoading) {
-                                CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onErrorContainer)
-                            } else {
-                                Text("Annulla Prenotazione", fontWeight = FontWeight.Bold)
+                        if (hasStarted) {
+                            Button(
+                                onClick = {},
+                                enabled = false,
+                                modifier = Modifier
+                                    .width(180.dp)
+                                    .height(52.dp),
+                                shape = RoundedCornerShape(26.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                    disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            ) {
+                                Text("Itinerario concluso", fontWeight = FontWeight.Bold)
+                            }
+                        } else {
+                            Button(
+                                onClick = {
+                                    showCancelConfirmationDialog = true
+                                },
+                                enabled = !isLoading,
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                                    contentColor = MaterialTheme.colorScheme.onErrorContainer
+                                ),
+                                modifier = Modifier
+                                    .width(210.dp)
+                                    .height(52.dp),
+                                shape = RoundedCornerShape(26.dp)
+                            ) {
+                                if (isLoading) {
+                                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onErrorContainer)
+                                } else {
+                                    Text("Annulla Prenotazione", fontWeight = FontWeight.Bold)
+                                }
                             }
                         }
                     } else if (hasStarted) {
@@ -361,7 +436,7 @@ fun ItineraryDetailScreen(
                         .background(Color.Black.copy(alpha = 0.5f), CircleShape)
                 ) {
                     Icon(
-                        imageVector = Icons.Default.ArrowBack,
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Indietro",
                         tint = Color.White
                     )
@@ -628,6 +703,378 @@ fun ItineraryDetailScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         lineHeight = MaterialTheme.typography.bodyMedium.lineHeight * 1.3f
                     )
+                }
+
+                // SHARE CODE CARD (Only if SHARED and Creator)
+                if (isShared && isCreator) {
+                    val displayCode = currentShareCode ?: itinerary.shareCode ?: ""
+                    Surface(
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
+                        shape = RoundedCornerShape(16.dp),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Share,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Text(
+                                    text = "Codice di Condivisione",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                            Text(
+                                text = "Condividi questo codice con i tuoi compagni di viaggio. Inserendolo nell'app potranno inviarti una richiesta di partecipazione.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Surface(
+                                    color = MaterialTheme.colorScheme.surface,
+                                    shape = RoundedCornerShape(10.dp),
+                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                                    modifier = Modifier.padding(vertical = 4.dp)
+                                ) {
+                                    Text(
+                                        text = if (displayCode.isNotBlank()) displayCode else "Caricamento...",
+                                        style = MaterialTheme.typography.titleMedium.copy(
+                                            fontFamily = FontFamily.Monospace,
+                                            fontWeight = FontWeight.ExtraBold,
+                                            letterSpacing = 2.sp
+                                        ),
+                                        color = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
+                                    )
+                                }
+
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    FilledTonalButton(
+                                        onClick = {
+                                            if (displayCode.isNotBlank()) {
+                                                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+                                                val clip = ClipData.newPlainText("Codice Itinerario", displayCode)
+                                                clipboard?.setPrimaryClip(clip)
+                                                Toast.makeText(context, "Codice '$displayCode' copiato!", Toast.LENGTH_SHORT).show()
+                                            }
+                                        },
+                                        enabled = displayCode.isNotBlank(),
+                                        shape = RoundedCornerShape(10.dp),
+                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.ContentCopy,
+                                            contentDescription = "Copia",
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text("Copia", style = MaterialTheme.typography.labelMedium)
+                                    }
+
+                                    Button(
+                                        onClick = {
+                                            if (displayCode.isNotBlank()) {
+                                                val sendIntent = Intent().apply {
+                                                    action = Intent.ACTION_SEND
+                                                    putExtra(
+                                                        Intent.EXTRA_TEXT,
+                                                        displayCode
+                                                    )
+                                                    type = "text/plain"
+                                                }
+                                                val shareIntent = Intent.createChooser(sendIntent, "Condividi codice")
+                                                context.startActivity(shareIntent)
+                                            }
+                                        },
+                                        enabled = displayCode.isNotBlank(),
+                                        shape = RoundedCornerShape(10.dp),
+                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Share,
+                                            contentDescription = "Condividi",
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text("Invia", style = MaterialTheme.typography.labelMedium)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // PENDING JOIN REQUESTS SECTION (For Organizer)
+                if (isCreator) {
+                    val pendingRequests = joinRequests.filter { it.status == JoinRequestStatus.PENDING }
+                    if (pendingRequests.isNotEmpty()) {
+                        Surface(
+                            color = MaterialTheme.colorScheme.surface,
+                            shape = RoundedCornerShape(16.dp),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Group,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                        Text(
+                                            text = "Richieste di Partecipazione",
+                                            style = MaterialTheme.typography.titleSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                    }
+                                    Badge(
+                                        containerColor = MaterialTheme.colorScheme.primary,
+                                        contentColor = MaterialTheme.colorScheme.onPrimary
+                                    ) {
+                                        Text(
+                                            text = "${pendingRequests.size}",
+                                            fontWeight = FontWeight.Bold,
+                                            modifier = Modifier.padding(horizontal = 4.dp)
+                                        )
+                                    }
+                                }
+
+                                Text(
+                                    text = "Questi utenti hanno inserito il tuo codice di condivisione e richiedono di unirsi al viaggio.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+
+                                pendingRequests.forEach { req ->
+                                    val reqId = req.id?.toString() ?: ""
+                                    val isActing = requestsActionLoadingId == reqId
+                                    Surface(
+                                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                                        shape = RoundedCornerShape(12.dp),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(10.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                        ) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(36.dp)
+                                                    .clip(CircleShape)
+                                                    .background(MaterialTheme.colorScheme.primaryContainer),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Person,
+                                                    contentDescription = null,
+                                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                                    modifier = Modifier.size(20.dp)
+                                                )
+                                            }
+                                            Column(modifier = Modifier.weight(1f)) {
+                                                Text(
+                                                    text = req.userName ?: req.userEmail ?: "Utente",
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MaterialTheme.colorScheme.onSurface
+                                                )
+                                                if (!req.userEmail.isNullOrBlank()) {
+                                                    Text(
+                                                        text = req.userEmail ?: "",
+                                                        style = MaterialTheme.typography.labelSmall,
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                    )
+                                                }
+                                            }
+
+                                            if (isActing) {
+                                                CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                                            } else {
+                                                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                                    // Reject button
+                                                    IconButton(
+                                                        onClick = {
+                                                            requestsActionLoadingId = reqId
+                                                            scope.launch {
+                                                                val res = AppContainer.itineraryRepository.rejectJoinRequest(reqId)
+                                                                requestsActionLoadingId = null
+                                                                if (res.isSuccess) {
+                                                                    Toast.makeText(context, "Richiesta rifiutata", Toast.LENGTH_SHORT).show()
+                                                                    reloadRequestsAndParticipants()
+                                                                } else {
+                                                                    Toast.makeText(context, "Errore: ${res.exceptionOrNull()?.message}", Toast.LENGTH_SHORT).show()
+                                                                }
+                                                            }
+                                                        },
+                                                        modifier = Modifier.size(36.dp)
+                                                    ) {
+                                                        Icon(
+                                                            imageVector = Icons.Default.Close,
+                                                            contentDescription = "Rifiuta",
+                                                            tint = MaterialTheme.colorScheme.error,
+                                                            modifier = Modifier.size(20.dp)
+                                                        )
+                                                    }
+
+                                                    // Accept button
+                                                    IconButton(
+                                                        onClick = {
+                                                            requestsActionLoadingId = reqId
+                                                            scope.launch {
+                                                                val res = AppContainer.itineraryRepository.acceptJoinRequest(reqId)
+                                                                requestsActionLoadingId = null
+                                                                if (res.isSuccess) {
+                                                                    Toast.makeText(context, "Richiesta accettata!", Toast.LENGTH_SHORT).show()
+                                                                    reloadRequestsAndParticipants()
+                                                                } else {
+                                                                    Toast.makeText(context, "Errore: ${res.exceptionOrNull()?.message}", Toast.LENGTH_SHORT).show()
+                                                                }
+                                                            }
+                                                        },
+                                                        modifier = Modifier
+                                                            .size(36.dp)
+                                                            .background(Color(0xFF16A34A).copy(alpha = 0.15f), CircleShape)
+                                                    ) {
+                                                        Icon(
+                                                            imageVector = Icons.Default.Check,
+                                                            contentDescription = "Accetta",
+                                                            tint = Color(0xFF16A34A),
+                                                            modifier = Modifier.size(20.dp)
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // PARTICIPANTS SECTION (When shared or participants exist)
+                if (participants.isNotEmpty() || isShared) {
+                    Surface(
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Group,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Text(
+                                    text = "Compagni di Viaggio (${participants.size})",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+
+                            if (participants.isEmpty()) {
+                                Text(
+                                    text = "Nessun partecipante ancora unito a questo viaggio.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            } else {
+                                participants.forEach { p ->
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 4.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(32.dp)
+                                                .clip(CircleShape)
+                                                .background(
+                                                    if (p.isCreator) MaterialTheme.colorScheme.primaryContainer 
+                                                    else MaterialTheme.colorScheme.secondaryContainer
+                                                ),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Person,
+                                                contentDescription = null,
+                                                tint = if (p.isCreator) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSecondaryContainer,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                        }
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = p.userName ?: p.userEmail ?: "Partecipante",
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = MaterialTheme.colorScheme.onSurface
+                                            )
+                                        }
+                                        Surface(
+                                            color = if (p.isCreator) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant,
+                                            shape = RoundedCornerShape(6.dp)
+                                        ) {
+                                            Text(
+                                                text = if (p.isCreator) "Organizzatore" else "Partecipante",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                fontWeight = FontWeight.Bold,
+                                                color = if (p.isCreator) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
 
                 HorizontalDivider(

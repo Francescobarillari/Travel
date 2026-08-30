@@ -232,19 +232,40 @@ fun ActivityDetailScreen(
                                         tint = MaterialTheme.colorScheme.onPrimaryContainer
                                     )
                                 }
-                                Button(
-                                    onClick = { showCancelConfirmationDialog = true },
-                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
-                                    contentPadding = PaddingValues(horizontal = 12.dp),
-                                    modifier = Modifier.height(48.dp),
-                                    shape = RoundedCornerShape(24.dp)
-                                ) {
-                                    Text(
-                                        text = "Annulla Prenotazione",
-                                        fontWeight = FontWeight.Bold,
-                                        maxLines = 1,
-                                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
-                                    )
+                                if (hasStarted) {
+                                    Button(
+                                        onClick = {},
+                                        enabled = false,
+                                        contentPadding = PaddingValues(horizontal = 12.dp),
+                                        modifier = Modifier.height(48.dp),
+                                        shape = RoundedCornerShape(24.dp),
+                                        colors = ButtonDefaults.buttonColors(
+                                            disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                            disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    ) {
+                                        Text(
+                                            text = "Evento concluso",
+                                            fontWeight = FontWeight.Bold,
+                                            maxLines = 1,
+                                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
+                                        )
+                                    }
+                                } else {
+                                    Button(
+                                        onClick = { showCancelConfirmationDialog = true },
+                                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                                        contentPadding = PaddingValues(horizontal = 12.dp),
+                                        modifier = Modifier.height(48.dp),
+                                        shape = RoundedCornerShape(24.dp)
+                                    ) {
+                                        Text(
+                                            text = "Annulla Prenotazione",
+                                            fontWeight = FontWeight.Bold,
+                                            maxLines = 1,
+                                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
+                                        )
+                                    }
                                 }
                             } else if (hasStarted) {
                                 Button(

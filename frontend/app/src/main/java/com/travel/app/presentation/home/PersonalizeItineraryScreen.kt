@@ -40,6 +40,10 @@ import it.unical.ea.dtos.activity.ActivityDto
 import it.unical.ea.dtos.activity.ActivityTemplateDto
 import it.unical.ea.dtos.itinerary.CreateItineraryRequest
 import it.unical.ea.dtos.itinerary.ItineraryDto
+import androidx.compose.material.icons.filled.CalendarToday
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -65,6 +69,18 @@ fun PersonalizeItineraryScreen(
         initialCity ?: itinerary.activities?.firstOrNull()?.location?.split(",")?.firstOrNull()?.trim() ?: ""
     }
 
+    val now = remember { LocalDateTime.now() }
+    val itineraryStart = itinerary.startDateTime
+    val itineraryEnd = itinerary.endDateTime
+
+    val effectiveMinStartTime = remember(itineraryStart, now) {
+        if (itineraryStart != null && itineraryStart.isAfter(now)) {
+            itineraryStart
+        } else {
+            now
+        }
+    }
+
     var isLoading by remember { mutableStateOf(true) }
     var isSaving by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
@@ -78,18 +94,42 @@ fun PersonalizeItineraryScreen(
     var searchQuery by remember { mutableStateOf("") }
     var activeTemplateForSessionSelection by remember { mutableStateOf<ActivityTemplateDto?>(null) }
 
-    LaunchedEffect(city) {
+    val filterValidTemplates = { rawTemplates: List<ActivityTemplateDto> ->
+        rawTemplates.mapNotNull { template ->
+            val validSessions = (template.sessions ?: emptyList()).filter { session ->
+                val sTime = session.startTime
+                val eTime = session.endTime
+                if (sTime == null) false
+                else {
+                    val isAfterMin = !sTime.isBefore(effectiveMinStartTime)
+                    val isBeforeEnd = if (itineraryEnd != null) (!sTime.isAfter(itineraryEnd) && (eTime == null || !eTime.isAfter(itineraryEnd))) else true
+                    isAfterMin && isBeforeEnd
+                }
+            }.sortedBy { it.startTime }
+            if (validSessions.isNotEmpty()) {
+                template.sessions = validSessions
+                template
+            } else {
+                null
+            }
+        }
+    }
+
+    LaunchedEffect(city, effectiveMinStartTime, itineraryEnd) {
         if (city.isNotBlank()) {
             isLoading = true
+            val minStartTimeIso = effectiveMinStartTime.format(DateTimeFormatter.ISO_DATE_TIME)
+            val maxEndTimeIso = itineraryEnd?.format(DateTimeFormatter.ISO_DATE_TIME)
             val res = AppContainer.activityRepository.searchActivities(
                 query = city, 
-                minStartTime = null,
+                minStartTime = minStartTimeIso,
+                maxEndTime = maxEndTimeIso,
                 size = 100
             )
             isLoading = false
             res.fold(
                 onSuccess = { page ->
-                    availableActivities = page.content ?: emptyList()
+                    availableActivities = filterValidTemplates(page.content ?: emptyList())
                 },
                 onFailure = { err ->
                     error = err.message
@@ -257,10 +297,17 @@ fun PersonalizeItineraryScreen(
                         isLoading = true
                         error = null
                         scope.launch {
-                            val res = AppContainer.activityRepository.searchActivities(query = city, size = 100)
+                            val minStartTimeIso = effectiveMinStartTime.format(DateTimeFormatter.ISO_DATE_TIME)
+                            val maxEndTimeIso = itineraryEnd?.format(DateTimeFormatter.ISO_DATE_TIME)
+                            val res = AppContainer.activityRepository.searchActivities(
+                                query = city,
+                                minStartTime = minStartTimeIso,
+                                maxEndTime = maxEndTimeIso,
+                                size = 100
+                            )
                             isLoading = false
                             res.fold(
-                                onSuccess = { page -> availableActivities = page.content ?: emptyList() },
+                                onSuccess = { page -> availableActivities = filterValidTemplates(page.content ?: emptyList()) },
                                 onFailure = { err -> error = err.message }
                             )
                         }
@@ -376,12 +423,55 @@ fun PersonalizeItineraryScreen(
                         }
                     } else {
                         // TAB 2: FIND AND ADD NEW ACTIVITIES
+                        
+                        // Banner informativo sul periodo di disponibilità
+                        Surface(
+                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 6.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.CalendarToday,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                                Column {
+                                    val dFmt = remember { DateTimeFormatter.ofPattern("dd/MM/yyyy") }
+                                    val rangeDesc = if (itineraryStart != null && itineraryEnd != null) {
+                                        "${itineraryStart.format(dFmt)} - ${itineraryEnd.format(dFmt)}"
+                                    } else if (itineraryStart != null) {
+                                        "Dal ${itineraryStart.format(dFmt)}"
+                                    } else {
+                                        "A partire da oggi (${now.format(dFmt)})"
+                                    }
+                                    Text(
+                                        text = "Date itinerario: $rangeDesc",
+                                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = "Mostrate solo attività con orari disponibili per questo periodo.",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+
                         OutlinedTextField(
                             value = searchQuery,
                             onValueChange = { searchQuery = it },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(16.dp),
+                                .padding(horizontal = 16.dp, vertical = 6.dp),
                             placeholder = { Text("Filtra attività...") },
                             leadingIcon = { Icon(Icons.Default.Search, null, tint = MaterialTheme.colorScheme.primary) },
                             shape = RoundedCornerShape(24.dp)
@@ -482,23 +572,42 @@ fun PersonalizeItineraryScreen(
                     onDismissRequest = { activeTemplateForSessionSelection = null },
                     title = { Text("Seleziona data e ora per ${template.name}") },
                     text = {
-                        val sessions = template.sessions ?: emptyList()
+                        val sessions = (template.sessions ?: emptyList()).filter { session ->
+                            val sTime = session.startTime
+                            val eTime = session.endTime
+                            if (sTime == null) false
+                            else {
+                                val isAfterMin = !sTime.isBefore(effectiveMinStartTime)
+                                val isBeforeEnd = if (itineraryEnd != null) (!sTime.isAfter(itineraryEnd) && (eTime == null || !eTime.isAfter(itineraryEnd))) else true
+                                isAfterMin && isBeforeEnd
+                            }
+                        }.sortedBy { it.startTime }
                         if (sessions.isEmpty()) {
-                            Text("Nessuna sessione programmata al momento.", style = MaterialTheme.typography.bodyMedium)
+                            Text("Nessuna sessione disponibile compatibile con le date dell'itinerario.", style = MaterialTheme.typography.bodyMedium)
                         } else {
+                            val dFmt = remember { DateTimeFormatter.ofPattern("EEE dd/MM/yyyy", Locale.ITALIAN) }
+                            val tFmt = remember { DateTimeFormatter.ofPattern("HH:mm") }
                             LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                items(sessions) { session ->
+                                items(items = sessions) { session: ActivityDto ->
                                     val isSessionAdded = selectedActivities.any { it.id?.toString() == session.id?.toString() }
-                                    val formattedDate = session.startTime?.let { "${it.dayOfMonth}/${it.monthValue}/${it.year} ${String.format("%02d:%02d", it.hour, it.minute)}" } ?: "N/D"
-                                    val formattedEnd = session.endTime?.let { "${String.format("%02d:%02d", it.hour, it.minute)}" } ?: "N/D"
+                                    val formattedDate = session.startTime?.let { "${it.format(dFmt)} ore ${it.format(tFmt)}" } ?: "N/D"
+                                    val formattedEnd = session.endTime?.let { it.format(tFmt) } ?: "N/D"
                                     
                                     Card(
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .clickable(enabled = !isSessionAdded) {
+                                                val sStart = session.startTime
+                                                val sEnd = session.endTime
+                                                if (sStart != null && sStart.isBefore(effectiveMinStartTime)) {
+                                                    Toast.makeText(context, "L'attività inizia prima della data dell'itinerario!", Toast.LENGTH_SHORT).show()
+                                                    return@clickable
+                                                }
+                                                if (itineraryEnd != null && ((sStart != null && sStart.isAfter(itineraryEnd)) || (sEnd != null && sEnd.isAfter(itineraryEnd)))) {
+                                                    Toast.makeText(context, "L'attività termina dopo la fine dell'itinerario!", Toast.LENGTH_SHORT).show()
+                                                    return@clickable
+                                                }
                                                 val overlap = selectedActivities.any { existing ->
-                                                    val sStart = session.startTime
-                                                    val sEnd = session.endTime
                                                     val eStart = existing.startTime
                                                     val eEnd = existing.endTime
                                                     if (sStart != null && sEnd != null && eStart != null && eEnd != null) {

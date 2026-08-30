@@ -47,11 +47,7 @@ public class Itinerary extends AuditBaseEntity {
     private User creator;
 
     @ManyToMany
-    @JoinTable(
-            name = "itinerary_activities",
-            joinColumns = @JoinColumn(name = "itinerary_id"),
-            inverseJoinColumns = @JoinColumn(name = "activity_id")
-    )
+    @JoinTable(name = "itinerary_activities", joinColumns = @JoinColumn(name = "itinerary_id"), inverseJoinColumns = @JoinColumn(name = "activity_id"))
     private List<Activity> activities = new ArrayList<>();
 
     @Column(name = "image_path", length = 500)
@@ -59,6 +55,9 @@ public class Itinerary extends AuditBaseEntity {
 
     @Column(name = "visibility", length = 50)
     private String visibility = "PRIVATE";
+
+    @Column(name = "share_code", unique = true, length = 20)
+    private String shareCode;
 
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;

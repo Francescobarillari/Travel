@@ -26,6 +26,8 @@ import it.unical.ea.dtos.activity.ActivityDto
 import it.unical.ea.dtos.itinerary.ItineraryDto
 import kotlinx.coroutines.launch
 
+import java.time.LocalDateTime
+
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,6 +45,7 @@ fun MyBookingsScreen(
     var errorMsg by remember { mutableStateOf<String?>(null) }
     
     var selectedTabIndex by remember { mutableIntStateOf(0) }
+    var filterStatus by remember { mutableStateOf("ALL") } // "ALL", "UPCOMING", "PAST"
     val tabs = listOf("Attività", "Itinerari")
     val scope = rememberCoroutineScope()
 
@@ -72,6 +75,36 @@ fun MyBookingsScreen(
 
     LaunchedEffect(user?.id, refreshTrigger) {
         fetchBookings()
+    }
+
+    val now = remember { LocalDateTime.now() }
+    val isPastActivity = { act: ActivityDto ->
+        val end = act.endTime ?: act.startTime
+        end != null && end.isBefore(now)
+    }
+    val isPastItinerary = { itin: ItineraryDto ->
+        val end = itin.endDateTime ?: itin.startDateTime
+        end != null && end.isBefore(now)
+    }
+
+    val filteredActivities = remember(bookedActivities, filterStatus) {
+        bookedActivities.filter {
+            when (filterStatus) {
+                "UPCOMING" -> !isPastActivity(it)
+                "PAST" -> isPastActivity(it)
+                else -> true
+            }
+        }.sortedWith(compareBy<ActivityDto> { isPastActivity(it) }.thenBy { it.startTime })
+    }
+
+    val filteredItineraries = remember(bookedItineraries, filterStatus) {
+        bookedItineraries.filter {
+            when (filterStatus) {
+                "UPCOMING" -> !isPastItinerary(it)
+                "PAST" -> isPastItinerary(it)
+                else -> true
+            }
+        }.sortedWith(compareBy<ItineraryDto> { isPastItinerary(it) }.thenBy { it.startDateTime })
     }
 
     Column(
@@ -120,7 +153,29 @@ fun MyBookingsScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        // Sub Filter Chips (Tutti, In Programma, Passati)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            FilterChip(
+                selected = filterStatus == "ALL",
+                onClick = { filterStatus = "ALL" },
+                label = { Text("Tutti") }
+            )
+            FilterChip(
+                selected = filterStatus == "UPCOMING",
+                onClick = { filterStatus = "UPCOMING" },
+                label = { Text("In Programma") }
+            )
+            FilterChip(
+                selected = filterStatus == "PAST",
+                onClick = { filterStatus = "PAST" },
+                label = { Text("Conclusi / Passati") }
+            )
+        }
 
         // Content
         Box(
@@ -156,14 +211,18 @@ fun MyBookingsScreen(
             } else {
                 if (selectedTabIndex == 0) {
                     // Activities Tab
-                    if (bookedActivities.isEmpty()) {
-                        EmptyBookingsView(text = "Nessuna attività prenotata")
+                    if (filteredActivities.isEmpty()) {
+                        EmptyBookingsView(
+                            text = if (filterStatus == "PAST") "Nessuna attività passata" 
+                                   else if (filterStatus == "UPCOMING") "Nessuna attività in programma"
+                                   else "Nessuna attività prenotata"
+                        )
                     } else {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(bottom = 80.dp)
                         ) {
-                            items(bookedActivities) { activity ->
+                            items(filteredActivities) { activity ->
                                 ActivityCard(
                                     activity = activity,
                                     onClick = {
@@ -175,14 +234,18 @@ fun MyBookingsScreen(
                     }
                 } else {
                     // Itineraries Tab
-                    if (bookedItineraries.isEmpty()) {
-                        EmptyBookingsView(text = "Nessun itinerario prenotato")
+                    if (filteredItineraries.isEmpty()) {
+                        EmptyBookingsView(
+                            text = if (filterStatus == "PAST") "Nessun itinerario passato"
+                                   else if (filterStatus == "UPCOMING") "Nessun itinerario in programma"
+                                   else "Nessun itinerario prenotato"
+                        )
                     } else {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(bottom = 80.dp)
                         ) {
-                            items(bookedItineraries) { itinerary ->
+                            items(filteredItineraries) { itinerary ->
                                 ItineraryCard(
                                     itinerary = itinerary,
                                     onClick = {
