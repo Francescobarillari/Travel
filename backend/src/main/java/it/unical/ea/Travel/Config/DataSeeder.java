@@ -11,6 +11,7 @@ import it.unical.ea.Travel.Repositories.activity.ActivityTemplateRepository;
 import it.unical.ea.Travel.Repositories.activity.ActivityBookingRepository;
 import it.unical.ea.Travel.Repositories.itinerary.ItineraryRepository;
 import it.unical.ea.Travel.Repositories.itinerary.ItineraryBookingRepository;
+import it.unical.ea.Travel.Repositories.itinerary.ItineraryJoinRequestRepository;
 import it.unical.ea.Travel.Repositories.location.LocationRepository;
 import it.unical.ea.Travel.Repositories.user.UserRepository;
 import it.unical.ea.Travel.Repositories.review.ReviewRepository;
@@ -30,7 +31,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.*;
 
 @Slf4j
@@ -54,12 +57,14 @@ public class DataSeeder implements CommandLineRunner {
     private final NotificationRepository notificationRepository;
     private final ItineraryBookingRepository itineraryBookingRepository;
     private final ActivityBookingRepository activityBookingRepository;
+    private final ItineraryJoinRequestRepository itineraryJoinRequestRepository;
 
     public DataSeeder(UserRepository userRepository, ActivityTemplateRepository activityTemplateRepository, ActivityRepository activityRepository,
                       ItineraryRepository itineraryRepository, LocationRepository locationRepository, LocationService locationService,
                       KeycloakAdminService keycloakAdminService, ReviewRepository reviewRepository,
                       FavoriteListRepository favoriteListRepository, NotificationRepository notificationRepository,
-                      ItineraryBookingRepository itineraryBookingRepository, ActivityBookingRepository activityBookingRepository) {
+                      ItineraryBookingRepository itineraryBookingRepository, ActivityBookingRepository activityBookingRepository,
+                      ItineraryJoinRequestRepository itineraryJoinRequestRepository) {
         this.userRepository = userRepository;
         this.activityTemplateRepository = activityTemplateRepository;
         this.activityRepository = activityRepository;
@@ -72,6 +77,7 @@ public class DataSeeder implements CommandLineRunner {
         this.notificationRepository = notificationRepository;
         this.itineraryBookingRepository = itineraryBookingRepository;
         this.activityBookingRepository = activityBookingRepository;
+        this.itineraryJoinRequestRepository = itineraryJoinRequestRepository;
     }
 
     @Override
@@ -79,39 +85,35 @@ public class DataSeeder implements CommandLineRunner {
     public void run(String... args) throws Exception {
         seedTestUser();
         
-        if (activityTemplateRepository.count() > 0) {
-            log.info("ℹ️ Dataset già presente nel database, skip pulizia e rigenerazione.");
-            return;
-        }
-
-        log.info(" Pulizia database per la generazione del dataset demo...");
+        log.info("🧹 Pulizia database per la generazione del nuovo dataset demo...");
         cleanupDatabase();
 
         log.info("📍 Seeding e allineamento delle località...");
         seedAndHealLocations();
         
-        log.info("Seeding del nuovo ricco dataset demo...");
+        log.info("🚀 Seeding del nuovo ricco dataset demo (date dal 30 Agosto in poi, almeno 10 eventi a città)...");
         seedData();
         
-        log.info(" Generazione recensioni (almeno 4-5 per attività e itinerario)...");
+        log.info("⭐ Generazione recensioni (4-5 per attività e itinerario)...");
         seedReviews();
         
-        log.info(" Database popolato con successo!");
+        log.info("🎉 Database popolato con successo!");
     }
 
     private void cleanupDatabase() {
         notificationRepository.deleteAll();
         favoriteListRepository.deleteAll();
         reviewRepository.deleteAll();
+        itineraryJoinRequestRepository.deleteAll();
         itineraryBookingRepository.deleteAll();
         activityBookingRepository.deleteAll();
         itineraryRepository.deleteAll();
         activityRepository.deleteAll();
         activityTemplateRepository.deleteAll();
         
-        // Delete all users except the test user
+        // Delete only seeded demo organizers and travelers, preserving real registered users and test user
         userRepository.findAll().forEach(u -> {
-            if (!u.getEmail().equalsIgnoreCase(TEST_EMAIL)) {
+            if (u.getEmail().startsWith("organizer") || u.getEmail().startsWith("viaggiatore")) {
                 userRepository.delete(u);
             }
         });
@@ -209,6 +211,10 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     private void seedData() {
+        // Data Base: 30 Agosto dell'anno corrente
+        int baseYear = LocalDate.now().getYear();
+        LocalDate baseDate = LocalDate.of(baseYear, 8, 30);
+
         // --- 1. Seed 10 Organizers (SOCIETA) ---
         List<User> organizers = new ArrayList<>();
         String[] companyNames = {
@@ -262,9 +268,6 @@ public class DataSeeder implements CommandLineRunner {
             travelers.add(userRepository.save(trav));
         }
 
-        // Ensure test user is also present in travelers list for reviews
-        userRepository.getUserByEmail(TEST_EMAIL).ifPresent(travelers::add);
-
         // --- 3. Seed/Load Locations ---
         String[] cities = {
             "Roma, Italia", "Milano, Italia", "Venezia, Italia", "Firenze, Italia", "Napoli, Italia",
@@ -278,143 +281,239 @@ public class DataSeeder implements CommandLineRunner {
                     .orElseGet(() -> {
                         Location newLoc = new Location();
                         newLoc.setName(city);
-                        newLoc.setDescription("Splendida località italiana ricca di attrazioni e cultura.");
+                        newLoc.setDescription("Splendida località ricca di attrazioni, esperienze e cultura.");
                         return locationRepository.save(newLoc);
                     });
             locationMap.put(city, loc);
         }
 
-        // --- 4. Seed Activity Templates (22 Templates) ---
+        // --- 4. Seed Activity Templates (3 template tematici per ciascuna delle 16 città = 48 template) ---
         List<ActivityTemplate> templates = new ArrayList<>();
-        
-        // Calabria templates (Focus - 2 templates per location to avoid identical activities in itineraries)
-        templates.add(createTemplate("Giro in Barca a Tropea e Capo Vaticano", "Esplora le acque cristalline e le grotte marine della Costa degli Dei.", "Tropea, Italia", locationMap.get("Tropea, Italia"), organizers.get(0), List.of(), Set.of(TravelTag.MARE, TravelTag.NATURA, TravelTag.ROMANTICISMO)));
-        templates.add(createTemplate("Trekking Urbano a Tropea", "Passeggiata guidata nel centro storico tra vicoli e degustazione di cipolla rossa.", "Tropea, Italia", locationMap.get("Tropea, Italia"), organizers.get(0), Set.of(TravelTag.CIBO, TravelTag.CULTURA)));
+        Map<String, List<ActivityTemplate>> cityTemplatesMap = new LinkedHashMap<>();
 
-        templates.add(createTemplate("Bronzi di Riace & Museo Nazionale", "Visita guidata al Museo Archeologico Nazionale di Reggio Calabria per ammirare i celebri Bronzi.", "Reggio Calabria, Italia", locationMap.get("Reggio Calabria, Italia"), organizers.get(0), Set.of(TravelTag.CULTURA, TravelTag.STORIA)));
-        templates.add(createTemplate("Passeggiata sul Lungomare Falcomatà", "Passeggia sul 'più bel chilometro d'Italia' con degustazione del famoso gelato Cesare.", "Reggio Calabria, Italia", locationMap.get("Reggio Calabria, Italia"), organizers.get(0), Set.of(TravelTag.RELAX, TravelTag.CIBO)));
-
-        templates.add(createTemplate("Trekking nel Parco Nazionale della Sila", "Escursione tra i boschi incontaminati e i laghi della Sila, respirando l'aria più pura d'Europa.", "Cosenza, Italia", locationMap.get("Cosenza, Italia"), organizers.get(0), Set.of(TravelTag.NATURA, TravelTag.TREKKING, TravelTag.MONTAGNA, TravelTag.AVVENTURA)));
-        templates.add(createTemplate("Castello Normanno-Svevo Tour", "Visita al celebre castello sul colle Pancrazio per una vista panoramica di Cosenza.", "Cosenza, Italia", locationMap.get("Cosenza, Italia"), organizers.get(0), Set.of(TravelTag.STORIA, TravelTag.CULTURA)));
-
-        templates.add(createTemplate("Cena Tipica a Scilla nel borgo di Chianalea", "Degusta il celebre panino col pesce spada e altre prelibatezze in riva al mare.", "Scilla, Italia", locationMap.get("Scilla, Italia"), organizers.get(0), Set.of(TravelTag.CIBO, TravelTag.ROMANTICISMO)));
-        templates.add(createTemplate("Snorkeling nella Spiaggia delle Sirene", "Esplora i meravigliosi fondali sotto il castello di Ruffo di Scilla.", "Scilla, Italia", locationMap.get("Scilla, Italia"), organizers.get(0), Set.of(TravelTag.MARE, TravelTag.NATURA, TravelTag.AVVENTURA)));
-
-        // Rome templates
-        templates.add(createTemplate("Visita Guidata al Colosseo e Fori", "Esplora la storia dell'Impero Romano con una guida esperta.", "Roma, Italia", locationMap.get("Roma, Italia"), organizers.get(1), List.of("colosseo.jpg"), Set.of(TravelTag.CULTURA, TravelTag.STORIA)));
-        templates.add(createTemplate("Cena Tradizionale a Trastevere", "Assapora la vera cucina romana in una trattoria tipica a Trastevere.", "Roma, Italia", locationMap.get("Roma, Italia"), organizers.get(1), List.of(), Set.of(TravelTag.CIBO, TravelTag.CITTA)));
-        
-        // Milan templates
-        templates.add(createTemplate("Duomo di Milano & Terrazze", "Sali sulle terrazze del Duomo di Milano per godere di un panorama mozzafiato.", "Milano, Italia", locationMap.get("Milano, Italia"), organizers.get(2), List.of("duomo.jpg"), Set.of(TravelTag.CULTURA, TravelTag.CITTA)));
-        templates.add(createTemplate("Aperitivo sui Navigli", "Gusta un tradicional aperitivo milanese sulle sponde dei Navigli storici.", "Milano, Italia", locationMap.get("Milano, Italia"), organizers.get(2), List.of(), Set.of(TravelTag.CIBO, TravelTag.RELAX)));
-        
-        // Venice templates
-        templates.add(createTemplate("Giro Romantico in Gondola", "Gondola condivisa o privata lungo il Canal Grande e i canali più nascosti.", "Venezia, Italia", locationMap.get("Venezia, Italia"), organizers.get(3), List.of("gondola.jpg"), Set.of(TravelTag.ROMANTICISMO, TravelTag.CULTURA)));
-        templates.add(createTemplate("Laboratorio di Maschere Veneziane", "Crea e decora la tua maschera del Carnevale di Venezia con un maestro artigiano.", "Venezia, Italia", locationMap.get("Venezia, Italia"), organizers.get(3), List.of(), Set.of(TravelTag.CULTURA, TravelTag.RELAX)));
-        
-        // Florence templates
-        templates.add(createTemplate("Galleria degli Uffizi Tour", "Ammira i capolavori del Rinascimento con una visita guidata salta-fila.", "Firenze, Italia", locationMap.get("Firenze, Italia"), organizers.get(4), List.of("uffizi.jpg"), Set.of(TravelTag.CULTURA, TravelTag.STORIA)));
-        templates.add(createTemplate("Lezione di Cucina Toscana", "Impara a preparare la pasta fatta in casa ed i cantucci toscani.", "Firenze, Italia", locationMap.get("Firenze, Italia"), organizers.get(4), List.of(), Set.of(TravelTag.CIBO, TravelTag.CULTURA)));
-        
-        // Naples templates
-        templates.add(createTemplate("Scavi Archeologici di Pompei Tour", "Un viaggio indietro nel tempo per visitare i resti dell'antica città romana.", "Napoli, Italia", locationMap.get("Napoli, Italia"), organizers.get(5), List.of("pompei.jpg"), Set.of(TravelTag.CULTURA, TravelTag.STORIA, TravelTag.AVVENTURA)));
-        templates.add(createTemplate("Masterclass Pizza Napoletana", "Tutti i segreti dell'impasto della vera pizza napoletana con un maestro pizzaiolo.", "Napoli, Italia", locationMap.get("Napoli, Italia"), organizers.get(5), List.of(), Set.of(TravelTag.CIBO, TravelTag.RELAX)));
-
-        // Torino template
-        templates.add(createTemplate("Museo Egizio & Torino Reale", "Visita il secondo museo egizio più importante al mondo nel cuore di Torino.", "Torino, Italia", locationMap.get("Torino, Italia"), organizers.get(6), List.of(), Set.of(TravelTag.CULTURA, TravelTag.STORIA)));
-        
-        // Bologna template
-        templates.add(createTemplate("Food Tour Bologna la Grassa", "Degustazione guidata di mortadella, parmigiano, aceto balsamico e tortellini.", "Bologna, Italia", locationMap.get("Bologna, Italia"), organizers.get(9), List.of(), Set.of(TravelTag.CIBO, TravelTag.CITTA)));
-        
-        // Palermo template
-        templates.add(createTemplate("Street Food Palermitano", "Tour dei mercati storici di Palermo per gustare arancine, panelle e sfincione.", "Palermo, Italia", locationMap.get("Palermo, Italia"), organizers.get(7), List.of(), Set.of(TravelTag.CIBO, TravelTag.AVVENTURA)));
-        
-        // Cortina template
-        templates.add(createTemplate("Trekking Tre Cime di Lavaredo", "Escursione indimenticabile sulle vette dolomitiche più famose d'Italia.", "Cortina d'Ampezzo, Italia", locationMap.get("Cortina d'Ampezzo, Italia"), organizers.get(8), List.of(), Set.of(TravelTag.AVVENTURA, TravelTag.MONTAGNA, TravelTag.NATURA)));
-
-        // --- 5. Seed Activity Sessions (at least 50 Sessions in total -> 66 Sessions here) ---
-        List<Activity> allActivities = new ArrayList<>();
-        BigDecimal[] prices = {
-            new BigDecimal("35.00"), new BigDecimal("25.00"), new BigDecimal("40.00"), new BigDecimal("45.00"),
-            new BigDecimal("35.00"), new BigDecimal("45.00"), new BigDecimal("25.00"), new BigDecimal("60.00"),
-            new BigDecimal("90.00"), new BigDecimal("40.00"), new BigDecimal("55.00"), new BigDecimal("75.00"),
-            new BigDecimal("50.00"), new BigDecimal("30.00"), new BigDecimal("20.00"), new BigDecimal("80.00"),
-            new BigDecimal("15.00"), new BigDecimal("110.00")
+        // Helper to register templates per city
+        java.util.function.Consumer<ActivityTemplate> addTpl = tpl -> {
+            templates.add(tpl);
+            cityTemplatesMap.computeIfAbsent(tpl.getLocation(), k -> new ArrayList<>()).add(tpl);
         };
-        Integer[] capacities = {15, 20, 25, 12, 20, 15, 10, 25, 6, 12, 30, 8, 40, 18, 50, 14, 35, 15};
 
-        for (int t = 0; t < templates.size(); t++) {
-            ActivityTemplate tpl = templates.get(t);
-            BigDecimal price = prices[t % prices.length];
-            int cap = capacities[t % capacities.length];
+        // 1. Roma, Italia (Org 1: Roma ArcheoTours)
+        addTpl.accept(createTemplate("Visita Guidata al Colosseo e Fori Romani", "Esplora la grandezza dell'Impero Romano e dell'Anfiteatro Flavio con una guida archeologica.", "Roma, Italia", locationMap.get("Roma, Italia"), organizers.get(1), List.of("colosseo.jpg"), Set.of(TravelTag.CULTURA, TravelTag.STORIA, TravelTag.STORIA_ANTICA)));
+        addTpl.accept(createTemplate("Cena Tradizionale nel Cuore di Trastevere", "Assapora carbonara, amatriciana e carciofi alla giudia in una caratteristica osteria trasteverina.", "Roma, Italia", locationMap.get("Roma, Italia"), organizers.get(1), List.of(), Set.of(TravelTag.CIBO, TravelTag.CITTA, TravelTag.ENOGASTRONOMIA)));
+        addTpl.accept(createTemplate("Tour Notturno delle Piazze e Fontane Barocche", "Passeggiata suggestiva tra Fontana di Trevi, Piazza Navona e il Pantheon illuminato.", "Roma, Italia", locationMap.get("Roma, Italia"), organizers.get(1), List.of(), Set.of(TravelTag.ROMANTICISMO, TravelTag.CITTA, TravelTag.ARCHITETTURA)));
 
-            // 3 sessions per template -> 66 total activities
-            for (int s = 1; s <= 3; s++) {
-                Activity act = new Activity();
-                act.setTemplate(tpl);
-                act.setStartTime(LocalDateTime.now().plusDays(s * 5).plusHours(9 + (s % 2) * 4));
-                act.setEndTime(LocalDateTime.now().plusDays(s * 5).plusHours(12 + (s % 2) * 5));
-                act.setParticipants(cap);
-                act.setPrice(price);
-                allActivities.add(activityRepository.save(act));
+        // 2. Milano, Italia (Org 2: Milano Style & Food)
+        addTpl.accept(createTemplate("Duomo di Milano & Terrazze Panoramiche", "Ammira le guglie gotiche e il panorama della città meneghina fino alle Alpi.", "Milano, Italia", locationMap.get("Milano, Italia"), organizers.get(2), List.of("duomo.jpg"), Set.of(TravelTag.CULTURA, TravelTag.CITTA, TravelTag.ARCHITETTURA)));
+        addTpl.accept(createTemplate("Aperitivo Gourmet sui Navigli Storici", "Gusta cocktail d'autore e finger food tipico milanese lungo il Naviglio Grande.", "Milano, Italia", locationMap.get("Milano, Italia"), organizers.get(2), List.of(), Set.of(TravelTag.CIBO, TravelTag.RELAX, TravelTag.CITTA)));
+        addTpl.accept(createTemplate("Pinacoteca di Brera & Quadrilatero della Moda", "Un viaggio tra capolavori rinascimentali e l'eleganza senza tempo di via Montenapoleone.", "Milano, Italia", locationMap.get("Milano, Italia"), organizers.get(2), List.of(), Set.of(TravelTag.ARTE, TravelTag.CULTURA, TravelTag.SHOPPING)));
+
+        // 3. Venezia, Italia (Org 3: Venezia Gondola Experience)
+        addTpl.accept(createTemplate("Giro Romantico in Gondola nel Canal Grande", "Lasciati cullare dall'acqua tra ponti storici, palazzi patrizi e canali nascosti.", "Venezia, Italia", locationMap.get("Venezia, Italia"), organizers.get(3), List.of("gondola.jpg"), Set.of(TravelTag.ROMANTICISMO, TravelTag.CULTURA, TravelTag.MARE)));
+        addTpl.accept(createTemplate("Laboratorio Artigianale di Maschere Veneziane", "Crea e decora la tua maschera originale del Carnevale insieme a maestri cartapestai.", "Venezia, Italia", locationMap.get("Venezia, Italia"), organizers.get(3), List.of(), Set.of(TravelTag.CULTURA, TravelTag.RELAX, TravelTag.ARTE)));
+        addTpl.accept(createTemplate("Escursione in Barca a Murano e Burano", "Scopri l'arte del vetro soffiato e le celebri case variopinte dei pescatori di Burano.", "Venezia, Italia", locationMap.get("Venezia, Italia"), organizers.get(3), List.of(), Set.of(TravelTag.MARE, TravelTag.NATURA, TravelTag.CULTURA)));
+
+        // 4. Firenze, Italia (Org 4: Toscana Bella Tours)
+        addTpl.accept(createTemplate("Galleria degli Uffizi Tour Guidato Salta-Fila", "Ammira la Venere del Botticelli, Leonardo e Caravaggio con una guida storica dell'arte.", "Firenze, Italia", locationMap.get("Firenze, Italia"), organizers.get(4), List.of("uffizi.jpg"), Set.of(TravelTag.CULTURA, TravelTag.STORIA, TravelTag.ARTE)));
+        addTpl.accept(createTemplate("Lezione di Cucina Toscana e Degustazione Chianti", "Impara i segreti della pasta fresca, cantucci e pici abbinati a calici di ottimo Chianti Classico.", "Firenze, Italia", locationMap.get("Firenze, Italia"), organizers.get(4), List.of(), Set.of(TravelTag.CIBO, TravelTag.CULTURA, TravelTag.ENOGASTRONOMIA)));
+        addTpl.accept(createTemplate("Tramonto Panoramico al Piazzale Michelangelo", "Passeggiata guidata dal Ponte Vecchio fino al belvedere più suggestivo della città.", "Firenze, Italia", locationMap.get("Firenze, Italia"), organizers.get(4), List.of(), Set.of(TravelTag.ROMANTICISMO, TravelTag.RELAX, TravelTag.FOTOGRAFIA)));
+
+        // 5. Napoli, Italia (Org 5: Campania Vesuvio Guides)
+        addTpl.accept(createTemplate("Scavi Archeologici di Pompei con Archeologo", "Un viaggio straordinario nel 79 d.C. alla scoperta di strade, domus e affreschi millenari.", "Napoli, Italia", locationMap.get("Napoli, Italia"), organizers.get(5), List.of("pompei.jpg"), Set.of(TravelTag.CULTURA, TravelTag.STORIA, TravelTag.STORIA_ANTICA)));
+        addTpl.accept(createTemplate("Masterclass Pizza Napoletana Verace", "Metti le mani in pasta e inforna la tua Margherita con un autentico mastro pizzaiolo partenopeo.", "Napoli, Italia", locationMap.get("Napoli, Italia"), organizers.get(5), List.of(), Set.of(TravelTag.CIBO, TravelTag.RELAX, TravelTag.DIVERTIMENTO)));
+        addTpl.accept(createTemplate("Napoli Sotterranea e Spaccanapoli Experience", "Cunicoli greco-romani nel sottosuolo ed escursione folkloristica tra i presepi di San Gregorio Armeno.", "Napoli, Italia", locationMap.get("Napoli, Italia"), organizers.get(5), List.of(), Set.of(TravelTag.STORIA, TravelTag.CULTURA, TravelTag.AVVENTURA)));
+
+        // 6. Tropea, Italia (Org 0: Calabria Tour Operator)
+        addTpl.accept(createTemplate("Giro in Barca a Tropea e Capo Vaticano", "Esplora acque turchesi, cale segrete e fondali mozzafiato lungo la splendida Costa degli Dei.", "Tropea, Italia", locationMap.get("Tropea, Italia"), organizers.get(0), List.of(), Set.of(TravelTag.MARE, TravelTag.NATURA, TravelTag.ROMANTICISMO)));
+        addTpl.accept(createTemplate("Trekking Urbano e Degustazione Cipolla Rossa IGP", "Passeggiata tra i vicoli affacciati sulla rupe e assaggi di 'Nduja e specialità calabresi.", "Tropea, Italia", locationMap.get("Tropea, Italia"), organizers.get(0), List.of(), Set.of(TravelTag.CIBO, TravelTag.CULTURA, TravelTag.STORIA)));
+        addTpl.accept(createTemplate("Tramonto in Kayak e Snorkeling a Tropea", "Pagaia nelle acque limpide al tramonto ammirando il santuario di Santa Maria dell'Isola.", "Tropea, Italia", locationMap.get("Tropea, Italia"), organizers.get(0), List.of(), Set.of(TravelTag.MARE, TravelTag.AVVENTURA, TravelTag.SPORT)));
+
+        // 7. Reggio Calabria, Italia (Org 0: Calabria Tour Operator)
+        addTpl.accept(createTemplate("Bronzi di Riace & Museo Archeologico Nazionale", "Incontra da vicino i leggendari capolavori bronzei del V secolo a.C. e la storia della Magna Grecia.", "Reggio Calabria, Italia", locationMap.get("Reggio Calabria, Italia"), organizers.get(0), List.of(), Set.of(TravelTag.CULTURA, TravelTag.STORIA, TravelTag.MUSEI)));
+        addTpl.accept(createTemplate("Passeggiata sul Lungomare Falcomatà & Gelato Cesare", "Vivi il 'più bel chilometro d'Italia' con una sosta golosa al chiosco più premiato d'Italia.", "Reggio Calabria, Italia", locationMap.get("Reggio Calabria, Italia"), organizers.get(0), List.of(), Set.of(TravelTag.RELAX, TravelTag.CIBO, TravelTag.ROMANTICISMO)));
+        addTpl.accept(createTemplate("Tour delle Coltivazioni di Bergamotto", "Scopri l'oro verde di Reggio Calabria tra profumati agrumeti e degustazioni di liquori tipici.", "Reggio Calabria, Italia", locationMap.get("Reggio Calabria, Italia"), organizers.get(0), List.of(), Set.of(TravelTag.NATURA, TravelTag.CIBO, TravelTag.ENOGASTRONOMIA)));
+
+        // 8. Cosenza, Italia (Org 0: Calabria Tour Operator)
+        addTpl.accept(createTemplate("Trekking nel Parco Nazionale della Sila e Laghi", "Escursione tra pini loricati giganti, laghi montani e l'aria certificata più pura d'Europa.", "Cosenza, Italia", locationMap.get("Cosenza, Italia"), organizers.get(0), List.of(), Set.of(TravelTag.NATURA, TravelTag.TREKKING, TravelTag.MONTAGNA, TravelTag.AVVENTURA)));
+        addTpl.accept(createTemplate("Castello Normanno-Svevo e Centro Storico di Cosenza", "Visita la maestosa fortezza sul colle Pancrazio e il suggestivo borgo antico dei Bruzi.", "Cosenza, Italia", locationMap.get("Cosenza, Italia"), organizers.get(0), List.of(), Set.of(TravelTag.STORIA, TravelTag.CULTURA, TravelTag.ARCHITETTURA)));
+        addTpl.accept(createTemplate("Degustazione Sapori Silani: Caciocavallo e Funghi", "Esperienza gastronomica in agriturismo con prodotti tipici d'eccellenza dell'altopiano.", "Cosenza, Italia", locationMap.get("Cosenza, Italia"), organizers.get(0), List.of(), Set.of(TravelTag.CIBO, TravelTag.ENOGASTRONOMIA, TravelTag.MONTAGNA)));
+
+        // 9. Scilla, Italia (Org 0: Calabria Tour Operator)
+        addTpl.accept(createTemplate("Cena Romantica a Chianalea sul Mare", "Gusta il celebre panino al pesce spada e specialità marinare sulle tipiche pedane a pelo d'acqua.", "Scilla, Italia", locationMap.get("Scilla, Italia"), organizers.get(0), List.of(), Set.of(TravelTag.CIBO, TravelTag.ROMANTICISMO, TravelTag.MARE)));
+        addTpl.accept(createTemplate("Snorkeling nella Spiaggia delle Sirene", "Immergiti tra i fondali ricchi di biodiversità sotto l'imponente rocca del Castello Ruffo.", "Scilla, Italia", locationMap.get("Scilla, Italia"), organizers.get(0), List.of(), Set.of(TravelTag.MARE, TravelTag.NATURA, TravelTag.AVVENTURA)));
+        addTpl.accept(createTemplate("Visita al Castello Ruffo e Belvedere sullo Stretto", "Vista panoramica spettacolare sulla Sicilia, l'Etna e le acque mitologiche dello Stretto.", "Scilla, Italia", locationMap.get("Scilla, Italia"), organizers.get(0), List.of(), Set.of(TravelTag.STORIA, TravelTag.CULTURA, TravelTag.FOTOGRAFIA)));
+
+        // 10. Torino, Italia (Org 6: Torino Reale Travel)
+        addTpl.accept(createTemplate("Museo Egizio & Torino Reale Tour", "Visita il secondo museo di antichità egizie al mondo e le splendide piazze sabaude.", "Torino, Italia", locationMap.get("Torino, Italia"), organizers.get(6), List.of(), Set.of(TravelTag.CULTURA, TravelTag.STORIA, TravelTag.MUSEI)));
+        addTpl.accept(createTemplate("Tour del Cioccolato, Bicerin e Caffè Storici", "Assapora il gianduiotto originale e la tradizionale bevanda calda nei locali d'epoca.", "Torino, Italia", locationMap.get("Torino, Italia"), organizers.get(6), List.of(), Set.of(TravelTag.CIBO, TravelTag.RELAX, TravelTag.CULTURA)));
+        addTpl.accept(createTemplate("Mole Antonelliana e Museo Nazionale del Cinema", "Sali con l'ascensore panoramico per una visuale a 360 gradi e immergiti nel mondo del cinema.", "Torino, Italia", locationMap.get("Torino, Italia"), organizers.get(6), List.of(), Set.of(TravelTag.ARTE, TravelTag.CULTURA, TravelTag.ARCHITETTURA)));
+
+        // 11. Bologna, Italia (Org 9: Puglia Sole & Salento)
+        addTpl.accept(createTemplate("Food Tour Bologna la Grassa: Salumi e Parmigiano", "Tour gastronomico nel Quadrilatero con degustazione di mortadella, tortellini e calici locali.", "Bologna, Italia", locationMap.get("Bologna, Italia"), organizers.get(9), List.of(), Set.of(TravelTag.CIBO, TravelTag.CITTA, TravelTag.ENOGASTRONOMIA)));
+        addTpl.accept(createTemplate("Salita sulla Torre degli Asinelli e Piazza Maggiore", "Panoramica mozzafiato dall'alto delle celebri Due Torri e racconto dei segreti medievali.", "Bologna, Italia", locationMap.get("Bologna, Italia"), organizers.get(9), List.of(), Set.of(TravelTag.STORIA, TravelTag.CITTA, TravelTag.AVVENTURA)));
+        addTpl.accept(createTemplate("Masterclass Pasta Fresca e Ragù alla Bolognese", "Impara a tirare la sfoglia a mano al mattarello per preparare tagliatelle e tortelloni perfetti.", "Bologna, Italia", locationMap.get("Bologna, Italia"), organizers.get(9), List.of(), Set.of(TravelTag.CIBO, TravelTag.DIVERTIMENTO, TravelTag.CULTURA)));
+
+        // 12. Palermo, Italia (Org 7: Sicilia Bedda Vacanze)
+        addTpl.accept(createTemplate("Street Food Palermitano tra Ballarò e il Capo", "Gusta arancine croccanti, panelle, sfincione e cannoli freschi immerso nel folklore siciliano.", "Palermo, Italia", locationMap.get("Palermo, Italia"), organizers.get(7), List.of(), Set.of(TravelTag.CIBO, TravelTag.AVVENTURA, TravelTag.CULTURA)));
+        addTpl.accept(createTemplate("Palazzo dei Normanni e Cappella Palatina", "I capolavori arabo-normanni patrimonio UNESCO con mosaici dorati bizantini senza eguali.", "Palermo, Italia", locationMap.get("Palermo, Italia"), organizers.get(7), List.of(), Set.of(TravelTag.STORIA, TravelTag.CULTURA, TravelTag.ARTE)));
+        addTpl.accept(createTemplate("Escursione in Barca al Golfo di Mondello", "Navigazione rilassante con bagni in acque cristalline e aperitivo siciliano a bordo.", "Palermo, Italia", locationMap.get("Palermo, Italia"), organizers.get(7), List.of(), Set.of(TravelTag.MARE, TravelTag.NATURA, TravelTag.RELAX)));
+
+        // 13. Verona, Italia (Org 3: Venezia Gondola Experience)
+        addTpl.accept(createTemplate("Arena di Verona e Casa di Giulietta Tour", "Ripercorri il mito shakespeariano tra vicoli medievali, l'Anfiteatro Romano e il celebre balcone.", "Verona, Italia", locationMap.get("Verona, Italia"), organizers.get(3), List.of(), Set.of(TravelTag.ROMANTICISMO, TravelTag.STORIA, TravelTag.CULTURA)));
+        addTpl.accept(createTemplate("Degustazione Vini della Valpolicella e Amarone", "Visita a una prestigiosa cantina storica veronese con assaggi di Amarone e Ripasso.", "Verona, Italia", locationMap.get("Verona, Italia"), organizers.get(3), List.of(), Set.of(TravelTag.CIBO, TravelTag.ENOGASTRONOMIA, TravelTag.RELAX)));
+        addTpl.accept(createTemplate("Passeggiata al Tramonto a Castel San Pietro", "Salita con la funicolare per ammirare le anse dell'Adige e i ponti storici di Verona.", "Verona, Italia", locationMap.get("Verona, Italia"), organizers.get(3), List.of(), Set.of(TravelTag.ROMANTICISMO, TravelTag.CITTA, TravelTag.FOTOGRAFIA)));
+
+        // 14. Lecce, Italia (Org 9: Puglia Sole & Salento)
+        addTpl.accept(createTemplate("Tour del Barocco Leccese e Santa Croce", "Ammira i ricami di pietra leccese, l'anfiteatro romano e la maestosa Piazza del Duomo.", "Lecce, Italia", locationMap.get("Lecce, Italia"), organizers.get(9), List.of(), Set.of(TravelTag.CULTURA, TravelTag.STORIA, TravelTag.ARCHITETTURA)));
+        addTpl.accept(createTemplate("Degustazione Salentina: Pasticciotto e Rustico", "Itinerario dei sapori tipici con caffè leccese al latte di mandorla e prelibatezze artigianali.", "Lecce, Italia", locationMap.get("Lecce, Italia"), organizers.get(9), List.of(), Set.of(TravelTag.CIBO, TravelTag.RELAX, TravelTag.CITTA)));
+        addTpl.accept(createTemplate("Laboratorio di Cartapesta Leccese", "Scopri l'antica arte scultorea salentina guidato da un maestro cartapestaio locale.", "Lecce, Italia", locationMap.get("Lecce, Italia"), organizers.get(9), List.of(), Set.of(TravelTag.ARTE, TravelTag.CULTURA, TravelTag.RELAX)));
+
+        // 15. Cortina d'Ampezzo, Italia (Org 8: Dolomiti Adventure Alps)
+        addTpl.accept(createTemplate("Trekking Tre Cime di Lavaredo e Rifugi Alpini", "Escursione spettacolare al cospetto delle pareti verticali più iconiche delle Dolomiti UNESCO.", "Cortina d'Ampezzo, Italia", locationMap.get("Cortina d'Ampezzo, Italia"), organizers.get(8), List.of(), Set.of(TravelTag.AVVENTURA, TravelTag.MONTAGNA, TravelTag.NATURA, TravelTag.TREKKING)));
+        addTpl.accept(createTemplate("Escursione alle Acque Turchesi del Lago di Sorapis", "Un cammino incantevole attraverso foreste alpine fino al celebre specchio d'acqua glaciale.", "Cortina d'Ampezzo, Italia", locationMap.get("Cortina d'Ampezzo, Italia"), organizers.get(8), List.of(), Set.of(TravelTag.NATURA, TravelTag.TREKKING, TravelTag.AVVENTURA)));
+        addTpl.accept(createTemplate("Cena Gourmet in Baita Montana con Vista Dolomiti", "Sapori autentici ampezzani: canederli, casunziei e dolci tipici con vista panoramica sulle vette.", "Cortina d'Ampezzo, Italia", locationMap.get("Cortina d'Ampezzo, Italia"), organizers.get(8), List.of(), Set.of(TravelTag.CIBO, TravelTag.MONTAGNA, TravelTag.RELAX)));
+
+        // 16. Costiera Amalfitana, Italia (Org 5: Campania Vesuvio Guides)
+        addTpl.accept(createTemplate("Giro in Barca da Positano a Capri e Faraglioni", "Navigazione panoramica tra baie nascoste, grotte marine e soste per nuotare in acque cobalto.", "Costiera Amalfitana, Italia", locationMap.get("Costiera Amalfitana, Italia"), organizers.get(5), List.of(), Set.of(TravelTag.MARE, TravelTag.ROMANTICISMO, TravelTag.AVVENTURA)));
+        addTpl.accept(createTemplate("Trekking sul Sentiero degli Dei da Bomerano", "Uno dei percorsi panoramici più celebri al mondo sospeso tra cielo azzurro e mare.", "Costiera Amalfitana, Italia", locationMap.get("Costiera Amalfitana, Italia"), organizers.get(5), List.of(), Set.of(TravelTag.TREKKING, TravelTag.NATURA, TravelTag.AVVENTURA)));
+        addTpl.accept(createTemplate("Tour di Amalfi, Ravello e Villa Rufolo", "Esplora il Duomo marinaro di Amalfi e i giardini incantati a picco sulla scogliera.", "Costiera Amalfitana, Italia", locationMap.get("Costiera Amalfitana, Italia"), organizers.get(5), List.of(), Set.of(TravelTag.CULTURA, TravelTag.ROMANTICISMO, TravelTag.STORIA)));
+
+        log.info("✅ Seeding di {} template di attività completato per {} città.", templates.size(), cities.length);
+
+        // --- 5. Seed Activity Sessions (12 sessioni per città = 192 sessioni totali, TUTTE a partire dal 30 Agosto) ---
+        List<Activity> allActivities = new ArrayList<>();
+        Map<String, List<Activity>> cityActivitiesMap = new LinkedHashMap<>();
+
+        // Matrice di orari variati e distribuiti: (templateIdx, dayOffset, startHour, startMinute, durationHours, durationMinutes, price, cap)
+        class SessionSlot {
+            final int tplIdx;
+            final int dayOffset;
+            final int startH;
+            final int startM;
+            final int durH;
+            final int durM;
+            final BigDecimal price;
+            final int capacity;
+
+            SessionSlot(int tplIdx, int dayOffset, int startH, int startM, int durH, int durM, BigDecimal price, int capacity) {
+                this.tplIdx = tplIdx;
+                this.dayOffset = dayOffset;
+                this.startH = startH;
+                this.startM = startM;
+                this.durH = durH;
+                this.durM = durM;
+                this.price = price;
+                this.capacity = capacity;
             }
         }
-        log.info("✅ Seeding di {} sessioni di attività completato.", allActivities.size());
 
-        // --- 6. Seed Itineraries (9 Premium + 43 Dynamic = 52 total) ---
+        List<SessionSlot> scheduleSlots = List.of(
+            new SessionSlot(0, 0,  9, 30, 2,  0, new BigDecimal("35.00"), 20), // 30 Ago Mattina
+            new SessionSlot(1, 0, 15,  0, 2, 30, new BigDecimal("45.00"), 15), // 30 Ago Pomeriggio
+            new SessionSlot(2, 0, 19, 30, 2, 30, new BigDecimal("60.00"), 12), // 30 Ago Sera / Cena
+            new SessionSlot(0, 1, 10,  0, 2, 30, new BigDecimal("30.00"), 25), // 31 Ago Mattina
+            new SessionSlot(1, 1, 16, 30, 2,  0, new BigDecimal("40.00"), 18), // 31 Ago Pomeriggio / Tramonto
+            new SessionSlot(2, 2,  9,  0, 3,  0, new BigDecimal("55.00"), 10), // 1 Set Mattina Excursion
+            new SessionSlot(0, 2, 14, 30, 2, 30, new BigDecimal("25.00"), 30), // 1 Set Pomeriggio
+            new SessionSlot(1, 3, 11,  0, 2, 30, new BigDecimal("50.00"), 15), // 2 Set Pranzo / Gusto
+            new SessionSlot(2, 3, 18,  0, 2, 30, new BigDecimal("65.00"), 12), // 2 Set Twilight
+            new SessionSlot(0, 4, 10, 30, 2, 30, new BigDecimal("35.00"), 20), // 3 Set Mattina
+            new SessionSlot(1, 5, 17,  0, 2, 30, new BigDecimal("45.00"), 16), // 4 Set Pomeriggio
+            new SessionSlot(2, 6, 20,  0, 2, 30, new BigDecimal("75.00"), 14)  // 5 Set Notturno
+        );
+
+        for (String city : cities) {
+            List<ActivityTemplate> cityTpls = cityTemplatesMap.get(city);
+            if (cityTpls == null || cityTpls.isEmpty()) continue;
+
+            List<Activity> cityActs = new ArrayList<>();
+            for (SessionSlot slot : scheduleSlots) {
+                ActivityTemplate tpl = cityTpls.get(slot.tplIdx % cityTpls.size());
+                
+                LocalDateTime start = baseDate.plusDays(slot.dayOffset).atTime(slot.startH, slot.startM);
+                LocalDateTime end = start.plusHours(slot.durH).plusMinutes(slot.durM);
+
+                Activity act = new Activity();
+                act.setTemplate(tpl);
+                act.setStartTime(start);
+                act.setEndTime(end);
+                act.setParticipants(slot.capacity);
+                act.setPrice(slot.price);
+                
+                Activity saved = activityRepository.save(act);
+                allActivities.add(saved);
+                cityActs.add(saved);
+            }
+            cityActivitiesMap.put(city, cityActs);
+        }
+
+        log.info("✅ Seeding di {} sessioni di attività completato (12 eventi per ciascuna delle 16 città con date a partire dal 30 Agosto).", allActivities.size());
+
+        // --- 6. Seed Itineraries (16 Itinerari tematici per città + 36 Itinerari dinamici = 52 totali) ---
         List<Itinerary> allItineraries = new ArrayList<>();
-        
-        // 9 Detailed Manual Itineraries (linking 2 different templates in each city)
-        allItineraries.add(createItinerary("Weekend da Sogno a Tropea", "Relax in barca e trekking urbano sulla Costa degli Dei.", organizers.get(0), List.of(allActivities.get(0), allActivities.get(3)), null));
-        allItineraries.add(createItinerary("Fascino Antico a Reggio", "Dalla bellezza dei Bronzi di Riace al Lungomare con delizioso gelato.", organizers.get(0), List.of(allActivities.get(6), allActivities.get(9)), null));
-        allItineraries.add(createItinerary("Sila Wild Adventure", "Esplora i laghi silani e visita il Castello storico.", organizers.get(0), List.of(allActivities.get(12), allActivities.get(15)), null));
-        allItineraries.add(createItinerary("Incanto a Scilla e Chianalea", "Cena tipica in riva al mare e snorkeling nella Spiaggia delle Sirene.", organizers.get(0), List.of(allActivities.get(18), allActivities.get(21)), null));
-        allItineraries.add(createItinerary("Gran Tour di Roma", "Il meglio della Città Eterna: Colosseo e cena a Trastevere.", organizers.get(1), List.of(allActivities.get(24), allActivities.get(27)), null));
-        allItineraries.add(createItinerary("Milano Moderna e Gusto", "Salita sulle terrazze del Duomo e aperitivo sui Navigli.", organizers.get(2), List.of(allActivities.get(30), allActivities.get(33)), null));
-        allItineraries.add(createItinerary("Fascino Veneziano", "Romanticismo in gondola e laboratorio di maschere veneziane.", organizers.get(3), List.of(allActivities.get(36), allActivities.get(39)), null));
-        allItineraries.add(createItinerary("Arte e Cucina a Firenze", "I capolavori degli Uffizi e lezione di cucina toscana.", organizers.get(4), List.of(allActivities.get(42), allActivities.get(45)), null));
-        allItineraries.add(createItinerary("Sole e Sapori di Napoli", "Dalla pizza napoletana al tour archeologico di Pompei.", organizers.get(5), List.of(allActivities.get(48), allActivities.get(51)), null));
 
-        // 43 Dynamically generated itineraries to reach 52 total
-        String[] titles = {
-            "Weekend a", "Alla scoperta di", "Guida Storica per", "Le prelibatezze di", "Fuga Romantica a",
-            "Esperienza di Gruppo a", "Outdoor e Avventura a", "Emozioni nel cuore di", "Itinerario Culturale in"
-        };
-        for (int i = 10; i <= 52; i++) {
-            User creator = organizers.get(i % organizers.size());
-            String locationName = cities[i % cities.length];
-            
-            // Strictly fetch activities that belong to this exact location
-            List<Activity> matchedActs = allActivities.stream()
-                    .filter(a -> a.getTemplate().getLocation().equals(locationName))
-                    .toList();
+        // 16 Itinerari dedicati (uno per città, con sessioni ordinate e senza alcuna sovrapposizione temporale)
+        for (int c = 0; c < cities.length; c++) {
+            String city = cities[c];
+            List<Activity> cityActs = cityActivitiesMap.get(city);
+            User creator = organizers.get(c % organizers.size());
+            String cityNameOnly = city.split(",")[0].trim();
 
-            // Group activities by template to ensure we pick DIFFERENT activities
-            Map<ActivityTemplate, List<Activity>> actsByTemplate = new LinkedHashMap<>();
-            for (Activity act : matchedActs) {
-                actsByTemplate.computeIfAbsent(act.getTemplate(), k -> new ArrayList<>()).add(act);
-            }
+            if (cityActs != null && cityActs.size() >= 5) {
+                // Seleziona 3 sessioni in giorni distinti per un itinerario perfetto di 3 giorni
+                // Slot 0 (Giorno 0, 09:30), Slot 4 (Giorno 1, 16:30), Slot 5 (Giorno 2, 09:00)
+                List<Activity> selectedActs = List.of(cityActs.get(0), cityActs.get(4), cityActs.get(5));
+                
+                LocalDateTime startIti = baseDate.atTime(8, 0); // 30 Agosto 08:00
+                LocalDateTime endIti = baseDate.plusDays(3).atTime(23, 0); // 2 Settembre 23:00
 
-            List<Activity> itineraryActivities = new ArrayList<>();
-            for (List<Activity> sessions : actsByTemplate.values()) {
-                if (!sessions.isEmpty()) {
-                    itineraryActivities.add(sessions.get(0)); // Add first session of this template
-                }
-            }
-
-            if (!itineraryActivities.isEmpty()) {
                 Itinerary iti = new Itinerary();
-                iti.setTitle(titles[i % titles.length] + " " + locationName.split(",")[0].trim() + " #" + (i - 9));
-                iti.setDescription("Un fantastico itinerario curato da " + creator.getCompanyName() + " per esplorare " + locationName);
-                iti.setStartDateTime(LocalDateTime.now().plusDays(i + 5));
-                iti.setEndDateTime(LocalDateTime.now().plusDays(i + 8));
+                iti.setTitle("Esperienza Completa a " + cityNameOnly);
+                iti.setDescription("Tre giorni indimenticabili alla scoperta di " + cityNameOnly + " tra arte, cultura, gastronomia e paesaggi unici.");
+                iti.setStartDateTime(startIti);
+                iti.setEndDateTime(endIti);
                 iti.setCreator(creator);
-                iti.setActivities(itineraryActivities);
+                iti.setActivities(selectedActs);
                 iti.setVisibility("PUBLIC");
+                iti.setImagePath(getFallbackItineraryUrl(iti.getTitle()));
                 allItineraries.add(itineraryRepository.save(iti));
             }
         }
-        log.info("✅ Seeding di {} itinerari completato.", allItineraries.size());
+
+        // 36 Itinerari Dinamici aggiuntivi per raggiungere 52 itinerari complessivi
+        String[] titles = {
+            "Weekend Romantico a", "Alla scoperta di", "Guida Storica e Segreti di", "Tour Gastronomico a",
+            "Emozioni e Natura a", "Esperienza Esclusiva a", "Outdoor e Avventura a", "Gran Tour Culturale di"
+        };
+        for (int i = 17; i <= 52; i++) {
+            User creator = organizers.get(i % organizers.size());
+            String city = cities[i % cities.length];
+            String cityNameOnly = city.split(",")[0].trim();
+            List<Activity> cityActs = cityActivitiesMap.get(city);
+
+            if (cityActs != null && cityActs.size() >= 8) {
+                // Seleziona 2 sessioni su giorni diversi per evitare ogni sovrapposizione:
+                // Es. slot 3 (Giorno 1) e slot 7 (Giorno 3)
+                Activity act1 = cityActs.get(3);
+                Activity act2 = cityActs.get(7);
+                List<Activity> itiActs = List.of(act1, act2);
+
+                LocalDateTime itiStart = act1.getStartTime().minusHours(2);
+                LocalDateTime itiEnd = act2.getEndTime().plusHours(4);
+
+                Itinerary iti = new Itinerary();
+                iti.setTitle(titles[i % titles.length] + " " + cityNameOnly + " #" + (i - 16));
+                iti.setDescription("Un fantastico itinerario curato da " + creator.getCompanyName() + " per vivere al meglio " + city + ".");
+                iti.setStartDateTime(itiStart);
+                iti.setEndDateTime(itiEnd);
+                iti.setCreator(creator);
+                iti.setActivities(itiActs);
+                iti.setVisibility("PUBLIC");
+                iti.setImagePath(getFallbackItineraryUrl(city));
+                allItineraries.add(itineraryRepository.save(iti));
+            }
+        }
+
+        log.info("✅ Seeding di {} itinerari completato (tutti con date a partire dal 30 Agosto).", allItineraries.size());
     }
 
     private ActivityTemplate createTemplate(String name, String desc, String locName, Location locEntity, User organizer, Set<TravelTag> tags) {
@@ -445,97 +544,82 @@ public class DataSeeder implements CommandLineRunner {
         return activityTemplateRepository.save(tpl);
     }
 
-    private Itinerary createItinerary(String title, String desc, User creator, List<Activity> activities, String localPic) {
-        Itinerary itinerary = new Itinerary();
-        itinerary.setTitle(title);
-        itinerary.setDescription(desc);
-        itinerary.setStartDateTime(LocalDateTime.now().plusDays(10));
-        itinerary.setEndDateTime(LocalDateTime.now().plusDays(14));
-        itinerary.setCreator(creator);
-        itinerary.setActivities(activities);
-        itinerary.setVisibility("PUBLIC");
-
-        if (localPic != null) {
-            String path = copyLocalImage(localPic, "itineraries");
-            if (path != null) {
-                itinerary.setImagePath(path);
-            } else {
-                itinerary.setImagePath(getFallbackItineraryUrl(title));
-            }
-        } else {
-            itinerary.setImagePath(getFallbackItineraryUrl(title));
-        }
-
-        return itineraryRepository.save(itinerary);
-    }
-
-
-    // NOTA SULLE IMMAGINI DI RIPAGINAMENTO / FALLBACK (UNSPLASH):
-    // Sappiamo bene che caricare le immagini staticamente tramite URL esterni di Unsplash
-    // non è una soluzione ideale per una produzione professionale. Questo approccio viene
-    // utilizzato esclusivamente in questa fase di seeding per la demo dell'applicazione.
-    // Nella realtà, quando gli utenti caricano immagini vere per attività ed itinerari,
-    // queste vengono salvate a livello del file system del backend (dentro il volume Docker
-    // mappato "/app/uploads") e associate nel database tramite un UUID univoco specifico
-    // per ciascun file, garantendo performance ottimali, persistenza e isolamento.
     private String getFallbackImageUrl(String activityName) {
         String lower = activityName.toLowerCase();
         if (lower.contains("tropea") || lower.contains("costa degli dei"))
             return "https://images.unsplash.com/photo-1590001155093-a3c66ab0c3ff?q=80&w=800&auto=format&fit=crop";
         if (lower.contains("bronzi") || lower.contains("reggio"))
-            return "https://images.unsplash.com/photo-1549887534-1541e9326642?q=80&w=800&auto=format&fit=crop";
-        if (lower.contains("sila") || lower.contains("trekking"))
-            return "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=800&auto=format&fit=crop";
+            return "https://images.unsplash.com/photo-1690289793717-f92cc222752c?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("sila") || lower.contains("cosenza"))
+            return "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=800&q=80";
         if (lower.contains("scilla") || lower.contains("chianalea"))
-            return "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=800&auto=format&fit=crop";
-        if (lower.contains("colosseo"))
+            return "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("colosseo") || lower.contains("roma"))
             return "https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&w=800&q=80";
-        if (lower.contains("trastevere"))
+        if (lower.contains("trastevere") || lower.contains("fontane"))
             return "https://images.unsplash.com/photo-1515003197210-e0cd71810b5f?auto=format&fit=crop&w=800&q=80";
-        if (lower.contains("duomo"))
+        if (lower.contains("duomo") || lower.contains("milano") || lower.contains("brera"))
             return "https://images.unsplash.com/photo-1520175480921-4edfa2983e0f?auto=format&fit=crop&w=800&q=80";
-        if (lower.contains("aperitivo") || lower.contains("navigli"))
+        if (lower.contains("navigli") || lower.contains("aperitivo"))
             return "https://images.unsplash.com/photo-1574085733277-851d9d856a3a?q=80&w=800&auto=format&fit=crop";
-        if (lower.contains("gondola"))
+        if (lower.contains("gondola") || lower.contains("venezia") || lower.contains("burano") || lower.contains("murano"))
             return "https://images.unsplash.com/photo-1527631746610-bca00a040d60?auto=format&fit=crop&w=800&q=80";
         if (lower.contains("maschere"))
-            return "https://images.unsplash.com/photo-1517524008697-84bbe3c3fd98?q=80&w=800&auto=format&fit=crop";
-        if (lower.contains("uffizi"))
+            return "https://images.unsplash.com/photo-1517524008697-84bbe3c3fd98?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("uffizi") || lower.contains("firenze") || lower.contains("michelangelo"))
             return "https://images.unsplash.com/photo-1478147427282-58a87a120781?auto=format&fit=crop&w=800&q=80";
-        if (lower.contains("cucina") || lower.contains("pasta"))
-            return "https://images.unsplash.com/photo-1556910103-1c02745aae4d?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("cucina") || lower.contains("chianti") || lower.contains("pasta"))
+            return "https://images.unsplash.com/photo-1556910103-1c02745aae4d?auto=format&fit=crop&w=800&q=80";
         if (lower.contains("pompei"))
             return "https://images.unsplash.com/photo-1595183350284-ff7741d40131?q=80&w=800&auto=format&fit=crop";
-        if (lower.contains("pizza"))
+        if (lower.contains("pizza") || lower.contains("napoli") || lower.contains("sotterranea"))
             return "https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=800&auto=format&fit=crop";
-        if (lower.contains("egizio"))
+        if (lower.contains("egizio") || lower.contains("torino") || lower.contains("mole"))
             return "https://images.unsplash.com/photo-1539650116574-8efeb43e2750?q=80&w=800&auto=format&fit=crop";
-        if (lower.contains("gastronomico") || lower.contains("bologna"))
+        if (lower.contains("bologna") || lower.contains("mortadella") || lower.contains("asinelli"))
             return "https://images.unsplash.com/photo-1563245372-f21724e3856d?q=80&w=800&auto=format&fit=crop";
-        if (lower.contains("street food") || lower.contains("palermo"))
+        if (lower.contains("palermo") || lower.contains("mondello") || lower.contains("ballarò"))
             return "https://images.unsplash.com/photo-1541532713592-79a0317b6b77?q=80&w=800&auto=format&fit=crop";
-        if (lower.contains("dolomiti"))
-            return "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80";
-        if (lower.contains("barca") || lower.contains("positano"))
-            return "https://images.unsplash.com/photo-1533105079780-92b9be482077?q=80&w=800&auto=format&fit=crop";
+        if (lower.contains("verona") || lower.contains("giulietta") || lower.contains("arena") || lower.contains("valpolicella"))
+            return "https://images.unsplash.com/photo-1584824486509-112e4181ff6b?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("lecce") || lower.contains("salento") || lower.contains("barocco"))
+            return "https://images.unsplash.com/photo-1568084680786-a84f91d1153c?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("cortina") || lower.contains("dolomiti") || lower.contains("lavaredo") || lower.contains("sorapis"))
+            return "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("costiera") || lower.contains("amalfi") || lower.contains("positano") || lower.contains("capri") || lower.contains("dei"))
+            return "https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=800&q=80";
         return "https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=800&q=80";
     }
 
     private String getFallbackItineraryUrl(String itineraryTitle) {
         String lower = itineraryTitle.toLowerCase();
-        if (lower.contains("calabria") || lower.contains("tropea") || lower.contains("scilla") || lower.contains("sila") || lower.contains("reggio"))
+        if (lower.contains("calabria") || lower.contains("tropea") || lower.contains("scilla") || lower.contains("sila") || lower.contains("reggio") || lower.contains("cosenza"))
             return "https://images.unsplash.com/photo-1590001155093-a3c66ab0c3ff?q=80&w=800&auto=format&fit=crop";
         if (lower.contains("roma"))
-            return "https://images.unsplash.com/photo-1552832230-c0197dd311b5?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80";
+            return "https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&w=800&q=80";
         if (lower.contains("milano"))
-            return "https://images.unsplash.com/photo-1520175480921-4edfa2983e0f?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80";
-        if (lower.contains("venezia") || lower.contains("fascino"))
-            return "https://images.unsplash.com/photo-1527631746610-bca00a040d60?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80";
-        if (lower.contains("firenze") || lower.contains("arte"))
-            return "https://images.unsplash.com/photo-1478147427282-58a87a120781?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80";
-        if (lower.contains("napoli") || lower.contains("sud"))
+            return "https://images.unsplash.com/photo-1520175480921-4edfa2983e0f?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("venezia"))
+            return "https://images.unsplash.com/photo-1527631746610-bca00a040d60?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("firenze"))
+            return "https://images.unsplash.com/photo-1478147427282-58a87a120781?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("napoli"))
             return "https://images.unsplash.com/photo-1599682715474-361182378581?q=80&w=800&auto=format&fit=crop";
-        return "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("torino"))
+            return "https://images.unsplash.com/photo-1539650116574-8efeb43e2750?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("bologna"))
+            return "https://images.unsplash.com/photo-1563245372-f21724e3856d?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("palermo"))
+            return "https://images.unsplash.com/photo-1541532713592-79a0317b6b77?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("verona"))
+            return "https://images.unsplash.com/photo-1584824486509-112e4181ff6b?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("lecce"))
+            return "https://images.unsplash.com/photo-1568084680786-a84f91d1153c?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("cortina"))
+            return "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("costiera") || lower.contains("amalfi") || lower.contains("positano"))
+            return "https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=800&q=80";
+        return "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=800&q=80";
     }
 
     private void seedReviews() {
@@ -616,6 +700,6 @@ public class DataSeeder implements CommandLineRunner {
             }
         }
 
-        log.info("✅ Generazione completata con successo: {} recensioni inserite.", reviewCount);
+        log.info("✅ Generazione recensioni completata con successo: {} recensioni inserite.", reviewCount);
     }
 }
