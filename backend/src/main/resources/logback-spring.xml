@@ -43,11 +43,11 @@
         <appender-ref ref="CONSOLE"/>
     </logger>
 
-    <logger name="it.unical.ea.Travel" level="DEBUG"/>
+    <logger name="it.unical.ea.Travel" level="INFO"/>
     <logger name="org.springframework" level="INFO"/>
     <logger name="org.hibernate" level="WARN"/>
-    <logger name="org.hibernate.SQL" level="DEBUG"/>
-    <logger name="org.hibernate.orm.jdbc.bind" level="TRACE"/>
+    <logger name="org.hibernate.SQL" level="WARN"/>
+    <logger name="org.hibernate.orm.jdbc.bind" level="WARN"/>
 
     <springProfile name="dev,default">
         <root level="INFO">

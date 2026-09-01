@@ -107,11 +107,13 @@ public class ActivityService {
             ActivityDto dto = activityMapper.toDTO(primarySession);
             dto.setCurrentParticipants(calculateCurrentParticipants(primarySession));
 
-            // Popola il campo sessions con tutte le sessioni future disponibili (ordinate per tempo di inizio)
+            // Popola il campo sessions con tutte le sessioni future disponibili senza query N+1 a cascata
             List<ActivityDto> sessionDtos = futureSessions.stream()
                 .map(session -> {
                     ActivityDto sDto = activityMapper.toDTO(session);
-                    sDto.setCurrentParticipants(calculateCurrentParticipants(session));
+                    if (session.getId().equals(primarySession.getId())) {
+                        sDto.setCurrentParticipants(dto.getCurrentParticipants());
+                    }
                     return sDto;
                 })
                 .collect(Collectors.toList());
@@ -136,11 +138,7 @@ public class ActivityService {
             dto.setAverageRating(avgRating != null ? avgRating : 0.0);
             
             List<Activity> sessions = activityRepository.findSessionsByTemplate(template.getId(), minStartTime, maxEndTime);
-            List<ActivityDto> sessionDtos = sessions.stream().map(session -> {
-                ActivityDto sessionDto = activityMapper.toDTO(session);
-                sessionDto.setCurrentParticipants(calculateCurrentParticipants(session));
-                return sessionDto;
-            }).collect(Collectors.toList());
+            List<ActivityDto> sessionDtos = sessions.stream().map(activityMapper::toDTO).collect(Collectors.toList());
             
             dto.setSessions(sessionDtos);
             return dto;
@@ -308,7 +306,9 @@ public class ActivityService {
             List<Activity> sessions = activityRepository.findSessionsByTemplate(activity.getTemplate().getId(), LocalDateTime.now());
             List<ActivityDto> sessionDtos = sessions.stream().map(session -> {
                 ActivityDto sDto = activityMapper.toDTO(session);
-                sDto.setCurrentParticipants(calculateCurrentParticipants(session));
+                if (session.getId().equals(activity.getId())) {
+                    sDto.setCurrentParticipants(dto.getCurrentParticipants());
+                }
                 return sDto;
             }).collect(Collectors.toList());
             dto.setSessions(sessionDtos);
@@ -329,7 +329,9 @@ public class ActivityService {
                 // Mappa tutte le sessioni nel DTO
                 List<ActivityDto> sessionDtos = sessions.stream().map(session -> {
                     ActivityDto sDto = activityMapper.toDTO(session);
-                    sDto.setCurrentParticipants(calculateCurrentParticipants(session));
+                    if (session.getId().equals(firstSession.getId())) {
+                        sDto.setCurrentParticipants(dto.getCurrentParticipants());
+                    }
                     return sDto;
                 }).collect(Collectors.toList());
                 dto.setSessions(sessionDtos);
@@ -583,7 +585,7 @@ public class ActivityService {
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "user.notFound"));
         List<ActivityBooking> bookings = activityBookingRepository.findByUserId(user.getId());
         return bookings.stream()
-                .filter(b -> b.getStatus() == BookingStatus.CONFIRMED)
+                .filter(b -> b.getStatus() == BookingStatus.CONFIRMED && b.getActivity() != null)
                 .map(b -> {
                     ActivityDto dto = activityMapper.toDTO(b.getActivity());
                     dto.setCurrentParticipants(calculateCurrentParticipants(b.getActivity()));

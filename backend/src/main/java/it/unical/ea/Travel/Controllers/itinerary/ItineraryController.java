@@ -337,6 +337,10 @@ public class ItineraryController {
             dto.setShareCode(itineraryService.ensureShareCode(itinerary));
         }
 
+        if (itinerary.getCreator() != null && itinerary.getId() != null) {
+            dto.setIsCreatorBooked(itineraryService.isItineraryBooked(itinerary.getId().toString(), itinerary.getCreator().getEmail()));
+        }
+
         return dto;
     }
 

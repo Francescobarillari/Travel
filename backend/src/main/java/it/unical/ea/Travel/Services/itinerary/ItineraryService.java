@@ -207,8 +207,20 @@ public class ItineraryService {
 
     public Itinerary updateItinerary(String stringId, CreateItineraryRequest request) {
         Itinerary itinerary = getItinerary(stringId);
-        authorizationService.verifyOwnershipOrAdmin(
-                itinerary.getCreator() != null ? itinerary.getCreator().getId() : null, "itinerary");
+        User currentUser = authorizationService.getCurrentUser();
+        boolean isOwner = itinerary.getCreator() != null && itinerary.getCreator().getId().equals(currentUser.getId());
+        boolean isAdmin = authorizationService.isOwnerOrAdmin(itinerary.getCreator() != null ? itinerary.getCreator().getId() : null);
+        boolean isAcceptedParticipant = itineraryJoinRequestRepository.existsByUserIdAndItineraryIdAndStatus(
+                currentUser.getId(), itinerary.getId(), JoinRequestStatus.ACCEPTED);
+
+        if (!isOwner && !isAdmin && !isAcceptedParticipant) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "error.forbidden");
+        }
+
+        boolean hasBookings = itineraryBookingRepository.existsByItineraryIdAndStatus(itinerary.getId(), it.unical.ea.Travel.Entities.payment.BookingStatus.CONFIRMED);
+        if (hasBookings) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "itinerary.update.alreadyBooked");
+        }
 
         itinerary.setTitle(request.getTitle());
         itinerary.setDescription(request.getDescription());
@@ -218,7 +230,9 @@ public class ItineraryService {
         if (request.getEndDateTime() != null) {
             itinerary.setEndDateTime(request.getEndDateTime());
         }
-        itinerary.setVisibility(request.getVisibility() != null ? request.getVisibility() : "PRIVATE");
+        if (request.getVisibility() != null && isOwner) {
+            itinerary.setVisibility(request.getVisibility());
+        }
 
         if ("SHARED".equalsIgnoreCase(itinerary.getVisibility().trim())) {
             if (itinerary.getShareCode() == null || itinerary.getShareCode().isBlank()) {
@@ -232,7 +246,7 @@ public class ItineraryService {
 
         Itinerary saved = itineraryRepository.save(itinerary);
         auditLogService.log("UPDATE_ITINERARY", "Itinerary", saved.getId().toString(),
-                "Updated itinerary: " + saved.getTitle());
+                "Updated itinerary: " + saved.getTitle() + " by: " + currentUser.getEmail());
         return saved;
     }
 
@@ -313,6 +327,15 @@ public class ItineraryService {
             ItineraryBooking existingBooking = existingBookingOpt.get();
             if (existingBooking.getStatus() == BookingStatus.CONFIRMED) {
                 throw new ApiException(HttpStatus.BAD_REQUEST, "itinerary.booking.alreadyBooked");
+            }
+        }
+
+        // Se l'itinerario è CONDIVISO (SHARED) e l'utente non è il creatore, verificare che il creatore abbia già prenotato
+        boolean isSharedItinerary = "SHARED".equalsIgnoreCase(itinerary.getVisibility());
+        if (isSharedItinerary && itinerary.getCreator() != null && !itinerary.getCreator().getId().equals(user.getId())) {
+            boolean creatorBooked = isItineraryBooked(itinerary.getId().toString(), itinerary.getCreator().getEmail());
+            if (!creatorBooked) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "itinerary.booking.creatorNotBookedYet");
             }
         }
 
@@ -495,6 +518,24 @@ public class ItineraryService {
                     "Il tuo itinerario '" + booking.getItinerary().getTitle() + "' è stato prenotato con successo!",
                     NotificationType.PRENOTAZIONE_SUCCESSO);
 
+            // Se l'utente che ha prenotato è il creatore dell'itinerario, invia notifica di sollecito a tutti i partecipanti approvati
+            if (booking.getItinerary().getCreator() != null &&
+                    booking.getItinerary().getCreator().getId().equals(booking.getUser().getId())) {
+                List<ItineraryJoinRequest> acceptedParticipants = itineraryJoinRequestRepository
+                        .findByItineraryIdAndStatusWithUser(booking.getItinerary().getId(), JoinRequestStatus.ACCEPTED);
+
+                for (ItineraryJoinRequest req : acceptedParticipants) {
+                    if (!req.getUser().getId().equals(booking.getUser().getId())) {
+                        notificationService.createNotification(
+                                req.getUser(),
+                                "Il creatore ha prenotato l'itinerario!",
+                                "Il creatore dell'itinerario '" + booking.getItinerary().getTitle() +
+                                        "' ha effettuato la prenotazione! Puoi ora procedere a confermare e prenotare la tua quota.",
+                                NotificationType.SOLLECITO_PRENOTAZIONE_ITINERARIO);
+                    }
+                }
+            }
+
             List<ActivityBooking> activityBookings = activityBookingRepository
                     .findByUserIdAndItineraryId(booking.getUser().getId(), booking.getItinerary().getId());
             for (ActivityBooking ab : activityBookings) {
@@ -530,7 +571,7 @@ public class ItineraryService {
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "user.notFound"));
         List<ItineraryBooking> bookings = itineraryBookingRepository.findByUserId(user.getId());
         return bookings.stream()
-                .filter(b -> b.getStatus() == BookingStatus.CONFIRMED)
+                .filter(b -> b.getStatus() == BookingStatus.CONFIRMED && b.getItinerary() != null)
                 .map(ItineraryBooking::getItinerary)
                 .toList();
     }
@@ -701,6 +742,7 @@ public class ItineraryService {
             creatorDto.setUserAvatarUrl(itinerary.getCreator().getAvatarUrl());
             creatorDto.setCreator(true);
             creatorDto.setJoinedAt(itinerary.getCreatedAt());
+            creatorDto.setBooked(isItineraryBooked(itinerary.getId().toString(), itinerary.getCreator().getEmail()));
             result.add(creatorDto);
         }
 
@@ -714,6 +756,7 @@ public class ItineraryService {
             dto.setUserAvatarUrl(req.getUser().getAvatarUrl());
             dto.setCreator(false);
             dto.setJoinedAt(req.getCreatedAt());
+            dto.setBooked(isItineraryBooked(itinerary.getId().toString(), req.getUser().getEmail()));
             result.add(dto);
         }
         return result;
