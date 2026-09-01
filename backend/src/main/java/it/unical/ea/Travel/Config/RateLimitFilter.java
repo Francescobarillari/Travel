@@ -25,7 +25,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private static final Duration LOGIN_REFILL_PERIOD = Duration.ofMinutes(1);
     private static final String LOGIN_PATH = "/api/auth/login";
 
-    private static final int MAX_UPLOAD_REQUESTS = 3;
+    private static final int MAX_UPLOAD_REQUESTS = 15;
     private static final Duration UPLOAD_REFILL_PERIOD = Duration.ofMinutes(1);
 
     private static final int MAX_PASSWORD_RESET_REQUESTS = 3;

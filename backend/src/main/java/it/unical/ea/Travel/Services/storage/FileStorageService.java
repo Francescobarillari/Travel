@@ -28,7 +28,8 @@ public class FileStorageService {
     private static final Map<String, String> MIME_TO_EXTENSION = Map.of(
             "image/jpeg", ".jpg",
             "image/png", ".png",
-            "image/webp", ".webp"
+            "image/webp", ".webp",
+            "application/pdf", ".pdf"
     );
 
     private static final Set<String> ALLOWED_CONTENT_TYPES = MIME_TO_EXTENSION.keySet();

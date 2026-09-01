@@ -255,6 +255,18 @@ public class LocationService {
             return "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=800&q=80";
         if (lower.contains("scilla"))
             return "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("torino"))
+            return "https://images.unsplash.com/photo-1539650116574-8efeb43e2750?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("bologna"))
+            return "https://images.unsplash.com/photo-1563245372-f21724e3856d?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("verona"))
+            return "https://images.unsplash.com/photo-1584824486509-112e4181ff6b?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("lecce"))
+            return "https://images.unsplash.com/photo-1568084680786-a84f91d1153c?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("cortina"))
+            return "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=800&q=80";
+        if (lower.contains("costiera") || lower.contains("amalfi") || lower.contains("positano"))
+            return "https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=800&q=80";
         return null;
     }
 }
