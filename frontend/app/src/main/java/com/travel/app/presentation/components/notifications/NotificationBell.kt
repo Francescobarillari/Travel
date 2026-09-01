@@ -288,5 +288,6 @@ private fun notificationVisuals(type: NotificationType?): Pair<ImageVector, Colo
     NotificationType.RICHIESTA_PARTECIPAZIONE_ITINERARIO -> Icons.Default.GroupAdd to MaterialTheme.colorScheme.primary
     NotificationType.ACCETTAZIONE_PARTECIPAZIONE_ITINERARIO -> Icons.Default.CheckCircle to Color(0xFF16A34A)
     NotificationType.RIFIUTO_PARTECIPAZIONE_ITINERARIO -> Icons.Default.Close to Color(0xFFDC2626)
+    NotificationType.SOLLECITO_PRENOTAZIONE_ITINERARIO -> Icons.Default.CheckCircle to MaterialTheme.colorScheme.primary
     else -> Icons.Outlined.Notifications to MaterialTheme.colorScheme.onSurfaceVariant
 }

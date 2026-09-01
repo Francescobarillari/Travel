@@ -63,7 +63,7 @@ fun PersonalizeItineraryScreen(
 
     val currentUser = remember { AppContainer.sessionManager.getSessionUser() }
     val userId = currentUser?.id
-    val isEditingExisting = itinerary.id != null && itinerary.creatorId?.toString() == userId
+    val isEditingExisting = itinerary.id != null
 
     val city = remember(itinerary) {
         initialCity ?: itinerary.activities?.firstOrNull()?.location?.split(",")?.firstOrNull()?.trim() ?: ""
@@ -214,7 +214,7 @@ fun PersonalizeItineraryScreen(
                                     description = itinerary.description
                                     startDateTime = itinerary.startDateTime
                                     endDateTime = itinerary.endDateTime
-                                    creatorId = userId
+                                    creatorId = itinerary.creatorId?.toString() ?: userId
                                     this.activityIds = selectedActivities.mapNotNull { it.id?.toString() }
                                     visibility = itinerary.visibility ?: "PRIVATE"
                                 }

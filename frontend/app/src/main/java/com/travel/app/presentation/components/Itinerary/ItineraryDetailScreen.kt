@@ -71,6 +71,8 @@ import it.unical.ea.enums.JoinRequestStatus
 import com.travel.app.presentation.components.checkout.CheckoutSummaryScreen
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 
@@ -250,7 +252,7 @@ fun ItineraryDetailScreen(
 
     Scaffold(
         floatingActionButton = {
-            if (isViaggiatore) {
+            if (isViaggiatore && !isBooked && itinerary.isCreatorBooked != true) {
                 FloatingActionButton(
                     onClick = { onPersonalizeClick(itinerary) },
                     shape = CircleShape,
@@ -298,6 +300,11 @@ fun ItineraryDetailScreen(
                     val isFull = itinerary.getActivities()?.any { activity ->
                         activity.participants != null && (activity.currentParticipants ?: 0) >= activity.participants
                     } == true
+                    val creatorHasBooked = itinerary.isCreatorBooked == true || participants.any { it.isCreator && it.isBooked }
+                    val isApprovedParticipant = participants.any { it.userId?.toString() == currentUser?.id && !it.isCreator } || itinerary.isParticipant == true
+
+                    val isSharedItinerary = "SHARED".equals(itinerary.visibility, ignoreCase = true)
+                    val isPublicItinerary = "PUBLIC".equals(itinerary.visibility, ignoreCase = true) || "PUBBLICO".equals(itinerary.visibility, ignoreCase = true)
 
                     if (isBooked) {
                         if (hasStarted) {
@@ -367,7 +374,56 @@ fun ItineraryDetailScreen(
                         ) {
                             Text("Posti esauriti", fontWeight = FontWeight.Bold)
                         }
+                    } else if (isSharedItinerary && !isCreator && isApprovedParticipant && !creatorHasBooked) {
+                        // Partecipante approvato in itinerario condiviso ma il creatore non ha ancora prenotato
+                        Button(
+                            onClick = {},
+                            enabled = false,
+                            modifier = Modifier
+                                .width(200.dp)
+                                .height(52.dp),
+                            shape = RoundedCornerShape(26.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        ) {
+                            Text("In attesa del creatore", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
+                        }
+                    } else if (isSharedItinerary && !isCreator && !isApprovedParticipant) {
+                        // Utente non iscritto/approvato in itinerario condiviso
+                        Button(
+                            onClick = {},
+                            enabled = false,
+                            modifier = Modifier
+                                .width(180.dp)
+                                .height(52.dp),
+                            shape = RoundedCornerShape(26.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        ) {
+                            Text("Non sei iscritto", fontWeight = FontWeight.Bold)
+                        }
+                    } else if (!isCreator && !isPublicItinerary && !isSharedItinerary) {
+                        // Utente non creatore in itinerario privato
+                        Button(
+                            onClick = {},
+                            enabled = false,
+                            modifier = Modifier
+                                .width(180.dp)
+                                .height(52.dp),
+                            shape = RoundedCornerShape(26.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        ) {
+                            Text("Non sei iscritto", fontWeight = FontWeight.Bold)
+                        }
                     } else {
+                        // Creatore, oppure Partecipante approvato in SHARED, oppure QUALSIASI utente in itinerario PUBBLICO!
                         Button(
                             onClick = { 
                                 itinerary.getId()?.toString()?.let {
@@ -987,8 +1043,8 @@ fun ItineraryDetailScreen(
                     }
                 }
 
-                // PARTICIPANTS SECTION (When shared or participants exist)
-                if (participants.isNotEmpty() || isShared) {
+                // PARTICIPANTS SECTION (Only when SHARED)
+                if (isShared) {
                     Surface(
                         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
                         shape = RoundedCornerShape(16.dp),
@@ -1127,9 +1183,12 @@ fun ItineraryDetailScreen(
                     )
                 }
 
-                val hasAlreadyReviewed = reviews.any { it.isEditable == true }
+                val hasAlreadyReviewed = reviews.any { 
+                    it.isEditable == true && (it.itineraryId != null && it.itineraryId.toString() == itinerary.id?.toString())
+                }
                 val isConcluded = itinerary.endDateTime?.isBefore(LocalDateTime.now()) == true ||
                         (itinerary.endDateTime == null && itinerary.startDateTime?.isBefore(LocalDateTime.now()) == true)
+                var visibleReviewsCount by remember { mutableIntStateOf(2) }
 
                 if (hasAlreadyReviewed) {
                     Card(
@@ -1244,7 +1303,7 @@ fun ItineraryDetailScreen(
                     )
                 } else {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        reviews.forEach { review ->
+                        reviews.take(visibleReviewsCount).forEach { review ->
                             // Here showActivityName is true to distinguish which activity the review is for
                             ReviewCard(
                                 review = review, 
@@ -1283,6 +1342,55 @@ fun ItineraryDetailScreen(
                                     }
                                 }
                             )
+                        }
+
+                        if (reviews.size > 2) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 4.dp),
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                if (visibleReviewsCount < reviews.size) {
+                                    OutlinedButton(
+                                        onClick = { 
+                                            visibleReviewsCount = (visibleReviewsCount + 2).coerceAtMost(reviews.size) 
+                                        },
+                                        shape = RoundedCornerShape(20.dp),
+                                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+                                    ) {
+                                        Text(
+                                            text = "Mostra altre recensioni (${reviews.size - visibleReviewsCount} rimanenti)",
+                                            fontWeight = FontWeight.Medium,
+                                            style = MaterialTheme.typography.bodyMedium
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Icon(
+                                            imageVector = Icons.Default.KeyboardArrowDown,
+                                            contentDescription = "Mostra altre",
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                } else {
+                                    OutlinedButton(
+                                        onClick = { visibleReviewsCount = 2 },
+                                        shape = RoundedCornerShape(20.dp),
+                                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+                                    ) {
+                                        Text(
+                                            text = "Mostra meno",
+                                            fontWeight = FontWeight.Medium,
+                                            style = MaterialTheme.typography.bodyMedium
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Icon(
+                                            imageVector = Icons.Default.KeyboardArrowUp,
+                                            contentDescription = "Mostra meno",
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
                 }

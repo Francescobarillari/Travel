@@ -50,6 +50,8 @@ import com.paypal.checkout.error.OnError
 import com.travel.app.presentation.components.checkout.CheckoutSummaryScreen
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 
@@ -782,6 +784,7 @@ fun ActivityDetailScreen(
 
                         val hasAlreadyReviewed = reviews.any { it.isEditable == true }
                         val isConcluded = (currentSession?.endTime?.isBefore(LocalDateTime.now()) == true) || (activity?.endTime?.isBefore(LocalDateTime.now()) == true)
+                        var visibleReviewsCount by remember { mutableIntStateOf(2) }
 
                         if (hasAlreadyReviewed) {
                             Card(
@@ -894,7 +897,7 @@ fun ActivityDetailScreen(
                             )
                         } else {
                             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                                reviews.forEach { review ->
+                                reviews.take(visibleReviewsCount).forEach { review ->
                                     ReviewCard(
                                         review = review, 
                                         showActivityName = false,
@@ -926,6 +929,55 @@ fun ActivityDetailScreen(
                                             }
                                         }
                                     )
+                                }
+
+                                if (reviews.size > 2) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(top = 4.dp),
+                                        horizontalArrangement = Arrangement.Center
+                                    ) {
+                                        if (visibleReviewsCount < reviews.size) {
+                                            OutlinedButton(
+                                                onClick = { 
+                                                    visibleReviewsCount = (visibleReviewsCount + 2).coerceAtMost(reviews.size) 
+                                                },
+                                                shape = RoundedCornerShape(20.dp),
+                                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+                                            ) {
+                                                Text(
+                                                    text = "Mostra altre recensioni (${reviews.size - visibleReviewsCount} rimanenti)",
+                                                    fontWeight = FontWeight.Medium,
+                                                    style = MaterialTheme.typography.bodyMedium
+                                                )
+                                                Spacer(modifier = Modifier.width(6.dp))
+                                                Icon(
+                                                    imageVector = Icons.Default.KeyboardArrowDown,
+                                                    contentDescription = "Mostra altre",
+                                                    modifier = Modifier.size(18.dp)
+                                                )
+                                            }
+                                        } else {
+                                            OutlinedButton(
+                                                onClick = { visibleReviewsCount = 2 },
+                                                shape = RoundedCornerShape(20.dp),
+                                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+                                            ) {
+                                                Text(
+                                                    text = "Mostra meno",
+                                                    fontWeight = FontWeight.Medium,
+                                                    style = MaterialTheme.typography.bodyMedium
+                                                )
+                                                Spacer(modifier = Modifier.width(6.dp))
+                                                Icon(
+                                                    imageVector = Icons.Default.KeyboardArrowUp,
+                                                    contentDescription = "Mostra meno",
+                                                    modifier = Modifier.size(18.dp)
+                                                )
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }

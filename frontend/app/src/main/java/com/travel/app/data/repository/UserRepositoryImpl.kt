@@ -344,7 +344,9 @@ class UserRepositoryImpl(
                     }
                 }
             }
-            is IOException -> "Nessuna connessione internet"
+            is java.net.UnknownHostException -> "Nessuna connessione internet"
+            is java.net.SocketTimeoutException -> "Tempo di connessione scaduto"
+            is IOException -> "Errore durante il caricamento o file troppo grande"
             else -> e.message ?: "Errore imprevisto"
         }
     }
