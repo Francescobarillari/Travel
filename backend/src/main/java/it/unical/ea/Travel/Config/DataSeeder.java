@@ -20,7 +20,9 @@ import it.unical.ea.Travel.Repositories.notification.NotificationRepository;
 import it.unical.ea.Travel.Services.keycloak.KeycloakAdminService;
 import it.unical.ea.Travel.Services.keycloak.KeycloakUserAlreadyExistsException;
 import it.unical.ea.Travel.Services.location.LocationService;
+import it.unical.ea.Travel.Entities.itinerary.ItineraryJoinRequest;
 import it.unical.ea.dtos.authDto.SignupRequest;
+import it.unical.ea.enums.JoinRequestStatus;
 import it.unical.ea.enums.UserType;
 import it.unical.ea.enums.TravelTag;
 import lombok.extern.slf4j.Slf4j;
@@ -81,17 +83,21 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     @Override
-    @Transactional
-    public void run(String... args) throws Exception {
+    public void run(String... args) {
+        if (itineraryRepository.count() >= 50 && activityRepository.count() >= 1000) {
+            log.info("ℹ️ Dataset demo completo già presente nel database ({} attività e {} itinerari trovati), skip pulizia e rigenerazione.", activityRepository.count(), itineraryRepository.count());
+            return;
+        }
+
         seedTestUser();
         
-        log.info("🧹 Pulizia database per la generazione del nuovo dataset demo...");
+        log.info("🧹 Pulizia database per la generazione del nuovo dataset demo esteso fino al 31 Ottobre...");
         cleanupDatabase();
 
         log.info("📍 Seeding e allineamento delle località...");
         seedAndHealLocations();
         
-        log.info("🚀 Seeding del nuovo ricco dataset demo (date dal 30 Agosto in poi, almeno 10 eventi a città)...");
+        log.info("🚀 Seeding del ricco dataset demo (5 attività al giorno per città fino al 31 Ottobre + Itinerari di Viaggiatori e Società)...");
         seedData();
         
         log.info("⭐ Generazione recensioni (4-5 per attività e itinerario)...");
@@ -111,9 +117,14 @@ public class DataSeeder implements CommandLineRunner {
         activityRepository.deleteAll();
         activityTemplateRepository.deleteAll();
         
-        // Delete only seeded demo organizers and travelers, preserving real registered users and test user
+        Set<String> preservedEmails = Set.of(
+            "a@a.com",
+            "a@a.it",
+            "admin-user@example.com",
+            "basic-user@example.com"
+        );
         userRepository.findAll().forEach(u -> {
-            if (u.getEmail().startsWith("organizer") || u.getEmail().startsWith("viaggiatore")) {
+            if (u.getEmail() != null && !preservedEmails.contains(u.getEmail().toLowerCase().trim())) {
                 userRepository.delete(u);
             }
         });
@@ -379,92 +390,98 @@ public class DataSeeder implements CommandLineRunner {
 
         log.info("✅ Seeding di {} template di attività completato per {} città.", templates.size(), cities.length);
 
-        // --- 5. Seed Activity Sessions (12 sessioni per città = 192 sessioni totali, TUTTE a partire dal 30 Agosto) ---
+        // --- 5. Seed Activity Sessions (5 attività al giorno per ciascuna delle 16 città fino al 31 Ottobre = 5.040 eventi) ---
         List<Activity> allActivities = new ArrayList<>();
         Map<String, List<Activity>> cityActivitiesMap = new LinkedHashMap<>();
 
-        // Matrice di orari variati e distribuiti: (templateIdx, dayOffset, startHour, startMinute, durationHours, durationMinutes, price, cap)
-        class SessionSlot {
-            final int tplIdx;
-            final int dayOffset;
-            final int startH;
-            final int startM;
-            final int durH;
-            final int durM;
-            final BigDecimal price;
-            final int capacity;
-
-            SessionSlot(int tplIdx, int dayOffset, int startH, int startM, int durH, int durM, BigDecimal price, int capacity) {
-                this.tplIdx = tplIdx;
-                this.dayOffset = dayOffset;
-                this.startH = startH;
-                this.startM = startM;
-                this.durH = durH;
-                this.durM = durM;
-                this.price = price;
-                this.capacity = capacity;
-            }
-        }
-
-        List<SessionSlot> scheduleSlots = List.of(
-            new SessionSlot(0, 0,  9, 30, 2,  0, new BigDecimal("35.00"), 20), // 30 Ago Mattina
-            new SessionSlot(1, 0, 15,  0, 2, 30, new BigDecimal("45.00"), 15), // 30 Ago Pomeriggio
-            new SessionSlot(2, 0, 19, 30, 2, 30, new BigDecimal("60.00"), 12), // 30 Ago Sera / Cena
-            new SessionSlot(0, 1, 10,  0, 2, 30, new BigDecimal("30.00"), 25), // 31 Ago Mattina
-            new SessionSlot(1, 1, 16, 30, 2,  0, new BigDecimal("40.00"), 18), // 31 Ago Pomeriggio / Tramonto
-            new SessionSlot(2, 2,  9,  0, 3,  0, new BigDecimal("55.00"), 10), // 1 Set Mattina Excursion
-            new SessionSlot(0, 2, 14, 30, 2, 30, new BigDecimal("25.00"), 30), // 1 Set Pomeriggio
-            new SessionSlot(1, 3, 11,  0, 2, 30, new BigDecimal("50.00"), 15), // 2 Set Pranzo / Gusto
-            new SessionSlot(2, 3, 18,  0, 2, 30, new BigDecimal("65.00"), 12), // 2 Set Twilight
-            new SessionSlot(0, 4, 10, 30, 2, 30, new BigDecimal("35.00"), 20), // 3 Set Mattina
-            new SessionSlot(1, 5, 17,  0, 2, 30, new BigDecimal("45.00"), 16), // 4 Set Pomeriggio
-            new SessionSlot(2, 6, 20,  0, 2, 30, new BigDecimal("75.00"), 14)  // 5 Set Notturno
-        );
+        int totalDays = (int) java.time.temporal.ChronoUnit.DAYS.between(baseDate, LocalDate.of(baseYear, 10, 31)) + 1;
+        log.info("📅 Generazione eventi per {} giorni (dal 30 Agosto al 31 Ottobre)...", totalDays);
 
         for (String city : cities) {
             List<ActivityTemplate> cityTpls = cityTemplatesMap.get(city);
             if (cityTpls == null || cityTpls.isEmpty()) continue;
 
             List<Activity> cityActs = new ArrayList<>();
-            for (SessionSlot slot : scheduleSlots) {
-                ActivityTemplate tpl = cityTpls.get(slot.tplIdx % cityTpls.size());
-                
-                LocalDateTime start = baseDate.plusDays(slot.dayOffset).atTime(slot.startH, slot.startM);
-                LocalDateTime end = start.plusHours(slot.durH).plusMinutes(slot.durM);
+            for (int day = 0; day < totalDays; day++) {
+                LocalDate currentDate = baseDate.plusDays(day);
 
-                Activity act = new Activity();
-                act.setTemplate(tpl);
-                act.setStartTime(start);
-                act.setEndTime(end);
-                act.setParticipants(slot.capacity);
-                act.setPrice(slot.price);
-                
-                Activity saved = activityRepository.save(act);
-                allActivities.add(saved);
-                cityActs.add(saved);
+                // Slot 1: Mattina (09:00 - 11:30) - Tour Culturale / Walking
+                ActivityTemplate tpl0 = cityTpls.get(0 % cityTpls.size());
+                Activity act0 = new Activity();
+                act0.setTemplate(tpl0);
+                act0.setStartTime(currentDate.atTime(9, 0));
+                act0.setEndTime(currentDate.atTime(11, 30));
+                act0.setParticipants(20);
+                act0.setPrice(BigDecimal.valueOf(30 + (day % 4) * 5));
+                cityActs.add(act0);
+
+                // Slot 2: Pranzo / Gusto (12:00 - 14:00) - Food Experience
+                ActivityTemplate tpl1 = cityTpls.get(1 % cityTpls.size());
+                Activity act1 = new Activity();
+                act1.setTemplate(tpl1);
+                act1.setStartTime(currentDate.atTime(12, 0));
+                act1.setEndTime(currentDate.atTime(14, 0));
+                act1.setParticipants(15);
+                act1.setPrice(BigDecimal.valueOf(25 + (day % 3) * 5));
+                cityActs.add(act1);
+
+                // Slot 3: Pomeriggio (15:00 - 17:30) - Musei / Esperienze
+                ActivityTemplate tpl2 = cityTpls.get(2 % cityTpls.size());
+                Activity act2 = new Activity();
+                act2.setTemplate(tpl2);
+                act2.setStartTime(currentDate.atTime(15, 0));
+                act2.setEndTime(currentDate.atTime(17, 30));
+                act2.setParticipants(25);
+                act2.setPrice(BigDecimal.valueOf(35 + (day % 5) * 5));
+                cityActs.add(act2);
+
+                // Slot 4: Tramonto Panoramico (18:00 - 19:45) - Aperitivo / Belvedere
+                ActivityTemplate tpl3 = cityTpls.get(day % cityTpls.size());
+                Activity act3 = new Activity();
+                act3.setTemplate(tpl3);
+                act3.setStartTime(currentDate.atTime(18, 0));
+                act3.setEndTime(currentDate.atTime(19, 45));
+                act3.setParticipants(18);
+                act3.setPrice(BigDecimal.valueOf(20 + (day % 4) * 5));
+                cityActs.add(act3);
+
+                // Slot 5: Cena / Tour Notturno (20:30 - 23:00) - Notturno & Cena tipica
+                ActivityTemplate tpl4 = cityTpls.get((day + 1) % cityTpls.size());
+                Activity act4 = new Activity();
+                act4.setTemplate(tpl4);
+                act4.setStartTime(currentDate.atTime(20, 30));
+                act4.setEndTime(currentDate.atTime(23, 0));
+                act4.setParticipants(14);
+                act4.setPrice(BigDecimal.valueOf(45 + (day % 5) * 5));
+                cityActs.add(act4);
             }
-            cityActivitiesMap.put(city, cityActs);
+
+            List<Activity> savedCityActs = activityRepository.saveAll(cityActs);
+            allActivities.addAll(savedCityActs);
+            cityActivitiesMap.put(city, savedCityActs);
         }
 
-        log.info("✅ Seeding di {} sessioni di attività completato (12 eventi per ciascuna delle 16 città con date a partire dal 30 Agosto).", allActivities.size());
+        log.info("✅ Seeding di {} sessioni di attività completato (5 attività al giorno per città fino al 31 Ottobre).", allActivities.size());
 
-        // --- 6. Seed Itineraries (16 Itinerari tematici per città + 36 Itinerari dinamici = 52 totali) ---
+        // --- 6. Seed Itineraries (Itinerari di Organizzatori + Itinerari Fittizi di Utenti Viaggiatori) ---
         List<Itinerary> allItineraries = new ArrayList<>();
 
-        // 16 Itinerari dedicati (uno per città, con sessioni ordinate e senza alcuna sovrapposizione temporale)
+        // A. 16 Itinerari completi ufficiali degli organizzatori
         for (int c = 0; c < cities.length; c++) {
             String city = cities[c];
             List<Activity> cityActs = cityActivitiesMap.get(city);
             User creator = organizers.get(c % organizers.size());
             String cityNameOnly = city.split(",")[0].trim();
 
-            if (cityActs != null && cityActs.size() >= 5) {
-                // Seleziona 3 sessioni in giorni distinti per un itinerario perfetto di 3 giorni
-                // Slot 0 (Giorno 0, 09:30), Slot 4 (Giorno 1, 16:30), Slot 5 (Giorno 2, 09:00)
-                List<Activity> selectedActs = List.of(cityActs.get(0), cityActs.get(4), cityActs.get(5));
+            if (cityActs != null && cityActs.size() >= 15) {
+                // Seleziona 3 sessioni in 3 giorni consecutivi (es. Giorno 0 mattina, Giorno 1 pomeriggio, Giorno 2 sera)
+                Activity a1 = cityActs.get(0);  // Day 0, Slot 0
+                Activity a2 = cityActs.get(7);  // Day 1, Slot 2
+                Activity a3 = cityActs.get(14); // Day 2, Slot 4
+                List<Activity> selectedActs = List.of(a1, a2, a3);
                 
-                LocalDateTime startIti = baseDate.atTime(8, 0); // 30 Agosto 08:00
-                LocalDateTime endIti = baseDate.plusDays(3).atTime(23, 0); // 2 Settembre 23:00
+                LocalDateTime startIti = a1.getStartTime().minusHours(1);
+                LocalDateTime endIti = a3.getEndTime().plusHours(1);
 
                 Itinerary iti = new Itinerary();
                 iti.setTitle("Esperienza Completa a " + cityNameOnly);
@@ -479,30 +496,105 @@ public class DataSeeder implements CommandLineRunner {
             }
         }
 
-        // 36 Itinerari Dinamici aggiuntivi per raggiungere 52 itinerari complessivi
-        String[] titles = {
-            "Weekend Romantico a", "Alla scoperta di", "Guida Storica e Segreti di", "Tour Gastronomico a",
-            "Emozioni e Natura a", "Esperienza Esclusiva a", "Outdoor e Avventura a", "Gran Tour Culturale di"
+        // B. 25 Itinerari fittizi creati da UTENTI VIAGGIATORI (sia PUBLIC che SHARED con partecipanti)
+        String[] travelerItineraryTitles = {
+            "I miei 3 giorni a Roma tra cucina e storia antica",
+            "Weekend Romantico a Firenze con tramonto a Piazzale Michelangelo",
+            "Avventura e Trekking tra i Laghi della Sila con amici",
+            "Napoli sotterranea, Spaccanapoli e pizza verace",
+            "Venezia insolita: laguna, Murano e botteghe storiche",
+            "Torino magica tra Museo Egizio, cioccolato e caffè d'epoca",
+            "Costiera Amalfitana on the road da Positano a Ravello",
+            "Weekend Gourmet a Bologna la Grassa tra pasta e torri",
+            "Salento d'incanto tra Barocco leccese e sapori tipici",
+            "Dolomiti d'autunno: trekking mozzafiato a Cortina",
+            "Scilla e Tropea: mare cristallino e borghi marinari",
+            "Milano Design & Food tra Duomo e Navigli",
+            "Palermo autentica: mercati storici e mare a Mondello",
+            "Verona d'amore: arte, Arena e vini della Valpolicella",
+            "Reggio Calabria tra Bronzi di Riace e lungomare da favola",
+            "Fuga di fine estate a Tropea e Capo Vaticano",
+            "Weekend culturale a Roma tra piazze barocche e osterie",
+            "Colori e profumi di Firenze e del Chianti",
+            "Escursione e relax tra i pini della Sila cosentina",
+            "Tour dei sapori partenopei con degustazioni imperdibili",
+            "Gondola e segreti veneziani per un weekend speciale",
+            "Torino Reale: arte, Mole Antonelliana e gianduiotti",
+            "Alla scoperta delle meraviglie di Amalfi e Capri",
+            "Bologna da gustare: tour dei tortellini e torre degli Asinelli",
+            "Salento autunnale tra storia, cartapesta e mare"
         };
-        for (int i = 17; i <= 52; i++) {
-            User creator = organizers.get(i % organizers.size());
+
+        for (int i = 0; i < travelerItineraryTitles.length; i++) {
+            User travelerCreator = travelers.get(i % travelers.size());
             String city = cities[i % cities.length];
+            List<Activity> cityActs = cityActivitiesMap.get(city);
+
+            if (cityActs != null && cityActs.size() >= 30) {
+                int dayOffset = (i * 2) % (totalDays - 5);
+                // Prendi 2 o 3 attività nei giorni consecutivi senza sovrapposizioni
+                Activity act1 = cityActs.get(dayOffset * 5 + 0); // Mattina Giorno N
+                Activity act2 = cityActs.get((dayOffset + 1) * 5 + 2); // Pomeriggio Giorno N+1
+                Activity act3 = cityActs.get((dayOffset + 1) * 5 + 4); // Sera Giorno N+1
+                List<Activity> itiActs = (i % 3 == 0) ? List.of(act1, act2, act3) : List.of(act1, act2);
+
+                LocalDateTime itiStart = act1.getStartTime().minusHours(2);
+                LocalDateTime itiEnd = itiActs.get(itiActs.size() - 1).getEndTime().plusHours(2);
+
+                boolean isShared = (i % 2 == 1); // Alterna tra PUBBLICO e CONDIVISO
+                String shareCode = isShared ? String.format("TRV%03d", 100 + i) : null;
+
+                Itinerary iti = new Itinerary();
+                iti.setTitle(travelerItineraryTitles[i]);
+                iti.setDescription("Itinerario creato e pianificato da " + travelerCreator.getFirstName() + " " + travelerCreator.getLastName() + " per vivere un'esperienza indimenticabile a " + city.split(",")[0] + ".");
+                iti.setStartDateTime(itiStart);
+                iti.setEndDateTime(itiEnd);
+                iti.setCreator(travelerCreator);
+                iti.setActivities(itiActs);
+                iti.setVisibility(isShared ? "SHARED" : "PUBLIC");
+                iti.setShareCode(shareCode);
+                iti.setImagePath(getFallbackItineraryUrl(city));
+                Itinerary savedIti = itineraryRepository.save(iti);
+                allItineraries.add(savedIti);
+
+                // Se l'itinerario è CONDIVISO, aggiungi 2 compagni di viaggio accettati
+                if (isShared) {
+                    for (int p = 1; p <= 2; p++) {
+                        User companion = travelers.get((i + p) % travelers.size());
+                        ItineraryJoinRequest joinReq = new ItineraryJoinRequest();
+                        joinReq.setItinerary(savedIti);
+                        joinReq.setUser(companion);
+                        joinReq.setStatus(JoinRequestStatus.ACCEPTED);
+                        joinReq.setCreatedAt(LocalDateTime.now().minusDays(3 - p));
+                        itineraryJoinRequestRepository.save(joinReq);
+                    }
+                }
+            }
+        }
+
+        // C. 15 Itinerari Tematici aggiuntivi degli Organizzatori
+        String[] thematicTitles = {
+            "Tour Enogastronomico d'Autunno a", "Gran Tour Culturale e Museale di",
+            "Weekend Romantico ed Esclusivo a", "Outdoor, Trekking e Natura a", "Esperienza Fotografica e Panorami di"
+        };
+        for (int i = 0; i < 15; i++) {
+            User creator = organizers.get(i % organizers.size());
+            String city = cities[(i + 3) % cities.length];
             String cityNameOnly = city.split(",")[0].trim();
             List<Activity> cityActs = cityActivitiesMap.get(city);
 
-            if (cityActs != null && cityActs.size() >= 8) {
-                // Seleziona 2 sessioni su giorni diversi per evitare ogni sovrapposizione:
-                // Es. slot 3 (Giorno 1) e slot 7 (Giorno 3)
-                Activity act1 = cityActs.get(3);
-                Activity act2 = cityActs.get(7);
+            if (cityActs != null && cityActs.size() >= 25) {
+                int dayOffset = (i * 3 + 1) % (totalDays - 4);
+                Activity act1 = cityActs.get(dayOffset * 5 + 1); // Pranzo Giorno N
+                Activity act2 = cityActs.get((dayOffset + 1) * 5 + 3); // Tramonto Giorno N+1
                 List<Activity> itiActs = List.of(act1, act2);
 
                 LocalDateTime itiStart = act1.getStartTime().minusHours(2);
-                LocalDateTime itiEnd = act2.getEndTime().plusHours(4);
+                LocalDateTime itiEnd = act2.getEndTime().plusHours(3);
 
                 Itinerary iti = new Itinerary();
-                iti.setTitle(titles[i % titles.length] + " " + cityNameOnly + " #" + (i - 16));
-                iti.setDescription("Un fantastico itinerario curato da " + creator.getCompanyName() + " per vivere al meglio " + city + ".");
+                iti.setTitle(thematicTitles[i % thematicTitles.length] + " " + cityNameOnly);
+                iti.setDescription("Proposta esclusiva curata da " + creator.getCompanyName() + " per scoprire il meglio di " + city + ".");
                 iti.setStartDateTime(itiStart);
                 iti.setEndDateTime(itiEnd);
                 iti.setCreator(creator);
@@ -513,7 +605,7 @@ public class DataSeeder implements CommandLineRunner {
             }
         }
 
-        log.info("✅ Seeding di {} itinerari completato (tutti con date a partire dal 30 Agosto).", allItineraries.size());
+        log.info("✅ Seeding di {} itinerari completato (Itinerari di Viaggiatori e Organizzatori con compagni di viaggio).", allItineraries.size());
     }
 
     private ActivityTemplate createTemplate(String name, String desc, String locName, Location locEntity, User organizer, Set<TravelTag> tags) {
