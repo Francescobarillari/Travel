@@ -29,4 +29,7 @@ public class ItineraryParticipantDto {
 
     @Schema(type = "string", format = "date-time", example = "2025-07-01T10:00:00")
     private LocalDateTime joinedAt;
+
+    @Schema(example = "false")
+    private boolean isBooked = false;
 }

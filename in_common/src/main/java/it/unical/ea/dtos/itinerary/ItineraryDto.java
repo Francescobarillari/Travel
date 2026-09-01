@@ -41,4 +41,6 @@ public class ItineraryDto {
     private Boolean isParticipant;
     @Schema(example = "0")
     private Integer pendingRequestsCount;
+    @Schema(example = "false")
+    private Boolean isCreatorBooked;
 }
