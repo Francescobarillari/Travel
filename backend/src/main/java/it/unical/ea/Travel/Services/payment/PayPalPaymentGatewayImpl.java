@@ -40,7 +40,7 @@ public class PayPalPaymentGatewayImpl implements PaymentGateway {
             @Value("${paypal.client.id:}") String clientId,
             @Value("${paypal.client.secret:}") String clientSecret,
             @Value("${paypal.webhook.id:}") String webhookId,
-            @Value("${paypal.webhook.skip-verify:true}") boolean skipVerify,
+            @Value("${paypal.webhook.skip-verify:false}") boolean skipVerify,
             @Value("${paypal.mode:sandbox}") String mode) {
         
         this.clientId = clientId;
@@ -68,7 +68,7 @@ public class PayPalPaymentGatewayImpl implements PaymentGateway {
         }
     }
 
-    private String getAccessToken() {
+    String getAccessToken() {
         if (cachedAccessToken != null && java.time.Instant.now().isBefore(tokenExpiryTime.minusSeconds(60))) {
             return cachedAccessToken;
         }

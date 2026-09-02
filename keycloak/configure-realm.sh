@@ -56,4 +56,17 @@ for role in manage-users query-users view-users query-clients view-clients view-
     || echo "Role ${role} already assigned or not assignable."
 done
 
+echo "Enforcing brute-force protection on realm ${REALM}..."
+/opt/keycloak/bin/kcadm.sh update "realms/${REALM}" \
+  -s bruteForceProtected=true \
+  -s permanentLockout=false \
+  -s failureFactor=5 \
+  -s maxDeltaTimeSeconds=43200 \
+  -s maxFailureWaitSeconds=900 \
+  -s minimumQuickLoginWaitSeconds=60 \
+  -s waitIncrementSeconds=60 \
+  -s quickLoginCheckMilliSeconds=1000 >/dev/null 2>&1 \
+  && echo "Brute-force protection enabled on ${REALM}." \
+  || echo "Could not update brute-force protection via kcadm."
+
 echo "Keycloak realm configured."
